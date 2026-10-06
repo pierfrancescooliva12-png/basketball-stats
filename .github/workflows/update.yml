@@ -15,6 +15,14 @@ on:
         description: "Giornate (es. 1-2 oppure 1,3,5-7). Vuoto = tutte"
         required: false
         default: ""
+      stagioni:
+        description: "Stagioni (es. x2627,x2526). Vuoto = stagione corrente"
+        required: false
+        default: ""
+      anagrafica:
+        description: "Massimo giocatori di cui scaricare l'anagrafica"
+        required: false
+        default: "400"
 
   # Collaudo sul branch di sviluppo (da rimuovere dopo il merge)
   push:
@@ -33,7 +41,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 240
     steps:
       - uses: actions/checkout@v4
 
@@ -55,11 +63,21 @@ jobs:
         env:
           CAMPIONATI: ${{ inputs.campionati }}
           GIORNATE: ${{ inputs.giornate }}
+          # Sul branch di sviluppo: recupero completo della stagione precedente
+          STAGIONI: ${{ github.event_name == 'push' && 'x2627,x2526' || inputs.stagioni }}
+          ANAGRAFICA: ${{ github.event_name == 'push' && '3000' || inputs.anagrafica || '400' }}
         run: |
           ARGS=()
           if [ -n "$CAMPIONATI" ]; then ARGS+=(--campionati "$CAMPIONATI"); fi
           if [ -n "$GIORNATE" ]; then ARGS+=(--giornate "$GIORNATE"); fi
-          python -m basket.update "${ARGS[@]}"
+          RC=0
+          for S in ${STAGIONI//,/ }; do
+            python -m basket.update "${ARGS[@]}" --stagione "$S" --anagrafica 0 \
+              --recupero-cronaca 2000 || RC=1
+          done
+          if [ -z "$STAGIONI" ]; then python -m basket.update "${ARGS[@]}" --anagrafica 0 || RC=1; fi
+          python -m basket.update --campionati "" --anagrafica "$ANAGRAFICA" || RC=1
+          exit $RC
 
       - name: Genera Excel di riepilogo
         run: |

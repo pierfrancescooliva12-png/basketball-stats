@@ -4,10 +4,16 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = ROOT / "data" / "lnp.sqlite"
+# Cronache (play-by-play): un file compresso per partita, scritto una volta e mai modificato,
+# così il repository non cresce a ogni aggiornamento settimanale
+CRONACA_DIR = ROOT / "data" / "cronaca"
 REPORTS_DIR = ROOT / "reports"
 
 STAGIONE = "x2627"
 STAGIONE_LABEL = "2026/27"
+
+# Stagioni in archivio (per mercato e storico). Codice sito -> etichetta
+STAGIONI = {"x2627": "2026/27", "x2526": "2025/26", "x2425": "2024/25"}
 
 # codice lega sul sito -> nome leggibile
 CAMPIONATI = {

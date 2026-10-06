@@ -50,9 +50,9 @@ class ScoutingReport:
     prossima: str | None = None
 
 
-def build_report(conn, squadra_id: int) -> ScoutingReport:
-    bs = A.load_box_squadra(conn)
-    bg = A.load_box_giocatore(conn)
+def build_report(conn, squadra_id: int, stagione: str = config.STAGIONE) -> ScoutingReport:
+    bs = A.load_box_squadra(conn, stagione)
+    bg = A.load_box_giocatore(conn, stagione)
     team_rows = bs[bs["squadra_id"] == squadra_id]
     if team_rows.empty:
         raise ValueError("Nessuna partita giocata per questa squadra")
@@ -113,7 +113,7 @@ def build_report(conn, squadra_id: int) -> ScoutingReport:
         "ORtg": split["ortg"], "DRtg": split["drtg"], "eFG%": split["efg_pct"],
     })
 
-    periodi = _periods(conn, squadra_id)
+    periodi = _periods(conn, squadra_id, stagione)
     pos = A.standings(bs_c)
     posizione = int(pos.loc[pos["squadra_id"] == squadra_id, "pos"].iloc[0])
 
@@ -126,10 +126,11 @@ def build_report(conn, squadra_id: int) -> ScoutingReport:
     )
 
 
-def _periods(conn, squadra_id: int) -> pd.DataFrame:
+def _periods(conn, squadra_id: int, stagione: str) -> pd.DataFrame:
     rows = conn.execute(
-        "SELECT squadra_casa_id, parziali FROM partite "
-        "WHERE squadra_casa_id = ? OR squadra_ospite_id = ?", (squadra_id, squadra_id)).fetchall()
+        "SELECT squadra_casa_id, parziali FROM partite WHERE stagione = ? "
+        "AND (squadra_casa_id = ? OR squadra_ospite_id = ?)",
+        (stagione, squadra_id, squadra_id)).fetchall()
     data = []
     for casa_id, parz in rows:
         side, other = ("casa", "ospite") if casa_id == squadra_id else ("ospite", "casa")

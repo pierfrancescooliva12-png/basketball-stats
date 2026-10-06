@@ -64,6 +64,7 @@ def parse_schedule(data: list[dict], league: str, season: str) -> list[dict]:
             "punti_ospite": _int(g.get("score_away")),
             "palazzetto": g.get("arena"),
             "stato": g.get("game_status"),
+            "stream_url": g.get("stream_url"),
         })
     return games
 
@@ -232,3 +233,143 @@ def _minutes(raw: str) -> float | None:
 
 def _clean_name(name: str) -> str:
     return re.sub(r"\s+", " ", name).strip()
+
+
+# ---------------------------------------------------------------- play-by-play
+
+# testo azione -> (tipo normalizzato, zona di tiro)
+PBP_TIPI = [
+    ("Tiro realizzato da 3 punti", "tiro3_fatto", "tre"),
+    ("Tiro sbagliato da 3 punti", "tiro3_sbagliato", "tre"),
+    ("Tiro realizzato da 2 punti da fuori area", "tiro2_fatto", "fuori_area"),
+    ("Tiro realizzato dall'area", "tiro2_fatto", "area"),
+    ("Tiro sbagliato da fuori area", "tiro2_sbagliato", "fuori_area"),
+    ("Tiro sbagliato dall'area", "tiro2_sbagliato", "area"),
+    ("Schiacciata", "tiro2_fatto", "schiacciata"),
+    ("Tiro libero segnato", "tl_fatto", None),
+    ("Tiro libero sbagliato", "tl_sbagliato", None),
+    ("Rimbalzo offensivo", "rimb_off", None),
+    ("Rimbalzo difensivo", "rimb_dif", None),
+    ("Assist", "assist", None),
+    ("Palla persa", "persa", None),
+    ("Palla recuperata", "recupero", None),
+    ("Stoppata Subita", "stoppata_subita", None),
+    ("Stoppata", "stoppata", None),
+    ("Fallo tecnico", "fallo_tecnico", None),
+    ("Fallo commesso", "fallo", None),
+    ("Fallo subito", "fallo_subito", None),
+    ("Cambio", "cambio", None),
+    ("Timeout", "timeout", None),
+]
+
+
+def pbp_url(gameid: str, league: str, season: str = config.STAGIONE) -> str:
+    return boxscore_url(gameid, league, season) + "/play-by-play"
+
+
+def fetch_pbp(client: RateLimitedClient, gameid: str, league: str,
+              season: str = config.STAGIONE) -> dict:
+    resp = client.get(pbp_url(gameid, league, season))
+    resp.raise_for_status()
+    return parse_pbp(resp.text)
+
+
+def classify_action(text: str) -> tuple[str, str | None, bool]:
+    """(tipo, zona, di_squadra) a partire dal testo dell'azione."""
+    di_squadra = "di squadra" in text
+    base = text.replace(" di squadra", "").strip()
+    for prefix, tipo, zona in PBP_TIPI:
+        if base.startswith(prefix):
+            return tipo, zona, di_squadra
+    return "altro", None, di_squadra
+
+
+def parse_pbp(html: str) -> dict:
+    """Cronaca: {'squadre': [nome_casa, nome_ospite], 'eventi': [...]}.
+
+    Ogni evento: n, periodo, secondi (trascorsi dall'inizio partita), lato ('casa'/'ospite'),
+    giocatore_id, tipo, zona, di_squadra, testo, punti_casa, punti_ospite."""
+    soup = BeautifulSoup(html, "lxml")
+    table = soup.select_one("table.sticky-table") or soup.select_one(".play-by-play-content table")
+    if table is None:
+        raise ParseError("tabella play-by-play non trovata")
+    head = [th.get_text(strip=True) for th in table.select("thead th")]
+    if len(head) != 5 or head[0] != "Minuto":
+        raise ParseError(f"intestazione play-by-play inattesa: {head}")
+    eventi, nomi = [], {}
+    for tr in table.select("tbody tr"):
+        td = tr.select("td")
+        if len(td) != 5:
+            continue
+        clock = td[0].get_text(strip=True)
+        score = td[2].get_text(strip=True)
+        m = re.match(r"(\d+)-(\d+)", score)
+        secondi = _clock(clock)
+        for lato, cell in (("casa", td[1]), ("ospite", td[4])):
+            text = cell.get_text(" ", strip=True)
+            if not text:
+                continue
+            link = cell.select_one("a")
+            gid = None
+            if link is not None:
+                mm = re.search(r"/giocatore/wp/([^/?#]+)", link.get("href", ""))
+                gid = mm.group(1) if mm else None
+                if gid:
+                    nomi[gid] = link.get_text(" ", strip=True)
+                azione = text.split(",", 1)[1].strip() if "," in text else text
+            else:
+                azione = text
+            tipo, zona, di_squadra = classify_action(azione)
+            eventi.append({
+                "n": len(eventi), "periodo": _int(tr.get("data-period")), "secondi": secondi,
+                "lato": lato, "giocatore_id": gid, "tipo": tipo, "zona": zona,
+                "di_squadra": di_squadra or gid is None, "testo": azione,
+                "punti_casa": int(m.group(1)) if m else None,
+                "punti_ospite": int(m.group(2)) if m else None,
+            })
+    if not eventi:
+        raise ParseError("play-by-play vuoto")
+    return {"squadre": [head[1], head[4]], "eventi": eventi, "nomi": nomi}
+
+
+def _clock(raw: str) -> int | None:
+    m = re.match(r"(\d+):(\d+)", raw or "")
+    return int(m.group(1)) * 60 + int(m.group(2)) if m else None
+
+
+# ---------------------------------------------------------------- anagrafica giocatore
+
+def player_url(giocatore_id: str) -> str:
+    return f"{config.SITE_BASE}/giocatore/wp/{giocatore_id}"
+
+
+def fetch_player(client: RateLimitedClient, giocatore_id: str) -> dict:
+    resp = client.get(player_url(giocatore_id))
+    resp.raise_for_status()
+    return parse_player(resp.text)
+
+
+def parse_player(html: str) -> dict:
+    """Anagrafica: data_nascita (ISO), nazionalita, altezza_cm, peso_kg, societa."""
+    soup = BeautifulSoup(html, "lxml")
+    specs = {}
+    for li in soup.select(".player-mini-specs li"):
+        label = li.select_one(".spec-label")
+        value = li.select_one(".spec-value")
+        if label and value:
+            specs[label.get_text(strip=True).rstrip(":").lower()] = value.get_text(" ", strip=True)
+    if not specs:
+        raise ParseError("anagrafica giocatore non trovata")
+    nascita = None
+    if specs.get("data di nascita"):
+        try:
+            nascita = datetime.strptime(specs["data di nascita"], "%d/%m/%Y").date().isoformat()
+        except ValueError:
+            nascita = None
+    return {
+        "data_nascita": nascita,
+        "nazionalita": (specs.get("nazionalità") or "").upper() or None,
+        "altezza_cm": _int(re.sub(r"[^\d]", "", specs.get("altezza", "")) or None),
+        "peso_kg": _int(re.sub(r"[^\d]", "", specs.get("peso", "")) or None),
+        "societa": specs.get("società"),
+    }

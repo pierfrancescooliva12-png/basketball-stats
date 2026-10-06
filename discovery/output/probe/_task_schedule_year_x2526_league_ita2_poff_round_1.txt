@@ -1,3 +1,0 @@
-https://lnpstat.domino.it/getstatisticsfiles?task=schedule&year=x2526&league=ita2_poff&round=1
-
-{"error":{"code":"102","message":"File richiesto non esistente. Parametri task, year, league, round obbligatori."}}

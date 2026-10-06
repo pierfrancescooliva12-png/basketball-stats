@@ -116,15 +116,16 @@ def casa_trasferta_giocatori(bg: pd.DataFrame, bs: pd.DataFrame) -> pd.DataFrame
                    "efg_pct": "eFG%", "ts_pct": "TS%", "usg_pct": "USG%"})
 
 
-def partite(conn) -> pd.DataFrame:
+def partite(conn, stagione: str | None = None) -> pd.DataFrame:
     df = pd.read_sql_query(
         """SELECT p.partita_id, p.campionato_id, p.giornata, p.data, sc.nome AS casa, p.punti_casa,
                   p.punti_ospite, so.nome AS ospite, p.palazzetto, p.url
            FROM partite p
            JOIN squadre sc ON sc.squadra_id = p.squadra_casa_id
            JOIN squadre so ON so.squadra_id = p.squadra_ospite_id
-           ORDER BY p.campionato_id, p.giornata, p.data""", conn)
-    df = df.merge(A.game_quality(conn), on="partita_id", how="left")
+           WHERE (:s IS NULL OR p.stagione = :s)
+           ORDER BY p.campionato_id, p.giornata, p.data""", conn, params={"s": stagione})
+    df = df.merge(A.game_quality(conn, stagione), on="partita_id", how="left")
     df["completo"] = df["affidabile"].map({True: "Sì", False: "No (escluso da avanzate)"})
     return select(df, {"campionato": "Campionato", "giornata": "Giornata", "data": "Data",
                        "casa": "Casa", "punti_casa": "PC", "punti_ospite": "PO",

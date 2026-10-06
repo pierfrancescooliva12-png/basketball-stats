@@ -44,7 +44,7 @@ PLAYER_ADV = ["fg_pct", "t2_pct", "t3_pct", "tl_pct", "efg_pct", "ts_pct", "usg_
 
 # ------------------------------------------------------------------ caricamento
 
-def load_box_giocatore(conn: sqlite3.Connection) -> pd.DataFrame:
+def load_box_giocatore(conn: sqlite3.Connection, stagione: str | None = None) -> pd.DataFrame:
     df = pd.read_sql_query(
         """
         SELECT b.*, g.nome AS giocatore, s.nome AS squadra,
@@ -56,20 +56,22 @@ def load_box_giocatore(conn: sqlite3.Connection) -> pd.DataFrame:
         JOIN partite p USING (partita_id)
         JOIN giocatori g USING (giocatore_id)
         JOIN squadre s ON s.squadra_id = b.squadra_id
+        WHERE (:stagione IS NULL OR p.stagione = :stagione)
         """,
-        conn,
+        conn, params={"stagione": stagione},
     )
     df["minuti"] = df["minuti"].fillna(0.0)
     df[COUNT_STATS] = df[COUNT_STATS].fillna(0)
     df["giocata"] = df["minuti"] > 0
     nomi = dict(conn.execute("SELECT squadra_id, nome FROM squadre").fetchall())
     df["avversario"] = df["avversario_id"].map(nomi)
-    df = df.merge(game_quality(conn)[["partita_id", "affidabile"]], on="partita_id", how="left")
+    df = df.merge(game_quality(conn, stagione)[["partita_id", "affidabile"]], on="partita_id",
+                  how="left")
     df["affidabile"] = df["affidabile"].fillna(True).astype(bool)
     return df
 
 
-def load_box_squadra(conn: sqlite3.Connection) -> pd.DataFrame:
+def load_box_squadra(conn: sqlite3.Connection, stagione: str | None = None) -> pd.DataFrame:
     """Una riga per squadra e partita, con le statistiche dell'avversario (prefisso opp_)."""
     bs = pd.read_sql_query(
         """
@@ -77,8 +79,9 @@ def load_box_squadra(conn: sqlite3.Connection) -> pd.DataFrame:
         FROM box_squadra b
         JOIN partite p USING (partita_id)
         JOIN squadre s ON s.squadra_id = b.squadra_id
+        WHERE (:stagione IS NULL OR p.stagione = :stagione)
         """,
-        conn,
+        conn, params={"stagione": stagione},
     )
     stat_cols = ["minuti"] + COUNT_STATS
     opp = bs[["partita_id", "squadra_id", "squadra"] + stat_cols].rename(
@@ -100,8 +103,9 @@ def _quality(bs: pd.DataFrame) -> pd.DataFrame:
     return q
 
 
-def game_quality(conn: sqlite3.Connection) -> pd.DataFrame:
-    return load_box_squadra(conn)[["partita_id", "pace_partita", "affidabile"]].drop_duplicates()
+def game_quality(conn: sqlite3.Connection, stagione: str | None = None) -> pd.DataFrame:
+    return load_box_squadra(conn, stagione)[["partita_id", "pace_partita", "affidabile"]
+                                            ].drop_duplicates()
 
 
 # ------------------------------------------------------------------ formule
@@ -352,12 +356,12 @@ PYTH_EXP = 14.0
 CLOSE_MARGIN = 5
 
 
-def load_quarters(conn: sqlite3.Connection) -> pd.DataFrame:
+def load_quarters(conn: sqlite3.Connection, stagione: str | None = None) -> pd.DataFrame:
     """Punti per periodo: una riga per squadra, partita e periodo."""
     rows = []
     for pid, camp, casa, ospite, parz in conn.execute(
             "SELECT partita_id, campionato_id, squadra_casa_id, squadra_ospite_id, parziali "
-            "FROM partite"):
+            "FROM partite WHERE (:s IS NULL OR stagione = :s)", {"s": stagione}):
         for p in json.loads(parz or "[]"):
             rows.append((pid, camp, casa, p["periodo"], p["casa"], p["ospite"]))
             rows.append((pid, camp, ospite, p["periodo"], p["ospite"], p["casa"]))

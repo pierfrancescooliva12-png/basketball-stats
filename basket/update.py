@@ -9,9 +9,13 @@ import argparse
 import logging
 import sys
 
+import requests
+
 from . import config, db
+from . import pbp as P
 from .client import RateLimitedClient
-from .scraper import ParseError, boxscore_url, fetch_boxscore, fetch_schedule
+from .scraper import (ParseError, boxscore_url, fetch_boxscore, fetch_pbp, fetch_player,
+                      fetch_schedule)
 
 log = logging.getLogger("basket.update")
 
@@ -45,7 +49,8 @@ def _round_complete(conn, league: str, season: str, giornata: int) -> list[dict]
     return None
 
 
-def update_league(conn, client, league: str, season: str, giornate: set[int] | None) -> dict:
+def update_league(conn, client, league: str, season: str, giornate: set[int] | None,
+                  with_pbp: bool = True) -> dict:
     stats = {"giornate": 0, "nuove": 0, "errori": []}
     db.upsert_campionato(conn, league, season, config.CAMPIONATI.get(league, league))
     conn.commit()
@@ -82,6 +87,9 @@ def update_league(conn, client, league: str, season: str, giornate: set[int] | N
                 box = fetch_boxscore(client, g["gameid"], league, season)
                 _check_score(g, box)
                 db.save_partita(conn, g, box, url)
+                if with_pbp:
+                    import_pbp(conn, client, pid, g["gameid"], league, season,
+                               g["squadra_casa_id"], g["squadra_ospite_id"], box)
             except (ParseError, ValueError) as exc:
                 log.error("%s: %s", pid, exc)
                 stats["errori"].append(f"{pid}: {exc}")
@@ -92,6 +100,77 @@ def update_league(conn, client, league: str, season: str, giornate: set[int] | N
                      box["casa"]["totali"]["punti"], box["ospite"]["totali"]["punti"],
                      g["squadra_ospite"])
     return stats
+
+
+def import_pbp(conn, client, pid: str, gameid: str, league: str, season: str,
+               home_id: int, away_id: int, box: dict) -> dict | None:
+    """Scarica la cronaca, ricostruisce i quintetti e salva. Errori non bloccanti."""
+    try:
+        cr = fetch_pbp(client, gameid, league, season)
+    except (ParseError, RuntimeError, requests.RequestException) as exc:
+        log.warning("%s: cronaca non disponibile (%s)", pid, exc)
+        return None
+    ev = cr["eventi"]
+    non_abbinati = P.align_ids(ev, box, cr.get("nomi", {}))
+    starters = {lato: {g["giocatore_id"] for g in box[lato]["giocatori"] if g["quintetto"]}
+                for lato in ("casa", "ospite")}
+    minuti = {g["giocatore_id"]: g["minuti"] or 0 for lato in ("casa", "ospite")
+              for g in box[lato]["giocatori"]}
+    qual = P.quality(ev, (box["casa"]["totali"]["punti"], box["ospite"]["totali"]["punti"]))
+    stints, q2 = [], {"quintetti_ok": False, "errore_minuti": None}
+    if all(len(v) == 5 for v in starters.values()):
+        stints, q2 = P.reconstruct(ev, starters, minuti)
+    ids = {"casa": home_id, "ospite": away_id}
+    for s_ in stints:
+        s_["squadra_id"] = ids[s_["lato"]]
+    qual |= {"quintetti_ok": bool(q2["quintetti_ok"] and qual["punteggio_ok"]
+                                  and non_abbinati == 0),
+             "errore_minuti": q2["errore_minuti"]}
+    db.save_pbp(conn, pid, home_id, away_id, cr, stints, qual)
+    return qual
+
+
+def box_from_db(conn, pid: str) -> dict:
+    """Ricostruisce dal database la struttura minima del box score usata dalla cronaca."""
+    home, away = conn.execute("SELECT squadra_casa_id, squadra_ospite_id FROM partite "
+                              "WHERE partita_id = ?", (pid,)).fetchone()
+    out = {}
+    for lato, sid in (("casa", home), ("ospite", away)):
+        rows = conn.execute(
+            "SELECT b.giocatore_id, g.nome, b.quintetto, b.minuti FROM box_giocatore b "
+            "JOIN giocatori g USING (giocatore_id) WHERE partita_id = ? AND squadra_id = ?",
+            (pid, sid)).fetchall()
+        tot = conn.execute("SELECT punti FROM box_squadra WHERE partita_id = ? AND squadra_id = ?",
+                           (pid, sid)).fetchone()[0]
+        out[lato] = {"giocatori": [{"giocatore_id": r[0], "nome": r[1], "quintetto": bool(r[2]),
+                                    "minuti": r[3]} for r in rows], "totali": {"punti": tot}}
+    return out
+
+
+def backfill_pbp(conn, client, league: str, season: str, limit: int) -> int:
+    """Scarica la cronaca delle partite già in archivio che non la hanno."""
+    rows = conn.execute(
+        "SELECT p.partita_id, p.gameid, p.squadra_casa_id, p.squadra_ospite_id FROM partite p "
+        "LEFT JOIN pbp_qualita q USING (partita_id) WHERE q.partita_id IS NULL "
+        "AND p.campionato_id = ? AND p.stagione = ? ORDER BY p.partita_id LIMIT ?",
+        (league, season, limit)).fetchall()
+    for pid, gameid, home, away in rows:
+        q = import_pbp(conn, client, pid, gameid, league, season, home, away, box_from_db(conn, pid))
+        log.info("%s: cronaca %s", pid, "ok" if q and q["quintetti_ok"] else
+                 "salvata (quintetti non verificati)" if q else "assente")
+    return len(rows)
+
+
+def update_players(conn, client, limit: int) -> int:
+    """Anagrafica dei giocatori che non la hanno ancora (al massimo `limit` per esecuzione)."""
+    todo = db.players_without_info(conn)[:limit]
+    for gid in todo:
+        try:
+            db.save_player_info(conn, gid, fetch_player(client, gid))
+        except (ParseError, RuntimeError, requests.RequestException) as exc:
+            log.warning("anagrafica %s non disponibile: %s", gid, exc)
+            db.save_player_info(conn, gid, {})
+    return len(todo)
 
 
 def _check_score(game: dict, box: dict):
@@ -113,6 +192,12 @@ def main(argv=None) -> int:
     parser.add_argument("--giornate", default=None, help="es. 1-2 oppure 1,3,5-7 (default: tutte)")
     parser.add_argument("--stagione", default=config.STAGIONE)
     parser.add_argument("--db", default=str(config.DB_PATH))
+    parser.add_argument("--senza-cronaca", action="store_true",
+                        help="non scaricare il play-by-play")
+    parser.add_argument("--recupero-cronaca", type=int, default=400,
+                        help="max partite già in archivio di cui scaricare la cronaca")
+    parser.add_argument("--anagrafica", type=int, default=400,
+                        help="max giocatori di cui scaricare l'anagrafica")
     args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -121,10 +206,17 @@ def main(argv=None) -> int:
     conn = db.connect(args.db)
     errori = []
     for league in [c.strip() for c in args.campionati.split(",") if c.strip()]:
-        s = update_league(conn, client, league, args.stagione, giornate)
+        s = update_league(conn, client, league, args.stagione, giornate,
+                          with_pbp=not args.senza_cronaca)
         log.info("%s: %d giornate, %d partite nuove, %d errori",
                  league, s["giornate"], s["nuove"], len(s["errori"]))
         errori += s["errori"]
+        if not args.senza_cronaca and args.recupero_cronaca:
+            n = backfill_pbp(conn, client, league, args.stagione, args.recupero_cronaca)
+            log.info("%s: cronaca recuperata per %d partite", league, n)
+    if args.anagrafica:
+        log.info("Anagrafica scaricata per %d giocatori", update_players(conn, client,
+                                                                         args.anagrafica))
     conn.close()
     log.info("Richieste HTTP effettuate: %d", client.n_requests)
     if errori:

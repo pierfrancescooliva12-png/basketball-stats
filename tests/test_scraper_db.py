@@ -71,7 +71,9 @@ class FakeClient:
         return FakeResponse(404, "")
 
 
-def test_update_is_incremental(tmp_path):
+def test_update_is_incremental(tmp_path, monkeypatch):
+    from basket import config
+    monkeypatch.setattr(config, "CRONACA_DIR", tmp_path / "cronaca")
     conn = db.connect(tmp_path / "t.sqlite")
     client = FakeClient()
     s = update.update_league(conn, client, "ita2", "x2627", {2})

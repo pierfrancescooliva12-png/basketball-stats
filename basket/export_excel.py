@@ -18,13 +18,13 @@ HEADER_FONT = Font(bold=True, color="FFFFFF")
 TWO_DECIMALS = ("rate", "FTA/FGA", "Variabilità")
 
 
-def build_sheets(conn) -> dict[str, pd.DataFrame]:
-    bs = A.load_box_squadra(conn)
-    bg = A.load_box_giocatore(conn)
+def build_sheets(conn, stagione: str = config.STAGIONE) -> dict[str, pd.DataFrame]:
+    bs = A.load_box_squadra(conn, stagione)
+    bg = A.load_box_giocatore(conn, stagione)
     teams = A.team_summary(bs).sort_values(["campionato_id", "squadra"])
     players = A.player_summary(bg, bs).sort_values(["campionato_id", "punti_pg"],
                                                    ascending=[True, False])
-    profilo = A.team_profile(bs, bg, A.load_quarters(conn)).sort_values(
+    profilo = A.team_profile(bs, bg, A.load_quarters(conn, stagione)).sort_values(
         ["campionato_id", "squadra"])
     trend = A.player_trend(bg, bs).sort_values(["campionato_id", "valutazione_pg_delta"],
                                                ascending=[True, False])
@@ -42,7 +42,7 @@ def build_sheets(conn) -> dict[str, pd.DataFrame]:
         "Giocatori ruolo": V.select(players, V.PLAYER_RUOLO),
         "Giocatori trend 5": V.select(trend, V.TREND),
         "Giocatori casa-trasf.": V.casa_trasferta_giocatori(bg, bs),
-        "Partite": V.partite(conn),
+        "Partite": V.partite(conn, stagione),
     }
 
 

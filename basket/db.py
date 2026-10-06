@@ -1,5 +1,6 @@
 """Database SQLite: schema e scrittura dei dati estratti."""
 
+import gzip
 import json
 import sqlite3
 from datetime import datetime, timezone
@@ -104,6 +105,27 @@ CREATE TABLE IF NOT EXISTS box_squadra (
     PRIMARY KEY (partita_id, squadra_id)
 );
 
+-- Qualità della cronaca di ogni partita
+CREATE TABLE IF NOT EXISTS pbp_qualita (
+    partita_id      TEXT PRIMARY KEY REFERENCES partite(partita_id),
+    n_eventi        INTEGER,
+    punteggio_ok    INTEGER,              -- il punteggio della cronaca coincide col box score
+    zone_affidabili INTEGER,              -- i canestri da 2 distinguono area / fuori area
+    quintetti_ok    INTEGER,              -- minuti ricostruiti coerenti col box score
+    errore_minuti   REAL                  -- scarto massimo (minuti) su un giocatore
+);
+
+-- Anagrafica giocatori (pagina giocatore del sito)
+CREATE TABLE IF NOT EXISTS giocatori_info (
+    giocatore_id  TEXT PRIMARY KEY REFERENCES giocatori(giocatore_id),
+    data_nascita  TEXT,
+    nazionalita   TEXT,
+    altezza_cm    INTEGER,
+    peso_kg       INTEGER,
+    societa       TEXT,
+    aggiornato_il TEXT
+);
+
 CREATE INDEX IF NOT EXISTS idx_box_giocatore_giocatore ON box_giocatore(giocatore_id);
 CREATE INDEX IF NOT EXISTS idx_box_giocatore_squadra ON box_giocatore(squadra_id);
 CREATE INDEX IF NOT EXISTS idx_partite_campionato ON partite(campionato_id, stagione);
@@ -116,6 +138,12 @@ BOX_FIELDS = [
 ]
 
 
+# Colonne aggiunte dopo la prima versione: (tabella, colonna, tipo)
+MIGRATIONS = [
+    ("calendario", "stream_url", "TEXT"),
+]
+
+
 def connect(path: Path | str = config.DB_PATH, readonly: bool = False) -> sqlite3.Connection:
     path = Path(path)
     if readonly:
@@ -124,6 +152,11 @@ def connect(path: Path | str = config.DB_PATH, readonly: bool = False) -> sqlite
         path.parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(path)
         conn.executescript(SCHEMA)
+        for table, col, typ in MIGRATIONS:
+            cols = {r[1] for r in conn.execute(f"PRAGMA table_info({table})")}
+            if col not in cols:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typ}")
+        conn.commit()
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
@@ -143,7 +176,8 @@ def upsert_campionato(conn, campionato_id: str, stagione: str, nome: str):
 def upsert_squadra(conn, squadra_id: int, nome: str, campionato_id: str, stagione: str):
     conn.execute(
         "INSERT INTO squadre VALUES (?, ?, ?, ?) ON CONFLICT(squadra_id) DO UPDATE SET "
-        "nome = excluded.nome, campionato_id = excluded.campionato_id, stagione = excluded.stagione",
+        "nome = excluded.nome, campionato_id = excluded.campionato_id, stagione = excluded.stagione "
+        "WHERE excluded.stagione >= squadre.stagione",  # conserva i dati della stagione più recente
         (squadra_id, nome, campionato_id, stagione),
     )
 
@@ -153,10 +187,13 @@ def save_calendario(conn, games: list[dict]):
         upsert_squadra(conn, g["squadra_casa_id"], g["squadra_casa"], g["campionato"], g["stagione"])
         upsert_squadra(conn, g["squadra_ospite_id"], g["squadra_ospite"], g["campionato"], g["stagione"])
         conn.execute(
-            "INSERT OR REPLACE INTO calendario VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "INSERT OR REPLACE INTO calendario (partita_id, gameid, campionato_id, stagione, "
+            "giornata, data, ora, squadra_casa_id, squadra_ospite_id, punti_casa, punti_ospite, "
+            "palazzetto, stato, stream_url) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (partita_id(g["stagione"], g["gameid"]), g["gameid"], g["campionato"], g["stagione"],
              g["giornata"], g["data"], g["ora"], g["squadra_casa_id"], g["squadra_ospite_id"],
-             g["punti_casa"], g["punti_ospite"], g["palazzetto"], g["stato"]),
+             g["punti_casa"], g["punti_ospite"], g["palazzetto"], g["stato"],
+             g.get("stream_url")),
         )
 
 
@@ -209,3 +246,64 @@ def save_partita(conn, game: dict, box: dict, url: str):
 
 def _insert(conn, table: str, values: tuple):
     conn.execute(f"INSERT INTO {table} VALUES ({','.join('?' * len(values))})", values)
+
+
+def pbp_ids(conn) -> set[str]:
+    return {r[0] for r in conn.execute("SELECT partita_id FROM pbp_qualita")}
+
+
+EVENT_FIELDS = ["n", "periodo", "secondi", "squadra_id", "giocatore_id", "tipo", "zona",
+                "di_squadra", "punti_casa", "punti_ospite"]
+STINT_FIELDS = ["squadra_id", "inizio", "fine", "quintetto", "punti_fatti", "punti_subiti",
+                "poss_fatti", "poss_subiti"]
+
+
+def cronaca_path(stagione: str, gameid: str, base: Path | None = None) -> Path:
+    return (base or config.CRONACA_DIR) / stagione / f"{gameid}.json.gz"
+
+
+def save_pbp(conn, pid: str, home_id: int, away_id: int, pbp: dict, stints: list[dict],
+             quality: dict, base: Path | None = None):
+    """Salva cronaca e frazioni di gioco in un file compresso e la qualità nel database."""
+    stagione, gameid = conn.execute("SELECT stagione, gameid FROM partite WHERE partita_id = ?",
+                                    (pid,)).fetchone()
+    ids = {"casa": home_id, "ospite": away_id}
+    eventi = [[e["n"], e["periodo"], e["secondi"], ids[e["lato"]], e["giocatore_id"], e["tipo"],
+               e["zona"], int(e["di_squadra"]), e["punti_casa"], e["punti_ospite"]]
+              for e in pbp["eventi"]]
+    data = {"partita_id": pid, "eventi": {"campi": EVENT_FIELDS, "righe": eventi},
+            "stint": {"campi": STINT_FIELDS,
+                      "righe": [[s[f] for f in STINT_FIELDS] for s in stints]}}
+    path = cronaca_path(stagione, gameid, base)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    raw = json.dumps(data, separators=(",", ":")).encode()
+    with gzip.GzipFile(path, "wb", mtime=0) as fh:   # mtime=0: file identico se riscritto
+        fh.write(raw)
+    with conn:
+        conn.execute("DELETE FROM pbp_qualita WHERE partita_id = ?", (pid,))
+        _insert(conn, "pbp_qualita", (pid, quality["n_eventi"], int(quality["punteggio_ok"]),
+                                      int(quality["zone_affidabili"]),
+                                      int(quality["quintetti_ok"]), quality["errore_minuti"]))
+
+
+def load_pbp_file(stagione: str, gameid: str, base: Path | None = None) -> dict | None:
+    path = cronaca_path(stagione, gameid, base)
+    if not path.exists():
+        return None
+    with gzip.open(path, "rb") as fh:
+        return json.loads(fh.read())
+
+
+def players_without_info(conn) -> list[str]:
+    return [r[0] for r in conn.execute(
+        "SELECT g.giocatore_id FROM giocatori g LEFT JOIN giocatori_info i USING (giocatore_id) "
+        "WHERE i.giocatore_id IS NULL ORDER BY g.giocatore_id")]
+
+
+def save_player_info(conn, giocatore_id: str, info: dict):
+    conn.execute(
+        "INSERT OR REPLACE INTO giocatori_info VALUES (?,?,?,?,?,?,?)",
+        (giocatore_id, info.get("data_nascita"), info.get("nazionalita"), info.get("altezza_cm"),
+         info.get("peso_kg"), info.get("societa"),
+         datetime.now(timezone.utc).isoformat(timespec="seconds")))
+    conn.commit()
