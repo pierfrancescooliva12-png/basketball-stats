@@ -138,7 +138,7 @@ def sezione_taglie(a: App, sid: int):
     t = tg[tg["squadra_id"] == sid]
     lo, hi = t["soglia_bassa"].iloc[0], t["soglia_alta"].iloc[0]
     section("Quintetti alti e bassi",
-            f"piccolo: media sotto {num(lo, 0)} cm · grande: da {num(hi, 0)} cm in su",
+            f"piccolo: media fino a {num(lo, 0)} cm · grande: da {num(hi, 0)} cm in su",
             key="taglia")
     c1, c2 = st.columns([3, 2])
     with c1:

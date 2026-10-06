@@ -117,14 +117,17 @@ def taglia_quintetti(st: pd.DataFrame, altezze: dict) -> pd.DataFrame:
         return pd.DataFrame()
     parti = []
     for camp, g in d.groupby("campionato_id"):
-        o = g.sort_values("altezza")
-        cum = o["secondi"].cumsum() / o["secondi"].sum()
-        t1 = o.loc[cum >= 1 / 3, "altezza"].iloc[0]
-        t2 = o.loc[cum >= 2 / 3, "altezza"].iloc[0]
-        g = g.assign(taglia=np.select([g["altezza"] < t1, g["altezza"] >= t2],
-                                      ["Piccolo", "Grande"], "Medio"),
-                     soglia_bassa=t1, soglia_alta=t2)
-        parti.append(g)
+        o = g.sort_values("altezza", kind="stable")
+        prima = (o["secondi"].cumsum() - o["secondi"]) / o["secondi"].sum()
+        taglia = pd.Series(np.select([prima < 1 / 3, prima >= 2 / 3], ["Piccolo", "Grande"],
+                                     "Medio"), index=o.index)
+        # stessa altezza, stessa taglia (quella della maggior parte dei minuti)
+        taglia = taglia.groupby(o["altezza"]).transform(lambda x: x.mode().iloc[0])
+        o = o.assign(taglia=taglia)
+        piccoli, grandi = o[o["taglia"] == "Piccolo"], o[o["taglia"] == "Grande"]
+        t1 = piccoli["altezza"].max() if not piccoli.empty else np.nan
+        t2 = grandi["altezza"].min() if not grandi.empty else np.nan
+        parti.append(o.assign(soglia_bassa=t1, soglia_alta=t2))
     d = pd.concat(parti)
     out = d.groupby(["campionato_id", "squadra_id", "taglia"]).agg(
         secondi=("secondi", "sum"), pf=("punti_fatti", "sum"), ps=("punti_subiti", "sum"),

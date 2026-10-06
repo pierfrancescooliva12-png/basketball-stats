@@ -22,6 +22,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (Image, PageBreak, Paragraph, SimpleDocTemplate, Spacer,
                                 Table, TableStyle)
 
+from . import approfondimenti as X
 from . import config, scouting
 from .contesto import Contesto, open_readonly
 
@@ -148,8 +149,8 @@ def _bar(val, media, width):
     return d
 
 
-def _header(r, prossima, S, width):
-    righe = [[Paragraph(f"SCOUTING REPORT · {r.campionato.upper()} {config.STAGIONE_LABEL}",
+def _header(r, prossima, S, width, stagione_label=config.STAGIONE_LABEL):
+    righe = [[Paragraph(f"SCOUTING REPORT · {r.campionato.upper()} {stagione_label}",
                         S["eyebrow"])],
              [Paragraph(r.squadra.upper(), S["h1"])],
              [Paragraph(f"Record {r.record} · {r.posizione}° posto · report del "
@@ -195,7 +196,9 @@ def build_pdf(ctx: Contesto, squadra_id: int) -> bytes:
     doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=12 * mm, rightMargin=12 * mm,
                             topMargin=12 * mm, bottomMargin=14 * mm,
                             title=f"Scouting {r.squadra}", author=config.BRAND)
-    el = [_header(r, ctx.next_game(squadra_id), S, W), Spacer(1, 6)]
+    prossima = ctx.next_game(squadra_id)
+    el = [_header(r, prossima, S, W, config.STAGIONI.get(ctx.stagione, ctx.stagione)),
+          Spacer(1, 6)]
 
     el.append(_kpis([
         ("Net rating", _fmt(pf["net_rtg"], signed=True), f"ORtg {_fmt(pf['ortg'])} · "
@@ -206,6 +209,11 @@ def build_pdf(ctx: Contesto, squadra_id: int) -> bytes:
         ("Panchina", f"{_fmt(pf['quota_punti_panchina'], 0)}%", "dei punti"),
         ("Top 2", f"{_fmt(pf['quota_top2'], 0)}%", "dei punti"),
     ], S, W))
+
+    frasi = X.frase_squadra(lega, squadra_id)
+    if frasi:
+        testo = frasi[0] if len(frasi) == 1 else ", ".join(frasi[:-1]) + " e " + frasi[-1]
+        el.append(Paragraph(f"<b>IN UNA FRASE</b> · {testo[0].upper() + testo[1:]}.", S["body"]))
 
     # Forza / debolezza
     def lista(items, colore):
@@ -336,6 +344,8 @@ def build_pdf(ctx: Contesto, squadra_id: int) -> bytes:
                                 ", ".join(f"{x.giocatore} {int(x.partite_problemi)} volte"
                                           for x in mine.itertuples()), S["body"]))
 
+    el += _approfondimenti(ctx, squadra_id, prossima, S, W)
+
     el += [Paragraph("ULTIME PARTITE", S["h2"]),
            _table([list(r.ultime.columns)] + [[_fmt(v, 1) if isinstance(v, float) else str(v)
                                                for v in row] for row in r.ultime.values],
@@ -361,6 +371,65 @@ def build_pdf(ctx: Contesto, squadra_id: int) -> bytes:
 
     doc.build(el, onFirstPage=footer, onLaterPages=footer)
     return buf.getvalue()
+
+
+def _approfondimenti(ctx: Contesto, sid: int, prossima, S, W) -> list:
+    """Rotazioni, quintetti per taglia, momenti della partita, riposo e trasferta."""
+    el = []
+    nomi = ctx.nomi_giocatori
+    rot = ctx.rotazioni
+    sq = rot["squadre"]
+    if not sq.empty and sid in set(sq["squadra_id"]):
+        s = sq.set_index("squadra_id").loc[sid]
+        gi = rot["giocatori"]
+        gi = gi[gi["squadra_id"] == sid].sort_values("secondi", ascending=False).head(10)
+        rows = [["Giocatore", "Minuti", "% da titolare", "Entra al minuto", "% negli ultimi 5'"]]
+        for x in gi.itertuples():
+            rows.append([nomi.get(x.giocatore_id, x.giocatore_id), _fmt(x.minuti_pg),
+                         f"{_fmt(x.quota_titolare, 0)}%", _fmt(x.minuto_ingresso),
+                         f"{_fmt(x.quota_finale, 0)}%"])
+        base = ", ".join(nomi.get(g, g) for g in str(s["quintetto"]).split(","))
+        el += [Paragraph("ROTAZIONI", S["h2"]),
+               Paragraph(f"Primo cambio al minuto {_fmt(s['minuto_primo_cambio'])} (mediana) · "
+                         f"{_fmt(s['giocatori_rotazione'])} giocatori con almeno 5' · quintetto "
+                         f"base ({_fmt(s['quota_quintetto_base'], 0)}% delle partite): {base}.",
+                         S["body"]),
+               _table(rows, [60 * mm] + [(W - 60 * mm) / 4] * 4)]
+    tg = ctx.taglie
+    if tg is not None and not tg.empty and sid in set(tg["squadra_id"]):
+        t = tg[tg["squadra_id"] == sid]
+        rows = [["Quintetto", "% minuti", "Altezza media", "ORtg", "DRtg", "Net rating"]]
+        for x in t.itertuples():
+            rows.append([str(x.taglia), f"{_fmt(x.quota_minuti, 0)}%", f"{_fmt(x.altezza, 0)} cm",
+                         _fmt(x.ortg), _fmt(x.drtg), _fmt(x.net_rtg, signed=True)])
+        el += [Paragraph("QUINTETTI ALTI E BASSI", S["h2"]),
+               _table(rows, [40 * mm] + [(W - 40 * mm) / 5] * 5)]
+    m = ctx.momenti
+    if m is not None and not m.empty and sid in set(m["squadra_id"]):
+        rows = [["Momento", "Fatti", "Subiti", "Differenza", "Posizione"]]
+        for x in m[m["squadra_id"] == sid].itertuples():
+            rows.append([x.etichetta, _fmt(x.fatti_pg), _fmt(x.subiti_pg),
+                         _fmt(x.diff_pg, signed=True), f"{x.posizione}° su {x.squadre}"])
+        el += [Paragraph("MOMENTI DELLA PARTITA · punti a partita", S["h2"]),
+               _table(rows, [60 * mm] + [(W - 60 * mm) / 4] * 4)]
+    if prossima:
+        cal = ctx.calendario_fisico
+        if cal is not None and not cal.empty:
+            casa = cal[cal["casa"] == 1].groupby("squadra_id")["citta_squadra"].agg(
+                lambda v: v.value_counts().index[0] if v.notna().any() else None)
+            righe = []
+            for tid in (prossima["casa_id"], prossima["ospite_id"]):
+                info = X.prossima_trasferta(cal[cal["squadra_id"] == tid]["data"].max(),
+                                            prossima["data"], casa.get(prossima["casa_id"]),
+                                            casa.get(tid), tid == prossima["casa_id"])
+                nome = ctx.nomi_squadre.get(tid, str(tid))
+                riposo = info["giorni_riposo"]
+                righe.append(f"{nome}: {riposo if riposo is not None else '–'} giorni di riposo"
+                             + ("" if tid == prossima["casa_id"] else
+                                f", trasferta di circa {_fmt(info['km'], 0)} km"))
+            el += [Paragraph("RIPOSO E TRASFERTA PER LA PROSSIMA PARTITA", S["h2"]),
+                   Paragraph(" · ".join(righe) + ".", S["body"])]
+    return el
 
 
 def slug(nome: str) -> str:

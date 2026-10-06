@@ -18,19 +18,33 @@ Funziona interamente nel cloud, senza un PC locale:
 
 ## Funzioni
 
-| Area | Cosa offre |
-|---|---|
-| **Panoramica** | Numeri del campionato, leader in 9 categorie, mappa attacco/difesa |
-| **Classifica** | Forma, Net rating, vittorie attese e "fortuna", partite punto a punto, forza del calendario |
-| **Squadre** | Avanzate, Four Factors, profilo (panchina, dipendenza dai top 2, distribuzione punti), mappa dei quarti |
-| **Giocatori** | Medie, totali, per 40', avanzate, "ruolo" (AST%, REB%, STL%, BLK%…), trend, casa/trasferta |
-| **Giocatore** | Scheda con anagrafica, percentili, +/- e On-Off, finali punto a punto, carriera, giocatori simili, note |
-| **Scouting** | Report completo sull'avversaria + **PDF per la riunione tecnica**: forza/debolezza, finali punto a punto, chi serve chi, origine dei punti, break, bonus falli, timeout, quintetti più usati, +/- e On-Off, profilo di tiro, problemi di falli, note dello staff |
-| **Anteprima** | Probabilità di vittoria e punteggio atteso, confronto voce per voce, Four Factors incrociati, giocatori chiave, precedenti, proiezione della classifica (simulazione) |
-| **Mercato** | **Fabbisogni della squadra selezionata**: carenze rispetto al campionato tradotte nel tipo di giocatore utile (tiratore, playmaker, rimbalzista, protettore del ferro, difensore perimetrale, attaccante del ferro, realizzatore), con motivazione, migliore già in rosa e candidati ordinati per adattamento al profilo. Poi ricerca con filtri (categoria, ruolo stimato, età, nazionalità, minuti, usage, TS%), talenti di B Nazionale, chi è cresciuto rispetto alla stagione precedente, giocatori simili, liste di osservati del club |
-| **Avvisi** | Assenze di giocatori importanti, cambi di quintetto, minuti in crescita o calo, giocatori in forma, massimi stagionali, serie di risultati |
-| **La mia squadra** | KPI e posizione nel campionato, obiettivi Four Factors dello staff, andamento, rendimento contro le forti e contro le deboli |
-| **Partite** | Box score, statistiche avanzate, grafico dell'andamento, link al video su LNP Pass |
+La dashboard è organizzata in **aree**, con la navigazione in alto (comoda al tocco):
+
+| Area | Pagine | Cosa offre |
+|---|---|---|
+| **Home** | – | La settimana dello staff: prossima avversaria (probabilità di vittoria, punteggio atteso, giorni di riposo, km di trasferta), ultima partita in sintesi, posizione e forma della propria squadra, avvisi, PDF pronti da scaricare |
+| **Avversaria** | Scouting · Anteprima · Squadre | Report completo con frase di sintesi e **PDF per la riunione tecnica**: forza/debolezza, finali punto a punto, **rotazioni** (chi parte, quando entrano i cambi, chi chiude), quintetti più usati, **quintetti alti e bassi**, +/- e On-Off, chi serve chi, **origine dei punti fatti e concessi**, **momenti della partita**, break, bonus falli, timeout, profilo di tiro, problemi di falli, **riposo e trasferte**, note dello staff. Anteprima con probabilità, confronto voce per voce, Four Factors incrociati, giorni di riposo e km, precedenti, proiezione della classifica |
+| **Giocatori** | Elenco · Scheda · Mercato | Medie, avanzate, ruolo, andamento, casa/trasferta; scheda con frase di sintesi, anagrafica, **presenze**, percentili, +/- e On-Off, finali punto a punto, carriera, giocatori simili, note e **report individuale in PDF**. Mercato: fabbisogni della squadra con candidati, ricerca con filtri, **dalla B all'A2** (statistiche attese salendo di categoria), talenti di B Nazionale, chi è cresciuto, giocatori simili, liste di osservati |
+| **La mia squadra** | La mia squadra · Avvisi | KPI e posizione, obiettivi Four Factors, andamento, rendimento contro forti e deboli, **report post-partita** (anche in PDF); avvisi su assenze, cambi di quintetto, minuti, forma, massimi, serie |
+| **Campionato** | Panoramica · Classifica · Partite | Numeri del campionato, leader, mappa attacco/difesa; classifica con forma, vittorie attese e forza del calendario; box score, avanzate e andamento di ogni partita |
+
+**Leggere i numeri senza fatica**
+
+- Interruttore **Esperto** in alto: spento mostra solo le colonne essenziali con nomi per esteso;
+  acceso mostra tutte le metriche e le viste.
+- Accanto ai valori principali c'è la **posizione nel campionato** (es. "3° su 20"); nelle
+  tabelle i valori migliori sono evidenziati in blu e i peggiori in arancio.
+- **"In una frase"**: le caratteristiche più marcate di squadre e giocatori, in parole.
+- I campioni piccoli sono segnalati (**⚠ pochi dati**) e a inizio stagione il mercato parte
+  dalla stagione precedente.
+- Numeri e date nel formato italiano; ogni pagina ha un indirizzo che si può condividire
+  (squadra, giocatore e stagione sono nel link).
+
+**Report PDF**
+
+- **Scouting** sulla squadra scelta (e ogni lunedì via email sulla prossima avversaria);
+- **post-partita** sulla propria ultima partita (allegato anche all'email del lunedì);
+- **individuale** per il giocatore, con lo spazio per gli obiettivi concordati con lo staff.
 
 Accanto alle statistiche complesse c'è un **?** che apre la spiegazione (cosa misura, come si
 calcola, come leggerla). Il glossario completo è in `basket/glossario.py`.
@@ -59,6 +73,14 @@ Controlli di qualità automatici:
 - **Quintetti**: la cronaca registra solo chi entra. Chi esce si deduce, e ogni partita viene
   verificata confrontando i minuti ricostruiti con quelli ufficiali (scarto massimo 3').
   +/-, On-Off e quintetti usano solo le partite verificate.
+- **Rotazioni e quintetti per taglia**: solo dalle partite con quintetti verificati; la taglia
+  usa l'altezza dell'anagrafica ufficiale.
+- **Trasferte**: la città si ricava dal nome del palazzetto; le distanze sono stimate (linea
+  d'aria + 25%). Coordinate delle città in `basket/luoghi.py`.
+- **Dalla B all'A2**: la stima compare solo con almeno 12 giocatori passati tra le due categorie
+  (stessa stagione o stagioni consecutive); lo storico 2024/25 la rende più solida.
+- **Arbitri**: le fonti usate (box score, cronaca, calendario) non riportano la terna arbitrale,
+  quindi l'analisi per arbitro non è disponibile.
 - **Zone di tiro**: nella stagione 2026/27 la cronaca non distingue i canestri da 2 in area da
   quelli dalla media distanza. Il profilo per zona compare solo dove i dati lo permettono.
 
@@ -179,18 +201,22 @@ fonte dati** salva le pagine in `discovery/output` per adeguare il parser.
 | `basket/previsioni.py` | Forza delle squadre, probabilità di vittoria, simulazione della stagione |
 | `basket/mercato.py` | Storico per stagione, ruolo stimato, giocatori simili, talenti, progressi |
 | `basket/avvisi.py` | Avvisi automatici e obiettivi della propria squadra |
+| `basket/approfondimenti.py`, `luoghi.py` | Rotazioni, taglia dei quintetti, momenti, presenze, riposo e trasferte, dalla B all'A2, frasi di sintesi |
+| `basket/report_extra.py` | Report PDF post-partita e individuale |
 | `basket/scouting.py`, `report_pdf.py`, `invio_email.py` | Report di scouting, PDF, invio email |
 | `basket/accesso.py`, `note.py` | Login per club, note, osservati, obiettivi |
 | `basket/glossario.py` | Spiegazioni delle statistiche (pulsanti "?") |
-| `dashboard/`, `streamlit_app.py` | Dashboard |
+| `dashboard/`, `streamlit_app.py` | Dashboard (`pagine.py`: Home e aree; `analisi.py`: nuove sezioni) |
 | `assets/logo/` | Logo ASSIST (SVG e PNG; `build_logo.py` lo rigenera) |
-| `tests/` | 28 test automatici (parser, formule, quintetti, PDF, accessi) |
+| `tests/` | 36 test automatici (parser, formule, quintetti, nuove analisi, PDF, accessi) |
 
 ```bash
 pip install -r requirements-update.txt
 python -m basket.update --campionati ita2 --giornate 1-2     # estrazione
 python -m basket.export_excel                                # Excel
 python -m basket.report_pdf "Forlì"                          # PDF di scouting
+python -m basket.report_extra partita "Forlì"                # PDF post-partita
+python -m basket.report_extra giocatore "Forlì" "Gaspardo"   # PDF individuale
 python -m pytest -q tests                                    # test
 pip install -r requirements.txt && streamlit run streamlit_app.py
 ```
