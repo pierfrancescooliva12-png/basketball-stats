@@ -725,7 +725,7 @@ def fabbisogni(a: App, hist: pd.DataFrame):
             note_html("Nessun candidato con i filtri scelti.")
             continue
         sq_col = "squadra_ora" if "squadra_ora" in c.columns else "squadra"
-        c = c.assign(squadra_vista=c[sq_col].fillna("non in archivio " +
+        c = c.assign(squadra_vista=c[sq_col].fillna("senza squadra in A2/B " +
                                                     config.STAGIONI.get(a.stagione, "")))
         cols = {"giocatore": "Giocatore", "squadra_vista": "Squadra",
                 "adattamento": "Adattamento"}
