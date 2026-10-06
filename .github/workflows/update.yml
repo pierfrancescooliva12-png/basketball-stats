@@ -83,6 +83,29 @@ jobs:
         run: |
           if [ -f data/lnp.sqlite ]; then python -m basket.export_excel; fi
 
+      # Report PDF sulla prossima avversaria agli abbonati (solo se configurati i segreti
+      # SMTP_HOST, SMTP_USER, SMTP_PASSWORD, MITTENTE e ABBONATI)
+      - name: Invia report agli abbonati
+        if: github.event_name != 'push'
+        continue-on-error: true
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MITTENTE: ${{ secrets.MITTENTE }}
+          ABBONATI: ${{ secrets.ABBONATI }}
+        run: python -m basket.invio_email
+
+      - name: Conserva i PDF generati
+        if: github.event_name != 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-pdf
+          path: reports/pdf/
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Commit dei dati aggiornati
         run: |
           git config user.name "github-actions[bot]"

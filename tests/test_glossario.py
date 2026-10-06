@@ -23,7 +23,7 @@ def test_colonne_avanzate_delle_tabelle_sono_spiegate():
 
 
 def test_tips_della_dashboard_esistono():
-    src = Path(__file__).parent.parent / "streamlit_app.py"
+    src = Path(__file__).parent.parent / "dashboard" / "ui.py"
     tree = ast.parse(src.read_text(encoding="utf-8"))
     for node in ast.walk(tree):
         if isinstance(node, ast.Assign) and any(getattr(t, "id", "") == "TIPS" for t in node.targets):
@@ -31,3 +31,10 @@ def test_tips_della_dashboard_esistono():
             assert set(tips.values()) <= set(G)
             return
     raise AssertionError("TIPS non trovato")
+
+
+def test_dashboard_modules_import():
+    """I moduli della dashboard si importano senza errori (nessun codice eseguito)."""
+    import importlib
+    for mod in ("dashboard.ui", "dashboard.stato", "dashboard.schede", "dashboard.nuove"):
+        importlib.import_module(mod)

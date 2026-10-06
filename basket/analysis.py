@@ -311,6 +311,7 @@ def _player_summary(bg: pd.DataFrame, bs: pd.DataFrame, by: list[str] | None = N
     tot["t3a_rate"] = 100 * _div(tot["t3a"], tot["fga"])
     tot["minuti_pg"] = tot["minuti"] / tot["partite"]
     tot["game_score_pg"] = tot["game_score"] / tot["partite"]
+    tot["game_score_p40"] = 40 * _div(tot["game_score"], tot["minuti"])
     # Costanza: coefficiente di variazione dei punti (più basso = più costante)
     tot["punti_cv"] = _div(tot["punti_std"], tot["punti"] / tot["partite"])
     for c in COUNT_STATS + ["fgm", "fga"]:

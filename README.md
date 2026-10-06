@@ -1,167 +1,189 @@
-# 🏀 Basketball Stats – Serie A2 e Serie B Nazionale 2026/27
+# 🏀 LNP Stats – piattaforma di scouting per Serie A2 e Serie B Nazionale
 
-Strumento di analisi statistica per la Serie A2 e la Serie B Nazionale (gironi A e B),
-con dati da [legapallacanestro.com](https://www.legapallacanestro.com).
+Piattaforma di analisi e scouting per la Serie A2 e la Serie B Nazionale (gironi A e B), con dati
+da [legapallacanestro.com](https://www.legapallacanestro.com). Pensata per gli staff tecnici
+(allenatore, assistenti, video analyst, direttore sportivo) e usabile da iPad.
 
 Funziona interamente nel cloud, senza un PC locale:
 
-- **GitHub Actions** scarica le partite nuove ogni lunedì mattina e aggiorna database ed Excel;
+- **GitHub Actions** scarica ogni lunedì mattina le partite nuove (box score, cronaca, anagrafica),
+  aggiorna il database e l'Excel, e invia via email il report PDF sulla prossima avversaria;
 - **Streamlit Community Cloud** pubblica la dashboard, da aprire da iPad (Safari).
 
 ---
 
-## Cosa contiene
+## Funzioni
 
-| Percorso | Contenuto |
+| Area | Cosa offre |
 |---|---|
-| `data/lnp.sqlite` | Database SQLite (creato e aggiornato dal workflow) |
-| `reports/riepilogo_x2627.xlsx` | Excel di riepilogo, rigenerato a ogni aggiornamento |
-| `streamlit_app.py` | Dashboard |
-| `basket/` | Codice: estrazione, database, analisi, scouting, export |
-| `.github/workflows/update.yml` | Aggiornamento settimanale automatico |
-| `.github/workflows/discovery.yml` | Ricognizione del sito (da usare solo se il sito cambia) |
-| `tests/` | Test automatici del parser e delle formule |
+| **Panoramica** | Numeri del campionato, leader in 9 categorie, mappa attacco/difesa |
+| **Classifica** | Forma, Net rating, vittorie attese e "fortuna", partite punto a punto, forza del calendario |
+| **Squadre** | Avanzate, Four Factors, profilo (panchina, dipendenza dai top 2, distribuzione punti), mappa dei quarti |
+| **Giocatori** | Medie, totali, per 40', avanzate, "ruolo" (AST%, REB%, STL%, BLK%…), trend, casa/trasferta |
+| **Giocatore** | Scheda con anagrafica, percentili, +/- e On-Off, finali punto a punto, carriera, giocatori simili, note |
+| **Scouting** | Report completo sull'avversaria + **PDF per la riunione tecnica**: forza/debolezza, finali punto a punto, chi serve chi, origine dei punti, break, bonus falli, timeout, quintetti più usati, +/- e On-Off, profilo di tiro, problemi di falli, note dello staff |
+| **Anteprima** | Probabilità di vittoria e punteggio atteso, confronto voce per voce, Four Factors incrociati, giocatori chiave, precedenti, proiezione della classifica (simulazione) |
+| **Mercato** | Ricerca con filtri (categoria, ruolo stimato, età, nazionalità, minuti, usage, TS%), talenti di B Nazionale, chi è cresciuto rispetto alla stagione precedente, giocatori simili, liste di osservati del club |
+| **Avvisi** | Assenze di giocatori importanti, cambi di quintetto, minuti in crescita o calo, giocatori in forma, massimi stagionali, serie di risultati |
+| **La mia squadra** | KPI e posizione nel campionato, obiettivi Four Factors dello staff, andamento, rendimento contro le forti e contro le deboli |
+| **Partite** | Box score, statistiche avanzate, grafico dell'andamento, link al video su LNP Pass |
 
-### Fonte dati
+Accanto alle statistiche complesse c'è un **?** che apre la spiegazione (cosa misura, come si
+calcola, come leggerla). Il glossario completo è in `basket/glossario.py`.
 
-- **Calendario e risultati**: endpoint JSON interno del sito
-  `lnpstat.domino.it/getstatisticsfiles?task=schedule&year=x2627&league=ita2&round=N`.
-- **Box score**: pagina HTML della partita, es.
-  `legapallacanestro.com/wp/match/ita2_412/ita2/x2627`.
+---
 
-Codici campionato: `ita2` = Serie A2, `ita3_a` / `ita3_b` = Serie B Nazionale girone A / B.
+## Fonte dati e qualità
 
-L'estrazione è **incrementale**: scarica solo le partite non ancora presenti nel database e salta
-le giornate già complete. Al massimo **1 richiesta al secondo** verso il sito.
-Ogni partita viene controllata (somma dei punti dei giocatori = totale squadra = risultato
-del calendario) prima di essere salvata.
+- **Calendario e risultati**: endpoint JSON interno `lnpstat.domino.it/getstatisticsfiles`.
+- **Box score**: pagina HTML `legapallacanestro.com/wp/match/{gameid}/{campionato}/{stagione}`.
+- **Cronaca (play-by-play)**: pagina `…/play-by-play` della partita.
+- **Anagrafica**: pagina `legapallacanestro.com/giocatore/wp/{codice}`.
 
-### Database
+Codici: `ita2` = Serie A2, `ita3_a` / `ita3_b` = Serie B Nazionale girone A / B; stagioni
+`x2627` = 2026/27, `x2526` = 2025/26, `x2425` = 2024/25.
 
-Tabelle: `campionati`, `squadre`, `giocatori`, `partite`, `box_giocatore`, `box_squadra`
-(più `calendario`, che contiene anche le partite ancora da giocare).
+Estrazione **incrementale** (solo dati nuovi), al massimo **1 richiesta al secondo**.
+Controlli di qualità automatici:
 
-Statistiche per giocatore e partita: minuti, punti, tiri da 2 / da 3 / liberi fatti e tentati,
-rimbalzi offensivi e difensivi, assist, perse, recuperate, stoppate date e subite,
-falli commessi e subiti, valutazione.
+- **Box score**: punti dei giocatori = totale squadra = risultato ufficiale. Le partite con box
+  score ufficiale incompleto (ritmo stimato sotto 58 possessi per 40') contano per risultati e
+  totali, ma sono escluse da percentuali e metriche avanzate.
+- **Cronaca**: il punteggio ricostruito deve coincidere con quello ufficiale.
+- **Quintetti**: la cronaca registra solo chi entra. Chi esce si deduce, e ogni partita viene
+  verificata confrontando i minuti ricostruiti con quelli ufficiali (scarto massimo 3').
+  +/-, On-Off e quintetti usano solo le partite verificate.
+- **Zone di tiro**: nella stagione 2026/27 la cronaca non distingue i canestri da 2 in area da
+  quelli dalla media distanza. Il profilo per zona compare solo dove i dati lo permettono.
 
-> **Nota:** il **+/-** non è disponibile. Il sito non lo pubblica e il play-by-play
-> non riporta le sostituzioni, quindi non si può ricostruire.
-
-### Analisi
-
-- Medie individuali e di squadra: totali, a partita e **per 40 minuti**.
-- Avanzate: **possessi, pace, ORtg, DRtg, Net Rtg, eFG%, TS%, Four Factors**
-  (eFG%, TOV%, OREB%, FT rate, in attacco e concessi), **usage rate, assist ratio**.
-- **Trend ultime 5 partite** (giocatori e squadre) e **split casa/trasferta**.
-- Giocatori, statistiche di "ruolo": **Game Score**, **AST%, OREB%, DREB%, REB%, STL%, BLK%,
-  TOV%** individuali, quota di tiri da 3, frequenza ai liberi (FTA/FGA), doppie doppie,
-  variabilità dei punti (costanza) e **profilo a percentili** rispetto al campionato.
-- Squadre, profilo di contesto: **vittorie attese** (pitagorica) e **fortuna**, record nelle
-  partite **punto a punto** (margine ≤ 5), **forza del calendario**, **punti della panchina**,
-  **dipendenza dai primi 2 realizzatori**, distribuzione dei punti (2 / 3 / liberi),
-  % di canestri assistiti, **differenza punti per quarto**.
-- **Report di scouting** su una squadra: punti di forza e deboli rispetto alla media del
-  campionato, Four Factors, giocatori chiave, ultime 5, casa/trasferta, punti per periodo,
-  prossima partita.
-
-<details>
-<summary>Formule</summary>
-
-| Metrica | Formula |
-|---|---|
-| Possessi | FGA − OREB + TOV + 0,44 × FTA (media delle due squadre) |
-| ORtg / DRtg | 100 × punti fatti / subiti ÷ possessi |
-| eFG% | (FGM + 0,5 × 3PM) / FGA |
-| TS% | Punti / (2 × (FGA + 0,44 × FTA)) |
-| TOV% | TOV / (FGA + 0,44 × FTA + TOV) |
-| OREB% | OREB / (OREB + DREB avversari) |
-| FT rate | Liberi segnati / FGA |
-| USG% | 100 × (FGA + 0,44 FTA + TOV) × (min squadra / 5) / (min × (FGA + 0,44 FTA + TOV squadra)) |
-| AST ratio | 100 × AST / (FGA + 0,44 × FTA + AST + TOV) |
-| Game Score | PTS + 0,4 FGM − 0,7 FGA − 0,4 (FTA − FTM) + 0,7 OREB + 0,3 DREB + STL + 0,7 AST + 0,7 BLK − 0,4 PF − TOV |
-| OREB% / DREB% individuale | rimbalzi del giocatore / rimbalzi disponibili mentre era in campo (stimati con la quota di minuti) |
-| AST% | AST / (canestri di squadra mentre era in campo − propri canestri) |
-| STL% / BLK% | recuperi / possessi avversari · stoppate / tiri da 2 avversari, mentre era in campo |
-| Vittorie attese | PF¹⁴ / (PF¹⁴ + PS¹⁴) × partite |
-| Fortuna | vittorie reali − vittorie attese |
-| Forza calendario | Net rating medio degli avversari affrontati |
-
-</details>
+Le cronache sono salvate in file compressi, uno per partita (`data/cronaca/`), scritti una
+volta e mai modificati, così il repository non cresce a ogni aggiornamento.
 
 ---
 
 ## Pubblicare la dashboard (da iPad)
 
-Servono un account GitHub (già presente) e un account gratuito Streamlit Community Cloud.
-
 1. **Porta il codice sul branch principale.** Su GitHub (app o Safari) apri la pull request del
-   branch di sviluppo e premi **Merge**. Le esecuzioni programmate del lunedì partono solo dal
-   branch principale (`main`).
-2. **Crea i dati la prima volta.** Su github.com, nel repository: **Actions → Aggiornamento dati →
-   Run workflow** (lascia i campi vuoti per scaricare tutto). Dopo qualche minuto compare un commit
-   "Dati aggiornati" con `data/lnp.sqlite` e l'Excel.
-3. Apri **[share.streamlit.io](https://share.streamlit.io)** in Safari e accedi con **Continue with GitHub**.
-   Autorizza l'accesso al repository `basketball-stats`.
-4. Premi **Create app → Deploy a public app from GitHub** e compila:
-   - **Repository**: `pierfrancescooliva12-png/basketball-stats`
-   - **Branch**: `main`
-   - **Main file path**: `streamlit_app.py`
-   - **App URL**: a scelta, es. `lnp-stats`
-5. Premi **Deploy**. Il primo avvio richiede un paio di minuti.
-6. In Safari: **Condividi → Aggiungi alla schermata Home** per aprire la dashboard come un'app.
+   branch di sviluppo e premi **Merge**. Le esecuzioni programmate del lunedì partono solo da `main`.
+2. **Crea i dati la prima volta** (se non ci sono già): **Actions → Aggiornamento dati → Run
+   workflow**. Nel campo *Stagioni* scrivi `x2627,x2526` per avere anche lo storico; nel campo
+   *Anagrafica* scrivi `3000` per scaricare tutti i giocatori.
+3. Apri **[share.streamlit.io](https://share.streamlit.io)** e accedi con **Continue with GitHub**.
+4. **Create app → Deploy a public app from GitHub**: repository
+   `pierfrancescooliva12-png/basketball-stats`, branch `main`, file `streamlit_app.py`.
+5. **Deploy**. Poi in Safari: **Condividi → Aggiungi alla schermata Home**.
 
-La dashboard si aggiorna da sola: a ogni commit del workflow, Streamlit Cloud ricarica i dati.
+La dashboard si aggiorna da sola a ogni commit del workflow.
 
-> **Privacy:** sul piano gratuito l'app può essere pubblica oppure, dalle impostazioni
-> dell'app (**Settings → Sharing**), visibile solo a chi inviti tramite email.
+---
 
-### Usare la dashboard
+## Configurazione per l'uso commerciale
 
-In alto ci sono i filtri **Campionato**, **Squadra** e **Giocatore**, sempre visibili anche con
-l'iPad in verticale. Accanto alle statistiche più complesse c'è un **?**: toccandolo si apre una
-spiegazione (cosa misura, come si calcola, come leggerla con i valori di riferimento); sopra le
-tabelle, **? Cosa significano le colonne** spiega tutte le colonne avanzate. Il glossario completo
-è in `basket/glossario.py`. Le schede:
+### Accessi per club
 
-- **Panoramica**: numeri del campionato, leader in 9 categorie, mappa attacco/difesa (ORtg vs DRtg).
-- **Classifica**: con forma (ultime 5), Net rating, vittorie attese, fortuna, punto a punto, calendario.
-- **Squadre**: avanzate, profilo, quarti (mappa di calore), medie, per 40', casa/trasferta, ultime 5.
-- **Giocatori**: medie, avanzate, ruolo, per 40', totali, trend ultime 5, casa/trasferta.
-- **Giocatore**: scheda con percentili nel campionato, andamento partita per partita, game log.
-- **Scouting**: report sulla squadra selezionata (forza/debolezza, Four Factors, quarti,
-  giocatori chiave), scaricabile in Markdown.
-- **Partite**: box score completo con statistiche avanzate della partita.
+Nei *Secrets* dell'app su Streamlit Cloud (**App → Settings → Secrets**) aggiungi un blocco per
+ogni utente. Per generare l'hash della password:
+
+```bash
+python -m basket.accesso nuovo mario "Unieuro Forlì"
+```
+
+```toml
+[utenti.mario]
+password_hash = "pbkdf2_sha256$200000$…"
+club = "Unieuro Forlì"
+ruolo = "staff"
+```
+
+Con almeno un utente configurato la dashboard chiede il login. La scheda **La mia squadra**
+si imposta sulla squadra del club e note, liste di osservati e obiettivi restano **privati per
+club**. Senza utenti la dashboard è in *modalità demo* (aperta a tutti).
+
+### Archivio permanente di note e osservati
+
+Di default note e liste sono salvate in un file locale che su Streamlit Cloud si perde a ogni
+riavvio. Per renderle permanenti crea un database PostgreSQL gratuito (per esempio
+[Supabase](https://supabase.com) o [Neon](https://neon.tech)) e aggiungi ai Secrets:
+
+```toml
+[database]
+url = "postgresql+psycopg2://utente:password@host:5432/nome_db"
+```
+
+Le tabelle vengono create automaticamente al primo avvio.
+
+### Report PDF via email ogni lunedì
+
+In GitHub: **Settings → Secrets and variables → Actions → New repository secret**:
+
+| Secret | Esempio |
+|---|---|
+| `SMTP_HOST` | `smtp.gmail.com` |
+| `SMTP_PORT` | `587` |
+| `SMTP_USER` / `SMTP_PASSWORD` | account e password per app |
+| `MITTENTE` | `LNP Stats <report@tuodominio.it>` |
+| `ABBONATI` | `[{"email": "staff@club.it", "squadra": "Forlì"}]` |
+
+Ogni lunedì, dopo l'aggiornamento, ogni abbonato riceve il PDF sulla **prossima avversaria**
+della propria squadra. I PDF restano scaricabili anche dalla pagina del workflow (artefatto
+`report-pdf`) e, in ogni momento, dalla scheda **Scouting** della dashboard.
+
+### Formula del campionato
+
+Le zone della proiezione di classifica (primo posto, prime 4, prime 8, ultimi 3) sono indicative.
+Allineale alla formula ufficiale in `basket/config.py` (`ZONE_CLASSIFICA`).
+
+### Prima di vendere il servizio
+
+- **Diritti sui dati**: i dati sono estratti dal sito della Lega. Per un uso commerciale vanno
+  verificati termini d'uso e diritti sulle banche dati, ed è consigliabile un accordo con LNP o
+  con il fornitore delle statistiche.
+- **Hosting**: Streamlit Community Cloud gratuito va bene per demo e prove. Per clienti paganti
+  serve un hosting con livello di servizio garantito (Streamlit a pagamento, un servizio cloud,
+  un server dedicato). Il codice non cambia.
+- **Contratti**: prevedere limitazioni di responsabilità per errori o incompletezze della fonte
+  (i controlli di qualità li segnalano ma non li eliminano) e l'informativa privacy sui dati dei
+  giocatori.
 
 ---
 
 ## Aggiornamento dei dati
 
 - **Automatico**: ogni **lunedì alle 07:00** (ora legale; 06:00 con l'ora solare).
-- **Manuale**: **Actions → Aggiornamento dati → Run workflow**. Si può limitare a certi
-  campionati (es. `ita2`) o giornate (es. `1-2` oppure `1,3,5-7`).
-- **Excel**: `reports/riepilogo_x2627.xlsx`. Da iPad: aprilo su GitHub e premi
-  **Download / View raw**, poi apri con Excel o Numbers.
+- **Manuale**: **Actions → Aggiornamento dati → Run workflow**, con campi facoltativi per
+  campionati, giornate, stagioni e numero massimo di anagrafiche.
+- **Excel**: `reports/riepilogo_x2627.xlsx` (14 fogli).
 
-Se una partita non si riesce a importare (per esempio perché il sito ha cambiato struttura),
-le altre vengono comunque salvate, il workflow risulta **fallito** e GitHub invia una notifica
-via email o app. In quel caso si può avviare **Actions → Ricognizione fonte dati** per
-salvare la nuova struttura delle pagine nella cartella `discovery/output` e adeguare il parser.
+Se qualcosa non si riesce a importare, il resto viene salvato comunque, il workflow risulta
+**fallito** e GitHub invia una notifica. Se il sito cambia struttura, **Actions → Ricognizione
+fonte dati** salva le pagine in `discovery/output` per adeguare il parser.
 
-### Cambio di stagione
-
-In `basket/config.py` modifica `STAGIONE` (es. `x2728`) e `STAGIONE_LABEL`.
-I dati delle stagioni precedenti restano nel database.
+**Cambio di stagione**: in `basket/config.py` aggiorna `STAGIONE`, `STAGIONE_LABEL` e `STAGIONI`.
 
 ---
 
-## Comandi (per riferimento)
+## Struttura del codice
+
+| Percorso | Contenuto |
+|---|---|
+| `basket/scraper.py`, `client.py`, `update.py` | Estrazione (calendario, box score, cronaca, anagrafica) |
+| `basket/db.py` | Database SQLite e file delle cronache |
+| `basket/analysis.py` | Medie, per 40', avanzate, profilo di squadra, leader, percentili |
+| `basket/pbp.py` | Cronaca: quintetti, +/-, On-Off, finali, assist, origine punti, break, falli, timeout |
+| `basket/previsioni.py` | Forza delle squadre, probabilità di vittoria, simulazione della stagione |
+| `basket/mercato.py` | Storico per stagione, ruolo stimato, giocatori simili, talenti, progressi |
+| `basket/avvisi.py` | Avvisi automatici e obiettivi della propria squadra |
+| `basket/scouting.py`, `report_pdf.py`, `invio_email.py` | Report di scouting, PDF, invio email |
+| `basket/accesso.py`, `note.py` | Login per club, note, osservati, obiettivi |
+| `basket/glossario.py` | Spiegazioni delle statistiche (pulsanti "?") |
+| `dashboard/`, `streamlit_app.py` | Dashboard |
+| `tests/` | 25 test automatici (parser, formule, quintetti, PDF, accessi) |
 
 ```bash
 pip install -r requirements-update.txt
-python -m basket.update --campionati ita2 --giornate 1-2   # estrazione
-python -m basket.export_excel                              # Excel
-python -m basket.scouting "Forlì"                          # report in reports/
-python -m pytest -q tests                                  # test
+python -m basket.update --campionati ita2 --giornate 1-2     # estrazione
+python -m basket.export_excel                                # Excel
+python -m basket.report_pdf "Forlì"                          # PDF di scouting
+python -m pytest -q tests                                    # test
 pip install -r requirements.txt && streamlit run streamlit_app.py
 ```

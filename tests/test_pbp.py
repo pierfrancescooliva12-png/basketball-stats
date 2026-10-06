@@ -122,3 +122,10 @@ def test_pbp_file_is_compact_and_immutable(conn, tmp_path):
     conn.execute("DELETE FROM pbp_qualita")
     update.backfill_pbp(conn, Client(), "ita2", "x2627", 10)  # riscrive lo stesso file
     assert f.read_bytes() == before
+
+
+def test_pdf_report(conn):
+    from basket.contesto import Contesto
+    from basket.report_pdf import build_pdf
+    pdf = build_pdf(Contesto(conn, "x2627"), 10050)
+    assert pdf[:4] == b"%PDF" and len(pdf) > 20_000

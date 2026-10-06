@@ -146,7 +146,14 @@ def quality(eventi: list[dict], punti_box: tuple[int, int]) -> dict:
 
 # ------------------------------------------------------------------ caricamento
 
+def _has_table(conn, name: str) -> bool:
+    return conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
+                        (name,)).fetchone() is not None
+
+
 def _games(conn, stagione):
+    if not _has_table(conn, "pbp_qualita"):
+        return []
     return conn.execute(
         """SELECT p.partita_id, p.gameid, p.stagione, p.campionato_id, p.squadra_casa_id,
                   p.squadra_ospite_id, p.data, p.giornata, q.quintetti_ok
@@ -205,6 +212,9 @@ def load_stints(conn: sqlite3.Connection, stagione: str | None = None,
 
 
 def coverage(conn: sqlite3.Connection, stagione: str | None = None) -> pd.DataFrame:
+    if not _has_table(conn, "pbp_qualita"):
+        return pd.DataFrame(columns=["campionato_id", "partite", "con_cronaca", "quintetti_ok",
+                                     "zone_ok"])
     q = """SELECT p.campionato_id, COUNT(*) AS partite, COUNT(q.partita_id) AS con_cronaca,
                   SUM(q.quintetti_ok) AS quintetti_ok, SUM(q.zone_affidabili) AS zone_ok
            FROM partite p LEFT JOIN pbp_qualita q USING (partita_id)"""
@@ -512,9 +522,11 @@ def shot_profile(ev: pd.DataFrame, zone_ok: set) -> pd.DataFrame:
         g = s[mask].groupby(keys).agg(**{f"{nome}_t": ("tipo", "size"),
                                          f"{nome}_r": ("fatto", "sum")}).reset_index()
         out = out.merge(g, on=keys, how="left")
-    out = out.fillna(0)
+    conteggi = [c for c in out.columns if c.endswith(("_t", "_r"))]
+    out[conteggi] = out[conteggi].fillna(0).astype(int)
     rel = s[s.affidabile & s.tipo.str.startswith("tiro2")].groupby(keys).size()
-    out = out.merge(rel.rename("tiri2_zona").reset_index(), on=keys, how="left").fillna(0)
+    out = out.merge(rel.rename("tiri2_zona").reset_index(), on=keys, how="left")
+    out["tiri2_zona"] = out["tiri2_zona"].fillna(0).astype(int)
     for nome in ("area", "media", "tre"):
         out[f"{nome}_pct"] = 100 * out[f"{nome}_r"] / out[f"{nome}_t"].where(out[f"{nome}_t"] > 0)
     out["quota_area"] = 100 * out["area_t"] / out["tiri2_zona"].where(out["tiri2_zona"] > 0)

@@ -249,6 +249,111 @@ G = {
         "media (per il TS% anche almeno 6 tiri a partita), per evitare valori gonfiati da pochi "
         "minuti.",
         "Tocca il ? di ogni statistica per la spiegazione."),
+    "plus_minus": Voce(
+        "+/- (plus/minus)",
+        "La differenza punti della squadra mentre il giocatore è in campo.",
+        "Punti fatti − punti subiti dalla squadra nei minuti del giocatore, dai quintetti "
+        "ricostruiti dalla cronaca (solo partite con quintetti verificati).",
+        "Dipende molto dai compagni e dagli avversari: va letto insieme all'On-Off e con un "
+        "buon numero di minuti. Su poche partite è rumoroso."),
+    "on_off": Voce(
+        "On-Off",
+        "Quanto cambia il rendimento della squadra con il giocatore in campo rispetto a quando "
+        "è in panchina.",
+        "Net rating con il giocatore in campo − Net rating con il giocatore fuori.",
+        "+10 o più = la squadra è molto migliore quando gioca lui; negativo = la squadra rende "
+        "di più senza di lui. Con pochi minuti fuori dal campo il dato è instabile."),
+    "quintetti": Voce(
+        "Quintetti",
+        "Le combinazioni di 5 giocatori usate dall'allenatore e il loro rendimento.",
+        "La cronaca registra solo chi entra: chi esce è dedotto (non può più comparire in azioni "
+        "fino al rientro). Ogni partita è verificata confrontando i minuti ricostruiti con "
+        "quelli ufficiali (scarto massimo 3'); le altre partite sono escluse.",
+        "Il quintetto con più minuti è quello di cui l'allenatore si fida; un quintetto con "
+        "Net rating molto negativo è un'opportunità per l'avversario."),
+    "clutch": Voce(
+        "Finali punto a punto (clutch)",
+        "Chi decide le partite equilibrate e come.",
+        "Azioni negli ultimi 5 minuti del 4° quarto e nei supplementari, con scarto di 5 punti o "
+        "meno al momento dell'azione.",
+        "La 'quota tiri' dice a chi va la palla nei momenti decisivi: è il giocatore da "
+        "togliere dalla partita nel finale."),
+    "assist_rete": Voce(
+        "Chi serve chi",
+        "Le combinazioni passaggio-tiro più frequenti della squadra.",
+        "Ogni assist della cronaca è abbinato al canestro registrato nello stesso istante.",
+        "Una coppia dominante (es. play → centro) indica un'azione ricorrente da preparare in "
+        "difesa: togliere quella linea di passaggio."),
+    "origini": Voce(
+        "Origine dei punti",
+        "Da quali situazioni nascono i punti: dopo una palla persa avversaria, da un rimbalzo "
+        "offensivo (seconda occasione), in contropiede.",
+        "Stima dalla cronaca: ogni canestro è attribuito all'ultimo evento che ha dato il "
+        "possesso alla squadra; contropiede = segnato entro 8 secondi da un rimbalzo "
+        "difensivo o un recupero.",
+        "Molti punti da palle perse o in contropiede = squadra che vive di transizione: "
+        "proteggere la palla e rientrare in difesa. Molte seconde occasioni = chiudere l'area."),
+    "break": Voce(
+        "Break (parziali)",
+        "La capacità di piazzare (o subire) parziali che girano la partita.",
+        "Sequenze di almeno 8 punti consecutivi di una squadra senza risposta dell'avversario.",
+        "Una squadra che subisce molti break ha cali di concentrazione: il timeout giusto al "
+        "momento giusto conta."),
+    "bonus": Voce(
+        "Bonus falli",
+        "Quanto spesso e quanto presto la squadra arriva al 5° fallo di squadra nel periodo, "
+        "mandando l'avversario ai liberi a ogni fallo.",
+        "Percentuale di periodi in cui la squadra commette almeno 5 falli e minuto medio del "
+        "5° fallo.",
+        "Una squadra che va presto in bonus va attaccata in penetrazione per prendere liberi."),
+    "timeout_eff": Voce(
+        "Effetto dei timeout",
+        "Se i timeout dell'allenatore cambiano l'inerzia della partita.",
+        "Differenza punti della squadra nei 2 minuti dopo ogni proprio timeout (e, per "
+        "confronto, nei 2 minuti prima).",
+        "Prima molto negativa e dopo positiva = timeout efficaci per fermare i parziali."),
+    "prob_vittoria": Voce(
+        "Probabilità di vittoria",
+        "Una stima della probabilità di vincere la partita, dai dati della stagione.",
+        "Margine atteso = (forza casa − forza ospite) × possessi / 100 + vantaggio del campo; "
+        "probabilità = distribuzione normale con deviazione di 11 punti. La forza è il Net "
+        "rating corretto per il numero di partite e, a inizio stagione, per la stagione "
+        "precedente.",
+        "È un riferimento statistico, non tiene conto di infortuni o mercato: 60% vuol dire "
+        "che su 10 partite simili se ne vincono circa 6."),
+    "simulazione": Voce(
+        "Proiezione della classifica",
+        "Come potrebbe finire la stagione regolare.",
+        "Il resto del calendario viene giocato 5.000 volte al computer con le probabilità di "
+        "ogni partita (e l'incertezza sulla forza delle squadre).",
+        "Le zone (primo posto, prime 4, prime 8, ultimi 3) sono indicative: vanno allineate "
+        "alla formula ufficiale del campionato in basket/config.py."),
+    "somiglianza": Voce(
+        "Giocatori simili",
+        "Giocatori con un profilo statistico vicino, anche in altre stagioni o nell'altra "
+        "categoria: utile per trovare un sostituto.",
+        "Distanza su 13 caratteristiche standardizzate (punti, rimbalzi, assist, perse, "
+        "recuperi e stoppate per 40', quota da 3, liberi, TS%, usage, AST%, REB%).",
+        "Somiglianza sopra 70 = profilo molto vicino; sotto 40 = solo in parte simile. Non "
+        "considera difesa e intangibili: è un punto di partenza per il video."),
+    "ruolo": Voce(
+        "Ruolo stimato",
+        "Il sito non pubblica i ruoli: sono stimati da altezza e statistiche.",
+        "Lungo: altezza ≥ 203 cm o REB% ≥ 14; Play / guardia: AST% ≥ 22 o altezza ≤ 186 cm; "
+        "gli altri Esterno / ala.",
+        "Indicativo: per i giocatori senza altezza conta solo lo stile statistico."),
+    "talenti": Voce(
+        "Talenti di B Nazionale",
+        "Giovani di B Nazionale con minuti importanti e alto rendimento: candidati per l'A2.",
+        "Indice = 50% percentile Game Score per 40' + 25% percentile TS% + 25% percentile "
+        "usage, tra i giocatori di B con almeno 15' di media e l'età indicata.",
+        "Un punto di partenza per lo scouting video, da integrare con il livello della squadra."),
+    "eta": Voce(
+        "Età, nazionalità, altezza",
+        "Anagrafica dalla pagina del giocatore sul sito della Lega.",
+        "Età calcolata alla data di oggi; 'italiano' = nazionalità ITA.",
+        "La nazionalità non coincide sempre con lo status di formazione italiana previsto dai "
+        "regolamenti: va verificato sul tesseramento."),
 }
 
 # Etichette di colonna delle tabelle -> voce del glossario
@@ -264,7 +369,12 @@ COLONNE = {
     "Punto a punto": "punto_a_punto", "Forza calendario": "sos", "Calendario": "sos",
     "% punti panchina": "panchina", "% minuti panchina": "panchina",
     "% punti top 2": "top2", "% canestri assistiti": "assistiti", "% punti da 3": "distribuzione",
-    "Box score completo": "incompleto",
+    "Box score completo": "incompleto", "+/-": "plus_minus", "+/- per 40": "plus_minus",
+    "On-Off": "on_off", "Net on": "on_off", "Net off": "on_off", "Quota tiri": "clutch",
+    "Somiglianza": "somiglianza", "Ruolo": "ruolo", "Indice": "talenti", "Età": "eta",
+    "Prob. vittoria": "prob_vittoria", "Punti da perse": "origini",
+    "Seconde occasioni": "origini", "Contropiede": "origini", "Break fatti": "break",
+    "Break subiti": "break", "Quintetto": "quintetti",
 }
 
 
