@@ -71,9 +71,9 @@ volta e mai modificati, così il repository non cresce a ogni aggiornamento.
 
 1. **Porta il codice sul branch principale.** Su GitHub (app o Safari) apri la pull request del
    branch di sviluppo e premi **Merge**. Le esecuzioni programmate del lunedì partono solo da `main`.
-2. **Crea i dati la prima volta** (se non ci sono già): **Actions → Aggiornamento dati → Run
-   workflow**. Nel campo *Stagioni* scrivi `x2627,x2526` per avere anche lo storico; nel campo
-   *Anagrafica* scrivi `3000` per scaricare tutti i giocatori.
+2. **Dati**: il repository contiene già stagione in corso e 2025/26. Per aggiungerne altre o
+   forzare un aggiornamento: **Actions → Aggiornamento dati → Run workflow** (campo *Stagioni*,
+   es. `x2425`).
 3. Apri **[share.streamlit.io](https://share.streamlit.io)** e accedi con **Continue with GitHub**.
 4. **Create app → Deploy a public app from GitHub**: repository
    `pierfrancescooliva12-png/basketball-stats`, branch `main`, file `streamlit_app.py`.

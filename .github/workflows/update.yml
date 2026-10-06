@@ -24,13 +24,6 @@ on:
         required: false
         default: "200"
 
-  # Collaudo sul branch di sviluppo (da rimuovere dopo il merge)
-  push:
-    branches: [claude/basket-stats-analysis-tool-z0mcls]
-    paths:
-      - "basket/**"
-      - ".github/workflows/update.yml"
-
 permissions:
   contents: write
 
@@ -63,9 +56,8 @@ jobs:
         env:
           CAMPIONATI: ${{ inputs.campionati }}
           GIORNATE: ${{ inputs.giornate }}
-          # Sul branch di sviluppo: recupero completo della stagione precedente
-          STAGIONI: ${{ github.event_name == 'push' && 'x2627,x2526' || inputs.stagioni }}
-          ANAGRAFICA: ${{ github.event_name == 'push' && '300' || inputs.anagrafica || '200' }}
+          STAGIONI: ${{ inputs.stagioni }}
+          ANAGRAFICA: ${{ inputs.anagrafica || '200' }}
         run: |
           ARGS=()
           if [ -n "$CAMPIONATI" ]; then ARGS+=(--campionati "$CAMPIONATI"); fi
@@ -87,7 +79,6 @@ jobs:
       # Report PDF sulla prossima avversaria agli abbonati (solo se configurati i segreti
       # SMTP_HOST, SMTP_USER, SMTP_PASSWORD, MITTENTE e ABBONATI)
       - name: Invia report agli abbonati
-        if: github.event_name != 'push'
         continue-on-error: true
         env:
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
@@ -99,7 +90,6 @@ jobs:
         run: python -m basket.invio_email
 
       - name: Conserva i PDF generati
-        if: github.event_name != 'push'
         uses: actions/upload-artifact@v4
         with:
           name: report-pdf
