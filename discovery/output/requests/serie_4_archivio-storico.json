@@ -1,0 +1,403 @@
+[
+ {
+  "url": "https://www.legapallacanestro.com/serie/4/archivio-storico",
+  "method": "GET",
+  "type": "document",
+  "status": 200,
+  "content_type": "text/html; charset=utf-8"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/cdn/css/http/css_zc3Lzc9dENItUR-3QQRib1n33JfH1dUxy3crVPLNmpE.css",
+  "method": "GET",
+  "type": "stylesheet",
+  "status": 200,
+  "content_type": "text/css"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/cdn/css/http/css_tTxIvHUuOBZkZ3x8pqbY74v3qmndaXZiDZ_R1LG9AM0.css",
+  "method": "GET",
+  "type": "stylesheet",
+  "status": 200,
+  "content_type": "text/css"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/cdn/css/http/css_LyejRxBLdm5R7nlXse-PdEBO6MB8TRAJf9ZCb8lDFJo.css",
+  "method": "GET",
+  "type": "stylesheet",
+  "status": 200,
+  "content_type": "text/css"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/cdn/css/http/css_pvxaLMXisNlSv62_A00JUnIttDx_NoIaXAXouXFAge0.css",
+  "method": "GET",
+  "type": "stylesheet",
+  "status": 200,
+  "content_type": "text/css"
+ },
+ {
+  "url": "https://netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css",
+  "method": "GET",
+  "type": "stylesheet",
+  "status": 200,
+  "content_type": "text/css; charset=utf-8"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/cdn/css/http/css_UfPWZx7_n5Zv4iGqnxm2wnCNVYtOzt3qtpbrUUU_EH0.css",
+  "method": "GET",
+  "type": "stylesheet",
+  "status": 200,
+  "content_type": "text/css"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/js/js_0GpDWjIZfbz1KO6hoHb7_uFrtRPkl5nwKZoYt-qLefU.js",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "text/javascript"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/js/js_sTITBmk5FzoakhRzUldz-zA-MQTTkY3-ZBmeodG0mso.js",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "text/javascript"
+ },
+ {
+  "url": "https://netdna.bootstrapcdn.com/bootstrap/3.0.2/js/bootstrap.min.js",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "application/javascript; charset=utf-8"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/js/js_R9UbiVw2xuTUI0GZoaqMDOdX0lrZtgX-ono8RVOUEVc.js",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "text/javascript"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/js/js_okNfy2Ly7wdsF-f6K0a7291QfM0hRP6qk1e1IB-LQug.js",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "text/javascript"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/js/js_rjQHvYp6XxqS8MWu1tZMQwbcVeuOBAZ3A-1bTAmj7zs.js",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "text/javascript"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/js/js_lz4yhxPFAXIl5u9She2zLnJt0XmmSRuJbup3xnrvIUc.js",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "text/javascript"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/all/themes/custom/lnp_2026_theme/logo.svg?v=1",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/svg+xml"
+ },
+ {
+  "url": "https://www.legapallacanestro.com/sites/all/themes/custom/lnp_2026_theme/images/logo_oww.png",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/png"
+ },
+ {
+  "url": "https://connect.facebook.net/en_US/fbevents.js",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "application/x-javascript; charset=utf-8"
+ },
+ {
+  "url": "https://www.googletagmanager.com/gtm.js?id=GTM-TL4XFG",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "application/javascript; charset=UTF-8"
+ },
+ {
+  "url": "https://connect.facebook.net/signals/config/414599102517434?v=2.9.414&r=stable&domain=www.legapallacanestro.com&im=1&hme=a4c28c8787325ac3f8f9eac68364f47df2a8c4266e43177443e5d7f6289c9774&ex_m=117%2C240%2C170%2C27%2C81%2C82%2C161%2C77%2C76%2C11%2C180%2C101%2C20%2C152%2C140%2C46%2C84%2C89%2C148%2C175%2C182%2C8%2C4%2C5%2C7%2C6%2C3%2C102%2C114%2C32%2C17%2C31%2C18%2C33%2C34%2C35%2C37%2C55%2C162%2C86%2C125%2C22%2C24%2C51%2C47%2C49%2C48%2C94%2C103%2C107%2C123%2C159%2C163%2C53%2C124%2C29%2C26%2C132%2C78%2C43%2C165%2C164%2C166%2C156%2C154%2C30%2C42%2C66%2C122%2C177%2C79%2C21%2C127%2C92%2C75%2C23%2C96%2C97%2C129%2C95%2C150%2C149%2C153%2C108%2C176%2C179%2C41%2C56%2C126%2C54%2C160%2C71%2C184%2C109%2C183%2C209%2C254%2C83%2C273%2C272%2C271%2C14%2C25%2C28%2C40%2C62%2C116%2C68%2C10%2C72%2C110%2C111%2C112%2C118%2C143%2C38%2C36%2C145%2C146%2C147%2C142%2C141%2C171%2C85%2C174%2C172%2C173%2C57%2C67%2C136%2C19%2C178%2C52%2C322%2C323%2C324%2C321%2C337%2C359%2C247%2C236%2C69%2C237%2C235%2C362%2C353%2C59%2C248%2C120%2C144%2C91%2C134%2C61%2C133%2C139%2C138%2C65%2C73%2C167%2C87%2C88%2C128%2C44%2C39%2C60%2C63%2C113%2C181%2C1%2C137%2C16%2C135%2C12%2C2%2C64%2C104%2C15%2C74%2C70%2C131%2C100%2C99%2C186%2C187%2C105%2C106%2C9%2C115%2C185%2C58%2C157%2C98%2C90%2C80%2C130%2C119%2C168%2C50%2C158%2C0%2C93%2C151%2C155%2C169%2C45%2C121%2C13%2C188",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "application/x-javascript; charset=utf-8"
+ },
+ {
+  "url": "https://fonts.gstatic.com/s/bebasneue/v16/JTUSjIg69CK48gW7PXooxW4.ttf",
+  "method": "GET",
+  "type": "font",
+  "status": 200,
+  "content_type": "font/ttf"
+ },
+ {
+  "url": "https://fonts.gstatic.com/s/robotocondensed/v31/ieVo2ZhZI2eCN5jzbjEETS9weq8-_d6T_POl0fRJeyWyovBJ.ttf",
+  "method": "GET",
+  "type": "font",
+  "status": 200,
+  "content_type": "font/ttf"
+ },
+ {
+  "url": "https://fonts.gstatic.com/s/robotocondensed/v31/ieVo2ZhZI2eCN5jzbjEETS9weq8-_d6T_POl0fRJeyVspfBJ.ttf",
+  "method": "GET",
+  "type": "font",
+  "status": 200,
+  "content_type": "font/ttf"
+ },
+ {
+  "url": "https://fonts.gstatic.com/s/robotocondensed/v31/ieVo2ZhZI2eCN5jzbjEETS9weq8-_d6T_POl0fRJeyVVpfBJ.ttf",
+  "method": "GET",
+  "type": "font",
+  "status": 200,
+  "content_type": "font/ttf"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/all/themes/custom/lnp_2026_theme/font/lnp-icons/fonts/lnp-icons.ttf?nt6ovz",
+  "method": "GET",
+  "type": "font",
+  "status": 200,
+  "content_type": "font/ttf"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/all/themes/custom/lnp_2026_theme/images/page-background.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://www.google-analytics.com/analytics.js",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "text/javascript"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/banner/basket_sitolnp_2019_low.gif",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/gif"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/banner/bann33.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_banner_frontpage/logo-mgs-small.png",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/png"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/logo_oww_copia.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/beretta.png",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/png"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/kruso_kapital.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/ticketone-logo.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/molten2.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/during_0.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/logo_adisport_2025.png",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/png"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/logo_arttech_neutro-1.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/deltatre-logo.png",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/png"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/fastweb_v3.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/wgp_logo_rgb_colorsblack-small.png",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/png"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/bbox.png",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/png"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/logo-paiper-small.png",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/png"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/banner/icsdeff.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/banner/wgp_logo_rgb_colorsblack-squared.png",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/png"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/banner/7_-_cesana_cividale_-_mvp_italiano_a2_aprile_0.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/banner/7_-_davis_cento_-_mvp_straniero_a2_aprile_0.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/banner/7_-_restelli_treviglio_-_mvp_b_nazionale_aprile_0.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/banner/7_-_stefano_pillastrini_-_best_coach_a2_aprile_0.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/banner/7_-_elia_rossi_-_best_coach_b_nazionale_aprile_0.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/banner/7_-_nicolas_tanfoglio_-_miglior_under_21_aprile_a2_0.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/js/js_-ISVz8gF5F0Gzj862Fdle0gAooLoGiLq-QHA1yS3xxo.js",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "text/javascript"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/js/js_paiTaEsc1HNeBS2rkLc1NrprKrFnApv70kuY8awAaTI.js",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "text/javascript"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/js/js_KtMRViuj0KwtbGPfyAKBS7VWEusTIlDLn8dwDl84ACg.js",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "text/javascript"
+ },
+ {
+  "url": "https://www.facebook.com/tr/?id=414599102517434&ev=PageView&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F4%2Farchivio-storico&rl=&if=false&ts=1791273281001&iw=false&sw=1280&sh=720&v=2.9.414&r=stable&ec=0&o=12318&aems=0%3B0&fbp=fb.1.1791273219074.571708828204736843&cs_est=true&ler=empty&pmd[title]=Archivio%20storico%20%7C%20Lega%20Nazionale%20Pallacanestro&pmd[locale]=it&iss=1&ss=%7B%22entity_name%22%3A%5B%7B%22rid%22%3A%221749210719693624%22%2C%22v%22%3A%5B%22Archivio%20storico%22%5D%7D%5D%2C%22author_article_name%22%3A%5B%7B%22rid%22%3A%221618956123002576%22%2C%22v%22%3A%5B%22Archivio%20storico%22%5D%7D%5D%2C%22page_title%22%3A%5B%7B%22rid%22%3A%221408737394696951%22%2C%22v%22%3A%5B%22Archivio%20storico%20%7C%20Lega%20Nazionale%20Pallacanestro%22%5D%7D%5D%7D&imft=1&tz=0&it=1791273280960&coo=false&expv2[0]=pl0&expv2[1]=el3&expv2[2]=bc1&expv2[3]=ra2&expv2[4]=rp2&expv2[5]=ct2&expv2[6]=hf0&expv2[7]=sd1&expv2[8]=sp1&expv2[9]=ek1&expv2[10]=pc1&expv2[11]=gs1&expv2[12]=zs1&expv2[13]=cp1&expv2[14]=es1&expv2[15]=ac1&expv2[16]=so1&expv2[17]=wc1&expv2[18]=la1&expv2[19]=sf1&expv2[20]=da1&expv2[21]=io1&expv2[22]=ae1&expv2[23]=sx1&expv2[24]=if1&expv2[25]=fd1&expv2[26]=bg1&expv2[27]=mg1&expv2[28]=kl1&expv2[29]=sg1&expv2[30]=mk1&expv2[31]=sn1&expv2[32]=ec1&expv2[33]=mp1&expv2[34]=ps1&expv2[35]=fx1&expv2[36]=vt1&expv2[37]=dp1&expv2[38]=fw1&expv2[39]=cn1&expv2[40]=tz1&expv2[41]=pe1&expv2[42]=ee1&expv2[43]=bu1&expv2[44]=ta1&expv2[45]=ot1&expv2[46]=hv1&expv2[47]=ep3&expv2[48]=rh2&expv2[49]=ah1&rqm=GET",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "text/plain"
+ },
+ {
+  "url": "https://www.googletagmanager.com/gtag/js?id=G-GRHXHLZQ9J&cx=c&_slc=1",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "application/javascript; charset=UTF-8"
+ },
+ {
+  "url": "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=1372697047&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F4%2Farchivio-storico&ul=en-us&dt=Archivio%20storico%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120385422~120469145~120469153~121046263~121046271~121125487&z=660701411",
+  "method": "POST",
+  "type": "xhr",
+  "status": 200,
+  "content_type": "text/plain",
+  "body_len": 15
+ },
+ {
+  "url": "https://analytics.google.com/g/collect?v=2&tid=G-GRHXHLZQ9J&gtm=45je6a21h1v9126101394za20gxf1&_p=1791273280934&_gaz=1&gcd=13l3l3l3l2l1&npa=0&dma=0&_eu=EBAIAGQ&_ng=1&cid=1195984655.1791273219&frm=0&ir=1&pscdl=noapi&rcb=19&sr=1280x720&uaa=arm&uab=64&uafvl=HeadlessChrome%3B153.0.8010.12%7CNot_A%2520Brand%3B8.0.0.0%7CChromium%3B153.0.8010.12&uam=&uamb=0&uap=iOS&uapv=17_0&uaw=0&ul=en-us&gaf=2&_s=1&tag_exp=115938466~115938468~118897920~118897930~120213116~120385422~120469145~120469153~121046263~121046271~121280969&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F4%2Farchivio-storico&dt=Archivio%20storico%20%7C%20Lega%20Nazionale%20Pallacanestro&sid=1791273219&sct=1&seg=1&en=page_view&_ee=1&tfd=479",
+  "method": "POST",
+  "type": "fetch",
+  "status": 204,
+  "content_type": "text/plain",
+  "body_error": "Response.text: Protocol error (Network.getResponseBody): No data found for resource with given identifier\nResponse body is not available for a response that was navigated away from. Read response.body() before triggering any navigation."
+ }
+]
