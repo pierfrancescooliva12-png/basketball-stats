@@ -1,0 +1,3 @@
+https://lnpstat.domino.it/robots.txt
+
+{"error":{"code":"404","message":"Page not found."}}

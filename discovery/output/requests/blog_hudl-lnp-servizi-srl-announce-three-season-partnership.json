@@ -1,0 +1,300 @@
+[
+ {
+  "url": "https://www.hudl.com/blog/hudl-lnp-servizi-srl-announce-three-season-partnership",
+  "method": "GET",
+  "type": "document",
+  "status": 200,
+  "content_type": "text/html; charset=UTF-8"
+ },
+ {
+  "url": "https://cdn.cookielaw.org/scripttemplates/otSDKStub.js",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "application/javascript"
+ },
+ {
+  "url": "https://fonts.googleapis.com/css2?family=Teko:wght@300;400;500;600",
+  "method": "GET",
+  "type": "stylesheet",
+  "status": 200,
+  "content_type": "text/css; charset=utf-8"
+ },
+ {
+  "url": "https://sc.hudl.com/cms/assets/styles/blog-new/styles.css?id=7b728551b05f74332c35486a4fc19494",
+  "method": "GET",
+  "type": "stylesheet",
+  "status": 200,
+  "content_type": "text/css"
+ },
+ {
+  "url": "https://static.hudl.com/craft/icons/blog-icon-chevron-dark.svg?mtime=20210319114218",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/svg+xml"
+ },
+ {
+  "url": "https://static.hudl.com/craft/icons/icon-chevron-thin-dark.svg?mtime=20170719132151",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/svg+xml"
+ },
+ {
+  "url": "https://static.hudl.com/craft/icons/blog_search_icon.svg?mtime=20210308133112",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/svg+xml"
+ },
+ {
+  "url": "https://cdn.jsdelivr.net/combine/npm/lazysizes@5.3.0,npm/lazysizes@5.3.0/plugins/unveilhooks/ls.unveilhooks.min.js,npm/lazysizes@5.3.0/plugins/video-embed/ls.video-embed.min.js,npm/stimulus@2.0.0",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "application/javascript; charset=utf-8"
+ },
+ {
+  "url": "https://www.hudl.com/cms/assets/nextlevel/blog/js/app.js?id=5ec68b60bff5aeb8a3715dc9cf12ddf2",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "application/javascript"
+ },
+ {
+  "url": "https://static.hudl.com/craft/_800x400_crop_center-center_none_ns/1411152/Blog-OG-Image_2026-09-25-145137_etsp.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://cdn.cookielaw.org/consent/3bd688f5-b6bf-4b17-939b-ebc3cf875964/3bd688f5-b6bf-4b17-939b-ebc3cf875964.json",
+  "method": "GET",
+  "type": "xhr",
+  "status": 200,
+  "content_type": "application/json",
+  "body_len": 6346
+ },
+ {
+  "url": "https://static.hudl.com/craft/_800x400_crop_center-center_none_ns/1409415/Blog-Feature-Image-EN.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.hudl.com/craft/_800x400_crop_center-center_none_ns/1410776/Blog-Feature-Image-1_2026-09-24-133002_brjb.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.hudl.com/craft/_800x400_crop_center-center_none_ns/HSC-Playlist-Version-History_blog-feature-image.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.hudl.com/craft/_800x400_crop_center-center_none_ns/1408662/Texas-Tech_BB_social-og.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.hudl.com/craft/_800x400_crop_center-center_none_ns/1408191/Blog-OG-Image-2.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://fonts.gstatic.com/s/teko/v23/LYjNdG7kmE0gfaN9pQlCpVo.woff2",
+  "method": "GET",
+  "type": "font",
+  "status": 200,
+  "content_type": "font/woff2"
+ },
+ {
+  "url": "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+  "method": "GET",
+  "type": "xhr",
+  "status": 200,
+  "content_type": "application/json",
+  "body_len": 65
+ },
+ {
+  "url": "https://cdn.cookielaw.org/scripttemplates/202609.1.0/otBannerSdk.js",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "application/javascript"
+ },
+ {
+  "url": "https://static.hudl.com/craft/_900x600_crop_center-center_none_ns/1300537/Screenshot-2025-08-15-at-12.57.12-PM.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://www.googletagmanager.com/gtm.js?id=GTM-57574Z",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "application/javascript; charset=UTF-8"
+ },
+ {
+  "url": "https://cdn.cookielaw.org/consent/3bd688f5-b6bf-4b17-939b-ebc3cf875964/01a0f7e7-20a7-7607-b62f-cee12e776858/en.json",
+  "method": "GET",
+  "type": "fetch",
+  "status": 200,
+  "content_type": "application/json",
+  "body_len": 480430
+ },
+ {
+  "url": "https://cdn.cookielaw.org/scripttemplates/202609.1.0/otGPP.js",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "application/javascript"
+ },
+ {
+  "url": "https://static.cloudflareinsights.com/beacon.min.js?token=47df843044554d01bea8852ddc88c9cd",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "text/javascript;charset=UTF-8"
+ },
+ {
+  "url": "https://cdn.cookielaw.org/scripttemplates/202609.1.0/assets/otFlat.json",
+  "method": "GET",
+  "type": "fetch",
+  "status": 200,
+  "content_type": "application/json",
+  "body_len": 20721
+ },
+ {
+  "url": "https://cdn.cookielaw.org/scripttemplates/202609.1.0/assets/otCommonStyles.css",
+  "method": "GET",
+  "type": "fetch",
+  "status": 200,
+  "content_type": "text/css",
+  "body_len": 27926
+ },
+ {
+  "url": "https://cdn.cookielaw.org/logos/static/ot_close.svg",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/svg+xml"
+ },
+ {
+  "url": "https://www.googletagmanager.com/gtag/js?id=AW-802398334&cx=c&gtm=4e6a21",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "application/javascript; charset=UTF-8"
+ },
+ {
+  "url": "https://www.googletagmanager.com/a?id=AW-802398334&v=3&t=t&pid=1777039027&gtm=45be6a21v898703511za20gzb71703256zd71703256xf1&cv=2&rv=6a21&tc=18&tag_exp=115938466~115938469~118012008~118897920~118897930~120213116~120385423~120469145~120469153~121046263~121046271~121284210&es=1&e=gtm.init&eid=2&h=Ag&tr=1ogtautoevents.1ogt1pdatav2.1ccdadsfirst.1ccdpreautopii.1ccdemform.1ccdempageview.1ccdadsconvmarking.1ccdadsfirst.1ccdenablecm.1ccdempageview.1ccdadd1pdata.1ccdadsconvmarking.1ccdadslast.1ccdadslast&ti=2ogtautoevents.2ogt1pdatav2.2ccdadsfirst.2ccdpreautopii.2ccdemform.2ccdempageview.2ccdadsconvmarking.2ccdadsfirst.2ccdenablecm.2ccdempageview.2ccdadd1pdata.2ccdadsconvmarking.2ccdadslast.2ccdadslast&z=0",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "text/html"
+ },
+ {
+  "url": "https://www.google.com/ccm/collect?rcb=17&frm=0&apvc=1&auid=2088367979.1791280274&dt=Hudl%20%26%20LNP%20Servizi%20SRL%20Announce%20Three-Season%20Partnership&tid=AW-802398334&en=page_view&dl=https%3A%2F%2Fwww.hudl.com%2Fblog%2Fhudl-lnp-servizi-srl-announce-three-season-partnership&scrsrc=www.googletagmanager.com&rnd=667997810.1791280274&navt=n&npa=0&gpp=DBABLA~BVQVAAAAAAGA.QA&gpp_sid=7&gtm=45be6a21v898703511za20ozb71703256zd71703256xecxf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118012008~118897920~118897930~120213116~120385423~120469145~120469153~121046263~121046271~121280971~121284210&tft=1791280274089&tfd=1330&tids=AW-802398334~AW-803046116&fmt=8",
+  "method": "POST",
+  "type": "fetch",
+  "status": 200,
+  "content_type": "",
+  "body_error": "Response.text: Protocol error (Network.getResponseBody): No data found for resource with given identifier\nResponse body is not available for a response that was navigated away from. Read response.body() before triggering any navigation."
+ },
+ {
+  "url": "https://www.google.com/ccm/collect?rcb=17&frm=0&apvc=1&auid=2088367979.1791280274&dt=Hudl%20%26%20LNP%20Servizi%20SRL%20Announce%20Three-Season%20Partnership&tid=AW-802398334&en=source_update&dl=https%3A%2F%2Fwww.hudl.com%2Fblog%2Fhudl-lnp-servizi-srl-announce-three-season-partnership&scrsrc=www.googletagmanager.com&rnd=667997810.1791280274&navt=n&npa=0&gpp=DBABLA~BVQVAAAAAAGA.QA&gpp_sid=7&gtm=45be6a21v898703511za20ozb71703256zd71703256xecxf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118012008~118897920~118897930~120213116~120385423~120469145~120469153~121046263~121046271~121280971~121284210&tft=1791280274094&tfd=1335&gap.sumav=4&gap.promptav=4&gap.embav=0&tids=AW-802398334&fmt=8",
+  "method": "POST",
+  "type": "fetch",
+  "status": 200,
+  "content_type": "",
+  "body_error": "Response.text: Protocol error (Network.getResponseBody): No data found for resource with given identifier\nResponse body is not available for a response that was navigated away from. Read response.body() before triggering any navigation."
+ },
+ {
+  "url": "https://googleads.g.doubleclick.net/pagead/viewthroughconversion/803046116/?random=1791280274078&cv=11&fst=1791280274078&bg=ffffff&guid=ON&async=1&en=gtag.config&gtm=45be6a21v898703511za20ozb71703256zd71703256xecxf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118012008~118897920~118897930~120213116~120385423~120469145~120469153~121046263~121046271~121280971~121284210&u_w=1280&u_h=720&url=https%3A%2F%2Fwww.hudl.com%2Fblog%2Fhudl-lnp-servizi-srl-announce-three-season-partnership&rcb=17&frm=0&tiba=Hudl%20%26%20LNP%20Servizi%20SRL%20Announce%20Three-Season%20Partnership&hn=www.googleadservices.com&npa=0&pscdl=noapi&auid=2088367979.1791280274&uaa=arm&uab=64&uafvl=HeadlessChrome%3B153.0.8010.12%7CNot_A%2520Brand%3B8.0.0.0%7CChromium%3B153.0.8010.12&uamb=0&uam=&uap=iOS&uapv=17_0&uaw=0&gpp=DBABLA~BVQVAAAAAAGA.QA&gpp_sid=7&data=event%3Dgtag.config&ept=9&rfmt=3&fmt=4",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "text/javascript; charset=UTF-8"
+ },
+ {
+  "url": "https://googleads.g.doubleclick.net/pagead/viewthroughconversion/802398334/?random=1791280274047&cv=11&fst=1791280274047&bg=ffffff&guid=ON&async=1&en=gtag.config&gtm=45be6a21v898703511za20ozb71703256zd71703256xecxf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118012008~118897920~118897930~120213116~120385423~120469145~120469153~121046263~121046271~121280971~121284210&u_w=1280&u_h=720&url=https%3A%2F%2Fwww.hudl.com%2Fblog%2Fhudl-lnp-servizi-srl-announce-three-season-partnership&rcb=17&frm=0&tiba=Hudl%20%26%20LNP%20Servizi%20SRL%20Announce%20Three-Season%20Partnership&hn=www.googleadservices.com&npa=0&pscdl=noapi&auid=2088367979.1791280274&uaa=arm&uab=64&uafvl=HeadlessChrome%3B153.0.8010.12%7CNot_A%2520Brand%3B8.0.0.0%7CChromium%3B153.0.8010.12&uamb=0&uam=&uap=iOS&uapv=17_0&uaw=0&gpp=DBABLA~BVQVAAAAAAGA.QA&gpp_sid=7&data=event%3Dgtag.config&ept=9&rfmt=3&fmt=4",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "text/javascript; charset=UTF-8"
+ },
+ {
+  "url": "https://www.google.com/rmkt/collect/803046116/?random=1791280274078&cv=11&fst=1791280274078&fmt=8&bg=ffffff&guid=ON&async=1&en=gtag.config&gtm=45be6a21v898703511za20ozb71703256zd71703256xecxf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118012008~118897920~118897930~120213116~120385423~120469145~120469153~121046263~121046271~121280971~121284210&u_w=1280&u_h=720&url=https%3A%2F%2Fwww.hudl.com%2Fblog%2Fhudl-lnp-servizi-srl-announce-three-season-partnership&rcb=17&frm=0&tiba=Hudl%20%26%20LNP%20Servizi%20SRL%20Announce%20Three-Season%20Partnership&hn=www.googleadservices.com&npa=0&pscdl=noapi&auid=2088367979.1791280274&uaa=arm&uab=64&uafvl=HeadlessChrome%3B153.0.8010.12%7CNot_A%2520Brand%3B8.0.0.0%7CChromium%3B153.0.8010.12&uamb=0&uam=&uap=iOS&uapv=17_0&uaw=0&gpp=DBABLA~BVQVAAAAAAGA.QA&gpp_sid=7&data=event%3Dgtag.config&ept=68&gcp=5",
+  "method": "POST",
+  "type": "fetch",
+  "status": 200,
+  "content_type": "",
+  "body_error": "Response.text: Protocol error (Network.getResponseBody): No data found for resource with given identifier\nResponse body is not available for a response that was navigated away from. Read response.body() before triggering any navigation."
+ },
+ {
+  "url": "https://www.google.com/rmkt/collect/802398334/?random=1791280274047&cv=11&fst=1791280274047&fmt=8&bg=ffffff&guid=ON&async=1&en=gtag.config&gtm=45be6a21v898703511za20ozb71703256zd71703256xecxf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118012008~118897920~118897930~120213116~120385423~120469145~120469153~121046263~121046271~121280971~121284210&u_w=1280&u_h=720&url=https%3A%2F%2Fwww.hudl.com%2Fblog%2Fhudl-lnp-servizi-srl-announce-three-season-partnership&rcb=17&frm=0&tiba=Hudl%20%26%20LNP%20Servizi%20SRL%20Announce%20Three-Season%20Partnership&hn=www.googleadservices.com&npa=0&pscdl=noapi&auid=2088367979.1791280274&uaa=arm&uab=64&uafvl=HeadlessChrome%3B153.0.8010.12%7CNot_A%2520Brand%3B8.0.0.0%7CChromium%3B153.0.8010.12&uamb=0&uam=&uap=iOS&uapv=17_0&uaw=0&gpp=DBABLA~BVQVAAAAAAGA.QA&gpp_sid=7&data=event%3Dgtag.config&ept=68&gcp=5",
+  "method": "POST",
+  "type": "fetch",
+  "status": 200,
+  "content_type": "",
+  "body_error": "Response.text: Protocol error (Network.getResponseBody): No data found for resource with given identifier\nResponse body is not available for a response that was navigated away from. Read response.body() before triggering any navigation."
+ },
+ {
+  "url": "https://ad.doubleclick.net/ccm/s/collect?auid=2088367979.1791280274&gtm=45be6a21v898703511za20ozb71703256zd71703256xecxf1&fmt=8",
+  "method": "POST",
+  "type": "fetch",
+  "status": 204,
+  "content_type": "",
+  "body_error": "Response.text: Protocol error (Network.getResponseBody): No data found for resource with given identifier\nResponse body is not available for a response that was navigated away from. Read response.body() before triggering any navigation."
+ },
+ {
+  "url": "https://www.googletagmanager.com/a?id=AW-802398334&v=3&t=t&pid=1777039027&gtm=45be6a21v898703511za20gzb71703256zd71703256xf1&cv=2&rv=6a21&tc=18&tag_exp=115938466~115938469~118012008~118897920~118897930~120213116~120385423~120469145~120469153~121046263~121046271~121284210&es=1&e=gtm.js&eid=3&h=Ag&tr=1rep.1rep&ti=2rep.2rep&z=0",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "text/html"
+ },
+ {
+  "url": "https://www.googletagmanager.com/a?id=AW-802398334&v=3&t=t&pid=1777039027&gtm=45be6a21v898703511za20gzb71703256zd71703256xf1&cv=2&rv=6a21&tc=18&tag_exp=115938466~115938469~118012008~118897920~118897930~120213116~120385423~120469145~120469153~121046263~121046271~121284210&es=1&e=*&eid=20&h=Ag&z=0",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "text/html"
+ },
+ {
+  "url": "https://www.googletagmanager.com/a?id=AW-802398334&v=3&t=t&pid=1777039027&gtm=45be6a21v898703511za20gzb71703256zd71703256xf1&cv=2&rv=6a21&tc=18&tag_exp=115938466~115938469~118012008~118897920~118897930~120213116~120385423~120469145~120469153~121046263~121046271~121284210&es=1&e=*&eid=21&h=Ag&z=0",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "text/html"
+ },
+ {
+  "url": "https://www.googletagmanager.com/a?id=AW-802398334&v=3&t=t&pid=1777039027&gtm=45be6a21v898703511za20gzb71703256zd71703256xf1&cv=2&rv=6a21&tc=18&tag_exp=115938466~115938469~118012008~118897920~118897930~120213116~120385423~120469145~120469153~121046263~121046271~121284210&es=1&e=gtm.dom&eid=22&h=Ag&z=0",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "text/html"
+ },
+ {
+  "url": "https://cloudflareinsights.com/cdn-cgi/rum",
+  "method": "POST",
+  "type": "xhr",
+  "status": 204,
+  "content_type": "text/plain",
+  "body_len": 0
+ }
+]
