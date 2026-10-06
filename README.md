@@ -54,6 +54,13 @@ falli commessi e subiti, valutazione.
 - Avanzate: **possessi, pace, ORtg, DRtg, Net Rtg, eFG%, TS%, Four Factors**
   (eFG%, TOV%, OREB%, FT rate, in attacco e concessi), **usage rate, assist ratio**.
 - **Trend ultime 5 partite** (giocatori e squadre) e **split casa/trasferta**.
+- Giocatori, statistiche di "ruolo": **Game Score**, **AST%, OREB%, DREB%, REB%, STL%, BLK%,
+  TOV%** individuali, quota di tiri da 3, frequenza ai liberi (FTA/FGA), doppie doppie,
+  variabilità dei punti (costanza) e **profilo a percentili** rispetto al campionato.
+- Squadre, profilo di contesto: **vittorie attese** (pitagorica) e **fortuna**, record nelle
+  partite **punto a punto** (margine ≤ 5), **forza del calendario**, **punti della panchina**,
+  **dipendenza dai primi 2 realizzatori**, distribuzione dei punti (2 / 3 / liberi),
+  % di canestri assistiti, **differenza punti per quarto**.
 - **Report di scouting** su una squadra: punti di forza e deboli rispetto alla media del
   campionato, Four Factors, giocatori chiave, ultime 5, casa/trasferta, punti per periodo,
   prossima partita.
@@ -72,6 +79,13 @@ falli commessi e subiti, valutazione.
 | FT rate | Liberi segnati / FGA |
 | USG% | 100 × (FGA + 0,44 FTA + TOV) × (min squadra / 5) / (min × (FGA + 0,44 FTA + TOV squadra)) |
 | AST ratio | 100 × AST / (FGA + 0,44 × FTA + AST + TOV) |
+| Game Score | PTS + 0,4 FGM − 0,7 FGA − 0,4 (FTA − FTM) + 0,7 OREB + 0,3 DREB + STL + 0,7 AST + 0,7 BLK − 0,4 PF − TOV |
+| OREB% / DREB% individuale | rimbalzi del giocatore / rimbalzi disponibili mentre era in campo (stimati con la quota di minuti) |
+| AST% | AST / (canestri di squadra mentre era in campo − propri canestri) |
+| STL% / BLK% | recuperi / possessi avversari · stoppate / tiri da 2 avversari, mentre era in campo |
+| Vittorie attese | PF¹⁴ / (PF¹⁴ + PS¹⁴) × partite |
+| Fortuna | vittorie reali − vittorie attese |
+| Forza calendario | Net rating medio degli avversari affrontati |
 
 </details>
 
@@ -107,12 +121,14 @@ La dashboard si aggiorna da sola: a ogni commit del workflow, Streamlit Cloud ri
 In alto ci sono i filtri **Campionato**, **Squadra** e **Giocatore**, sempre visibili anche con
 l'iPad in verticale. Le schede:
 
-- **Classifica**: calcolata dai risultati, con ORtg / DRtg / Net Rtg.
-- **Squadre**: medie, per 40', avanzate, casa/trasferta, ultime 5; grafico ORtg vs DRtg.
-- **Giocatori**: medie, totali, per 40', avanzate, trend ultime 5, casa/trasferta.
-- **Giocatore**: andamento partita per partita, game log, casa/trasferta.
-- **Scouting**: report sulla squadra selezionata, scaricabile in Markdown.
-- **Partite**: box score completo di ogni partita con statistiche avanzate.
+- **Panoramica**: numeri del campionato, leader in 9 categorie, mappa attacco/difesa (ORtg vs DRtg).
+- **Classifica**: con forma (ultime 5), Net rating, vittorie attese, fortuna, punto a punto, calendario.
+- **Squadre**: avanzate, profilo, quarti (mappa di calore), medie, per 40', casa/trasferta, ultime 5.
+- **Giocatori**: medie, avanzate, ruolo, per 40', totali, trend ultime 5, casa/trasferta.
+- **Giocatore**: scheda con percentili nel campionato, andamento partita per partita, game log.
+- **Scouting**: report sulla squadra selezionata (forza/debolezza, Four Factors, quarti,
+  giocatori chiave), scaricabile in Markdown.
+- **Partite**: box score completo con statistiche avanzate della partita.
 
 ---
 

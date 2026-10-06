@@ -70,3 +70,25 @@ def test_incomplete_boxscore_excluded_from_advanced(conn):
     assert t.loc[10050, "vinte"] == 1 and t.loc[10050, "punti_pg"] == 80
     assert t.loc[10050, "partite_avanzate"] == 0
     assert t["ortg"].isna().all()
+
+
+def test_new_player_and_team_metrics(conn):
+    bs, bg = A.load_box_squadra(conn), A.load_box_giocatore(conn)
+    p = A.player_summary(bg, bs).set_index("giocatore")
+    w = p.loc["Avery Woodson"]
+    # Game Score: 26 + 0.4*9 - 0.7*14 - 0.4*0 + 0 + 0.3*2 + 3 + 0.7*2 + 0.7*0 - 0.4*F - 2
+    row = bg[bg["giocatore"] == "Avery Woodson"].iloc[0]
+    expected = (26 + 0.4 * 9 - 0.7 * 14 - 0.4 * (row.tla - row.tlm) + 0.7 * row.rimb_off
+                + 0.3 * row.rimb_dif + row.recuperate + 0.7 * row.assist + 0.7 * row.stoppate
+                - 0.4 * row.falli_commessi - row.perse)
+    assert w["game_score_pg"] == pytest.approx(expected)
+    # La somma dei rimbalzi % pesata sui minuti dà la quota catturata dai giocatori (≈ 1/5 del totale)
+    for _, g in p.groupby("squadra_id"):
+        assert 0 < (g["trb_pct"] * g["minuti"]).sum() / g["minuti"].sum() < 25
+    prof = A.team_profile(bs, bg, A.load_quarters(conn)).set_index("squadra_id")
+    f = prof.loc[10050]
+    assert f["quota_punti_2"] + f["quota_punti_3"] + f["quota_punti_tl"] == pytest.approx(100)
+    assert f["record_pp"] == "0-0"  # vinta di 7
+    assert f["diff_q1"] == 31 - 18
+    pc = A.percentiles(p.reset_index(), w["giocatore_id"], w["squadra_id"])
+    assert pc["Percentile"].between(0, 100).all()

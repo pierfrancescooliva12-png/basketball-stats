@@ -50,7 +50,22 @@ PLAYER_P40 = PLAYER_BASE | {
 }
 PLAYER_AVANZATE = PLAYER_BASE | {
     "fg_pct": "FG%", "efg_pct": "eFG%", "ts_pct": "TS%", "t3_pct": "3P%", "tl_pct": "TL%",
-    "usg_pct": "USG%", "ast_ratio": "AST ratio", "punti_p40": "Punti/40",
+    "usg_pct": "USG%", "ast_ratio": "AST ratio", "game_score_pg": "Game Score",
+    "punti_p40": "Punti/40",
+}
+PLAYER_RUOLO = PLAYER_BASE | {
+    "ast_pct": "AST%", "tov_pct": "TOV%", "orb_pct": "OREB%", "drb_pct": "DREB%",
+    "trb_pct": "REB%", "stl_pct": "STL%", "blk_pct": "BLK%", "t3a_rate": "% tiri da 3",
+    "ft_rate": "FTA/FGA", "falli_subiti_p40": "F. sub./40", "doppie_doppie": "Doppie doppie",
+    "max_punti": "Max punti", "punti_cv": "Variabilità punti",
+}
+TEAM_PROFILO = TEAM_BASE | {
+    "pyth_pct": "V% attesa", "vinte_attese": "V attese", "fortuna": "Fortuna",
+    "record_pp": "Punto a punto", "sos": "Forza calendario", "quota_punti_2": "% punti da 2",
+    "quota_punti_3": "% punti da 3", "quota_punti_tl": "% punti TL",
+    "ast_su_canestri": "% canestri assistiti", "quota_punti_panchina": "% punti panchina",
+    "quota_minuti_panchina": "% minuti panchina", "quota_top2": "% punti top 2",
+    "diff_q1": "Diff Q1", "diff_q2": "Diff Q2", "diff_q3": "Diff Q3", "diff_q4": "Diff Q4",
 }
 TREND = {
     "campionato": "Campionato", "giocatore": "Giocatore", "squadra": "Squadra", "partite": "PG",
