@@ -1,6 +1,6 @@
 [
  {
-  "url": "https://www.legapallacanestro.com/serie/1/calendario",
+  "url": "https://www.legapallacanestro.com/wp/match/ita2_412/ita2/x2627/play-by-play",
   "method": "GET",
   "type": "document",
   "status": 200,
@@ -22,6 +22,13 @@
  },
  {
   "url": "https://static.legapallacanestro.com/sites/default/files/cdn/css/http/css_LyejRxBLdm5R7nlXse-PdEBO6MB8TRAJf9ZCb8lDFJo.css",
+  "method": "GET",
+  "type": "stylesheet",
+  "status": 200,
+  "content_type": "text/css"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/cdn/css/http/css_pvxaLMXisNlSv62_A00JUnIttDx_NoIaXAXouXFAge0.css",
   "method": "GET",
   "type": "stylesheet",
   "status": 200,
@@ -63,6 +70,48 @@
   "content_type": "image/png"
  },
  {
+  "url": "https://static.legapallacanestro.com/sites/default/files/styles/255_x/public/team_logo/10050.png?itok=cwHdF1dM",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/png"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/styles/255_x/public/team_logo/100118.png?itok=c-rlBzx5",
+  "method": "GET",
+  "type": "image",
+  "status": 200,
+  "content_type": "image/png"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/js/js_0GpDWjIZfbz1KO6hoHb7_uFrtRPkl5nwKZoYt-qLefU.js",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "text/javascript"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/js/js_R9UbiVw2xuTUI0GZoaqMDOdX0lrZtgX-ono8RVOUEVc.js",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "text/javascript"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/js/js_rjQHvYp6XxqS8MWu1tZMQwbcVeuOBAZ3A-1bTAmj7zs.js",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "text/javascript"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/js/js_lz4yhxPFAXIl5u9She2zLnJt0XmmSRuJbup3xnrvIUc.js",
+  "method": "GET",
+  "type": "script",
+  "status": 200,
+  "content_type": "text/javascript"
+ },
+ {
   "url": "https://static.legapallacanestro.com/sites/default/files/banner/basket_sitolnp_2019_low.gif",
   "method": "GET",
   "type": "image",
@@ -96,27 +145,6 @@
   "type": "image",
   "status": 200,
   "content_type": "image/png"
- },
- {
-  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/kruso_kapital.jpg",
-  "method": "GET",
-  "type": "image",
-  "status": 200,
-  "content_type": "image/jpeg"
- },
- {
-  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/ticketone-logo.jpg",
-  "method": "GET",
-  "type": "image",
-  "status": 200,
-  "content_type": "image/jpeg"
- },
- {
-  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/molten2.jpg",
-  "method": "GET",
-  "type": "image",
-  "status": 200,
-  "content_type": "image/jpeg"
  },
  {
   "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/during_0.jpg",
@@ -161,13 +189,6 @@
   "content_type": "image/png"
  },
  {
-  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/bbox.png",
-  "method": "GET",
-  "type": "image",
-  "status": 200,
-  "content_type": "image/png"
- },
- {
   "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/logo-paiper-small.png",
   "method": "GET",
   "type": "image",
@@ -187,20 +208,6 @@
   "type": "image",
   "status": 200,
   "content_type": "image/png"
- },
- {
-  "url": "https://static.legapallacanestro.com/sites/default/files/banner/7_-_cesana_cividale_-_mvp_italiano_a2_aprile_0.jpg",
-  "method": "GET",
-  "type": "image",
-  "status": 200,
-  "content_type": "image/jpeg"
- },
- {
-  "url": "https://static.legapallacanestro.com/sites/default/files/banner/7_-_davis_cento_-_mvp_straniero_a2_aprile_0.jpg",
-  "method": "GET",
-  "type": "image",
-  "status": 200,
-  "content_type": "image/jpeg"
  },
  {
   "url": "https://static.legapallacanestro.com/sites/default/files/banner/7_-_restelli_treviglio_-_mvp_b_nazionale_aprile_0.jpg",
@@ -231,41 +238,6 @@
   "content_type": "image/jpeg"
  },
  {
-  "url": "https://static.legapallacanestro.com/sites/default/files/js/js_0GpDWjIZfbz1KO6hoHb7_uFrtRPkl5nwKZoYt-qLefU.js",
-  "method": "GET",
-  "type": "script",
-  "status": 200,
-  "content_type": "text/javascript"
- },
- {
-  "url": "https://static.legapallacanestro.com/sites/default/files/js/js_eD21_fbU5oJoxSp6yVztKjH-35dIYm0UNgTNGK7r2Ac.js",
-  "method": "GET",
-  "type": "script",
-  "status": 200,
-  "content_type": "text/javascript"
- },
- {
-  "url": "https://static.legapallacanestro.com/sites/default/files/js/js_R9UbiVw2xuTUI0GZoaqMDOdX0lrZtgX-ono8RVOUEVc.js",
-  "method": "GET",
-  "type": "script",
-  "status": 200,
-  "content_type": "text/javascript"
- },
- {
-  "url": "https://static.legapallacanestro.com/sites/default/files/js/js_rjQHvYp6XxqS8MWu1tZMQwbcVeuOBAZ3A-1bTAmj7zs.js",
-  "method": "GET",
-  "type": "script",
-  "status": 200,
-  "content_type": "text/javascript"
- },
- {
-  "url": "https://static.legapallacanestro.com/sites/default/files/js/js_lz4yhxPFAXIl5u9She2zLnJt0XmmSRuJbup3xnrvIUc.js",
-  "method": "GET",
-  "type": "script",
-  "status": 200,
-  "content_type": "text/javascript"
- },
- {
   "url": "https://static.legapallacanestro.com/sites/default/files/js/js_-ISVz8gF5F0Gzj862Fdle0gAooLoGiLq-QHA1yS3xxo.js",
   "method": "GET",
   "type": "script",
@@ -287,11 +259,11 @@
   "content_type": "text/javascript"
  },
  {
-  "url": "https://static.legapallacanestro.com/sites/default/files/cdn/css/http/css_r6R_vNmWMu4CCQt22BDqCFHohBfw5VvZzk_-zdgYVWY.css",
+  "url": "https://static.legapallacanestro.com/sites/default/files/js/js_eD21_fbU5oJoxSp6yVztKjH-35dIYm0UNgTNGK7r2Ac.js",
   "method": "GET",
-  "type": "stylesheet",
+  "type": "script",
   "status": 200,
-  "content_type": "text/css"
+  "content_type": "text/javascript"
  },
  {
   "url": "https://connect.facebook.net/en_US/fbevents.js",
@@ -350,7 +322,49 @@
   "content_type": "image/jpeg"
  },
  {
-  "url": "https://static.legapallacanestro.com/sites/default/files/js/js_ttTWICPuq8cezc_70VT2lKN-mzs2ZgcUtGReMWF5Kvs.js",
+  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/kruso_kapital.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 304,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/ticketone-logo.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 304,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/molten2.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 304,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor_pag_sponsor_partner/bbox.png",
+  "method": "GET",
+  "type": "image",
+  "status": 304,
+  "content_type": "image/png"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/banner/7_-_cesana_cividale_-_mvp_italiano_a2_aprile_0.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 304,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/banner/7_-_davis_cento_-_mvp_straniero_a2_aprile_0.jpg",
+  "method": "GET",
+  "type": "image",
+  "status": 304,
+  "content_type": "image/jpeg"
+ },
+ {
+  "url": "https://static.legapallacanestro.com/sites/default/files/js/js_B9nYULP03sbY8dGc2pStsICtZiF4WcWrN9CFb1ZcAyY.js",
   "method": "GET",
   "type": "script",
   "status": 200,
@@ -371,7 +385,7 @@
   "content_type": "text/javascript"
  },
  {
-  "url": "https://www.facebook.com/tr/?id=414599102517434&ev=PageView&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F1%2Fcalendario&rl=&if=false&ts=1791273420394&iw=false&sw=1280&sh=720&v=2.9.414&r=stable&ec=0&o=12318&aems=0%3B0&fbp=fb.1.1791273409011.155854777717904133&cs_est=true&ler=empty&pmd[title]=Calendario%202026-2027%20%7C%20Lega%20Nazionale%20Pallacanestro&pmd[locale]=it&plt=1155.5999999999767&iss=1&ss=%7B%22author_article_name%22%3A%5B%7B%22rid%22%3A%221618956123002576%22%2C%22v%22%3A%5B%22Calendario%202026-2027%22%5D%7D%5D%2C%22entity_name%22%3A%5B%7B%22rid%22%3A%221749210719693624%22%2C%22v%22%3A%5B%22Calendario%202026-2027%22%5D%7D%5D%2C%22page_title%22%3A%5B%7B%22rid%22%3A%221408737394696951%22%2C%22v%22%3A%5B%22Calendario%202026-2027%20%7C%20Lega%20Nazionale%20Pallacanestro%22%5D%7D%5D%7D&imft=1&tz=0&it=1791273420337&coo=false&expv2[0]=pl0&expv2[1]=el2&expv2[2]=bc1&expv2[3]=ra2&expv2[4]=rp2&expv2[5]=ct3&expv2[6]=hf0&expv2[7]=sd1&expv2[8]=sp1&expv2[9]=ek1&expv2[10]=pc1&expv2[11]=gs1&expv2[12]=zs1&expv2[13]=cp1&expv2[14]=es1&expv2[15]=ac1&expv2[16]=so1&expv2[17]=wc1&expv2[18]=la1&expv2[19]=sf1&expv2[20]=da1&expv2[21]=io1&expv2[22]=ae1&expv2[23]=sx1&expv2[24]=if1&expv2[25]=fd1&expv2[26]=bg1&expv2[27]=mg1&expv2[28]=kl1&expv2[29]=sg1&expv2[30]=mk1&expv2[31]=sn1&expv2[32]=ec1&expv2[33]=mp1&expv2[34]=ps1&expv2[35]=fx1&expv2[36]=vt1&expv2[37]=dp1&expv2[38]=fw1&expv2[39]=cn1&expv2[40]=tz1&expv2[41]=pe1&expv2[42]=ee1&expv2[43]=bu1&expv2[44]=ta1&expv2[45]=ot1&expv2[46]=hv1&expv2[47]=ep3&expv2[48]=rh2&expv2[49]=ah1&rqm=GET",
+  "url": "https://www.facebook.com/tr/?id=414599102517434&ev=PageView&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fwp%2Fmatch%2Fita2_412%2Fita2%2Fx2627%2Fplay-by-play&rl=&if=false&ts=1791273412904&iw=false&sw=1280&sh=720&v=2.9.414&r=stable&ec=0&o=12318&aems=0%3B0&fbp=fb.1.1791273409011.155854777717904133&cs_est=true&ler=empty&pmd[title]=Unieuro%20Forl%C3%AC%20VS%20Sella%20Cento%20%7C%20Lega%20Nazionale%20Pallacanestro&pmd[locale]=it&plt=1215.7000000000116&iss=1&ss=%7B%22author_article_name%22%3A%5B%7B%22rid%22%3A%221618956123002576%22%2C%22v%22%3A%5B%22Unieuro%20Forl%C3%AC%20VS%20Sella%20Cento%22%5D%7D%5D%2C%22entity_name%22%3A%5B%7B%22rid%22%3A%221749210719693624%22%2C%22v%22%3A%5B%22Unieuro%20Forl%C3%AC%20VS%20Sella%20Cento%22%5D%7D%5D%2C%22page_title%22%3A%5B%7B%22rid%22%3A%221408737394696951%22%2C%22v%22%3A%5B%22Unieuro%20Forl%C3%AC%20VS%20Sella%20Cento%20%7C%20Lega%20Nazionale%20Pallacanestro%22%5D%7D%5D%7D&imft=1&tz=0&it=1791273412839&coo=false&expv2[0]=pl1&expv2[1]=el2&expv2[2]=bc1&expv2[3]=ra2&expv2[4]=rp2&expv2[5]=im0&expv2[6]=hf0&expv2[7]=sd1&expv2[8]=sp1&expv2[9]=ek1&expv2[10]=pc1&expv2[11]=gs1&expv2[12]=zs1&expv2[13]=cp1&expv2[14]=es1&expv2[15]=ac1&expv2[16]=so1&expv2[17]=wc1&expv2[18]=la1&expv2[19]=sf1&expv2[20]=da1&expv2[21]=io1&expv2[22]=ae1&expv2[23]=sx1&expv2[24]=if1&expv2[25]=fd1&expv2[26]=bg1&expv2[27]=mg1&expv2[28]=kl1&expv2[29]=sg1&expv2[30]=mk1&expv2[31]=sn1&expv2[32]=ec1&expv2[33]=mp1&expv2[34]=ps1&expv2[35]=fx1&expv2[36]=vt1&expv2[37]=dp1&expv2[38]=fw1&expv2[39]=cn1&expv2[40]=tz1&expv2[41]=pe1&expv2[42]=ee1&expv2[43]=bu1&expv2[44]=ta1&expv2[45]=ot1&expv2[46]=hv1&expv2[47]=ep1&expv2[48]=rh3&expv2[49]=ah1&rqm=GET",
   "method": "GET",
   "type": "image",
   "status": 200,
@@ -385,47 +399,11 @@
   "content_type": "application/javascript; charset=UTF-8"
  },
  {
-  "url": "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=1965179754&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F1%2Fcalendario&ul=en-us&dt=Calendario%202026-2027%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=823554572.1791273409&tid=UA-67913270-1&_gid=2101726713.1791273409&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120385422~120469145~120469153~121046263~121046271~121125486&z=118420531",
+  "url": "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=417634783&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fwp%2Fmatch%2Fita2_412%2Fita2%2Fx2627%2Fplay-by-play&ul=en-us&dt=Unieuro%20Forl%C3%AC%20VS%20Sella%20Cento%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=823554572.1791273409&tid=UA-67913270-1&_gid=2101726713.1791273409&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938465~115938468~118897920~118897930~120385422~120469145~120469153~121046263~121046271&z=2025684519",
   "method": "POST",
   "type": "xhr",
   "status": 200,
   "content_type": "text/plain",
   "body_len": 15
- },
- {
-  "url": "https://static.legapallacanestro.com/sites/all/themes/custom/lnp_2026_theme/images/banner_lnptvpass2019.jpg",
-  "method": "GET",
-  "type": "image",
-  "status": 200,
-  "content_type": "image/jpeg"
- },
- {
-  "url": "https://static.legapallacanestro.com/sites/default/files/logo_sponsor/logo_oww_p.gif",
-  "method": "GET",
-  "type": "image",
-  "status": 200,
-  "content_type": "image/gif"
- },
- {
-  "url": "https://lnpstat.domino.it/getstatisticsfiles?task=schedule&year=x2627&league=ita2&round=2",
-  "method": "GET",
-  "type": "xhr",
-  "status": 200,
-  "content_type": "application/json",
-  "body_len": 4289
- },
- {
-  "url": "https://www.legapallacanestro.com/sites/all/themes/custom/lnp_2023_theme/images/lnp_pass.png",
-  "method": "GET",
-  "type": "image",
-  "status": 200,
-  "content_type": "image/png"
- },
- {
-  "url": "https://www.legapallacanestro.com/sites/all/themes/custom/lnp_2023_theme/images/RaiSport.svg",
-  "method": "GET",
-  "type": "image",
-  "status": 200,
-  "content_type": "image/svg+xml"
  }
 ]

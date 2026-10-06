@@ -1,84 +1,30 @@
 [
  {
-  "url": "https://www.legapallacanestro.com/",
+  "url": "https://www.legapallacanestro.com/wp/match/ita2_412/ita2/x2627",
   "status": 200,
-  "title": "Lega Nazionale Pallacanestro",
-  "n_requests": 94,
+  "title": "Unieuro Forlì VS Sella Cento | Lega Nazionale Pallacanestro",
+  "n_requests": 61,
   "xhr_json": [
-   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=1665892253&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2F&ul=en-us&dt=Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=YEBAAAABAAAAAC~&jid=1527962905&gjid=1052114625&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_r=1&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938465~115938468~118897920~118897930~119860442~120385423~120469145~120469153~121046263~121046271&z=1430734062",
-   "https://analytics.google.com/g/collect?v=2&tid=G-GRHXHLZQ9J&gtm=45je6a21h1v9126101394za20gxf1&_p=1791273218568&_gaz=1&gcd=13l3l3l3l2l1&npa=0&dma=0&_eu=EBAIAGA&_ng=1&cid=1195984655.1791273219&frm=0&ir=1&pscdl=noapi&rcb=1&sr=1280x720&uaa=arm&uab=64&uafvl=HeadlessChrome%3B153.0.8010.12%7CNot_A%2520Brand%3B8.0.0.0%7CChromium%3B153.0.8010.12&uam=&uamb=0&uap=iOS&uapv=17_0&uaw=0&ul=en-us&gaf=2&_s=1&tag_exp=115938465~115938469~118897920~118897930~119860442~120213116~120385423~120469145~120469153~121046263~121046271~121427143&dl=https%3A%2F%2Fwww.legapallacanestro.com%2F&dt=Lega%20Nazionale%20Pallacanestro&sid=1791273219&sct=1&seg=0&en=page_view&_fv=1&_ss=1&_ee=1&tfd=2114"
+   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=88134397&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fwp%2Fmatch%2Fita2_412%2Fita2%2Fx2627&ul=en-us&dt=Unieuro%20Forl%C3%AC%20VS%20Sella%20Cento%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=YEBAAAABAAAAAC~&jid=1603542965&gjid=1521238017&cid=823554572.1791273409&tid=UA-67913270-1&_gid=2101726713.1791273409&_r=1&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120385423~120469145~120469153~121046263~121046271~121125487&z=1703414041",
+   "https://analytics.google.com/g/collect?v=2&tid=G-GRHXHLZQ9J&gtm=45je6a21v9126101394za20gxf1&_p=1791273408351&_gaz=1&gcd=13l3l3l3l2l1&npa=0&dma=0&_eu=EBAIAGA&_ng=1&cid=823554572.1791273409&frm=0&ir=1&pscdl=noapi&rcb=12&sr=1280x720&uaa=arm&uab=64&uafvl=HeadlessChrome%3B153.0.8010.12%7CNot_A%2520Brand%3B8.0.0.0%7CChromium%3B153.0.8010.12&uam=&uamb=0&uap=iOS&uapv=17_0&uaw=0&ul=en-us&gaf=2&_s=1&tag_exp=115616985~115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153~121046263~121046271~121246026~121246034~121280971&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fwp%2Fmatch%2Fita2_412%2Fita2%2Fx2627&dt=Unieuro%20Forl%C3%AC%20VS%20Sella%20Cento%20%7C%20Lega%20Nazionale%20Pallacanestro&sid=1791273408&sct=1&seg=0&en=page_view&_fv=1&_ss=1&_ee=1&tfd=2466"
   ]
  },
  {
-  "url": "https://www.legapallacanestro.com/wp/match/ita2_1/ita2/x2627",
+  "url": "https://www.legapallacanestro.com/wp/match/ita2_412/ita2/x2627/play-by-play",
   "status": 200,
-  "title": "VS | Lega Nazionale Pallacanestro",
-  "n_requests": 56,
-  "xhr_json": [
-   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=1148436494&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fwp%2Fmatch%2Fita2_1%2Fita2%2Fx2627&ul=en-us&dt=VS%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938465~115938468~118897920~118897930~120385423~120469145~120469153~121046263~121046271&z=939145795"
-  ]
- },
- {
-  "url": "https://www.legapallacanestro.com/wp/match/ita2_1/ita2/x2627/tabellino",
-  "status": 200,
-  "title": "VS | Lega Nazionale Pallacanestro",
-  "n_requests": 56,
-  "xhr_json": [
-   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=1348997677&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fwp%2Fmatch%2Fita2_1%2Fita2%2Fx2627%2Ftabellino&ul=en-us&dt=VS%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120385422~120469145~120469153~121046263~121046271&z=39471500"
-  ]
- },
- {
-  "url": "https://www.legapallacanestro.com/wp/match/ita2_2/ita2/x2627/tabellino",
-  "status": 200,
-  "title": "VS | Lega Nazionale Pallacanestro",
-  "n_requests": 56,
-  "xhr_json": [
-   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=866339623&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fwp%2Fmatch%2Fita2_2%2Fita2%2Fx2627%2Ftabellino&ul=en-us&dt=VS%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938465~115938468~118897920~118897930~120385422~120469145~120469153~121046263~121046271~121125486&z=1831907028"
-  ]
- },
- {
-  "url": "https://www.legapallacanestro.com/wp/match/ita3_a_1/ita3_a/x2627/tabellino",
-  "status": 200,
-  "title": "VS | Lega Nazionale Pallacanestro",
-  "n_requests": 56,
-  "xhr_json": [
-   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=397585831&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fwp%2Fmatch%2Fita3_a_1%2Fita3_a%2Fx2627%2Ftabellino&ul=en-us&dt=VS%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938465~115938468~118897920~118897930~120385423~120469145~120469153~121046263~121046271&z=1900447662"
-  ]
- },
- {
-  "url": "https://www.legapallacanestro.com/wp/match/ita3_b_1/ita3_b/x2627/tabellino",
-  "status": 200,
-  "title": "VS | Lega Nazionale Pallacanestro",
-  "n_requests": 56,
-  "xhr_json": [
-   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=924559184&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fwp%2Fmatch%2Fita3_b_1%2Fita3_b%2Fx2627%2Ftabellino&ul=en-us&dt=VS%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616985~115938466~115938469~118897920~118897930~120385423~120469145~120469153~121046263~121046271~121125486&z=1471882848"
-  ]
- },
- {
-  "url": "https://www.legapallacanestro.com/wp/match/ita2_375/ita2/x2526/tabellino",
-  "status": 200,
-  "title": "Ferraroni Juvi Cremona VS Gemini Mestre | Lega Nazionale Pallacanestro",
+  "title": "Unieuro Forlì VS Sella Cento | Lega Nazionale Pallacanestro",
   "n_requests": 58,
   "xhr_json": [
-   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=796003440&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fwp%2Fmatch%2Fita2_375%2Fita2%2Fx2526%2Ftabellino&ul=en-us&dt=Ferraroni%20Juvi%20Cremona%20VS%20Gemini%20Mestre%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938465~115938469~118897920~118897930~120385423~120469145~120469153~121046263~121046271~121125486&z=1708111401"
+   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=417634783&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fwp%2Fmatch%2Fita2_412%2Fita2%2Fx2627%2Fplay-by-play&ul=en-us&dt=Unieuro%20Forl%C3%AC%20VS%20Sella%20Cento%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=823554572.1791273409&tid=UA-67913270-1&_gid=2101726713.1791273409&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938465~115938468~118897920~118897930~120385422~120469145~120469153~121046263~121046271&z=2025684519"
   ]
  },
  {
-  "url": "https://www.legapallacanestro.com/wp/match/ita3_a_408/ita3_a/x2627/tabellino",
+  "url": "https://www.legapallacanestro.com/wp/match/ita3_a_410/ita3_a/x2627",
   "status": 200,
-  "title": "S4 Energia Vicenza VS A2A Leonessa Brescia | Lega Nazionale Pallacanestro",
+  "title": "Rimadesio Desio VS Siaz Basket Piazza Armerina | Lega Nazionale Pallacanestro",
   "n_requests": 58,
   "xhr_json": [
-   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=829179388&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fwp%2Fmatch%2Fita3_a_408%2Fita3_a%2Fx2627%2Ftabellino&ul=en-us&dt=S4%20Energia%20Vicenza%20VS%20A2A%20Leonessa%20Brescia%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120385423~120469145~120469153~121046263~121046271&z=1271175507"
-  ]
- },
- {
-  "url": "https://www.legapallacanestro.com/serie/1/archivio-storico",
-  "status": 200,
-  "title": "Archivio storico | Lega Nazionale Pallacanestro",
-  "n_requests": 56,
-  "xhr_json": [
-   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=388202349&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F1%2Farchivio-storico&ul=en-us&dt=Archivio%20storico%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938465~115938469~118897920~118897930~120385422~120469145~120469153~121046263~121046271~121125487&z=584429013"
+   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=1168131323&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fwp%2Fmatch%2Fita3_a_410%2Fita3_a%2Fx2627&ul=en-us&dt=Rimadesio%20Desio%20VS%20Siaz%20Basket%20Piazza%20Armerina%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=823554572.1791273409&tid=UA-67913270-1&_gid=2101726713.1791273409&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938465~115938469~118897920~118897930~120385422~120469145~120469153~121046263~121046271&z=1981072197"
   ]
  },
  {
@@ -87,123 +33,8 @@
   "title": "Calendario 2026-2027 | Lega Nazionale Pallacanestro",
   "n_requests": 61,
   "xhr_json": [
-   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=228261021&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F1%2Fcalendario&ul=en-us&dt=Calendario%202026-2027%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118012008~118897920~118897930~120385422~120469145~120469153~121046263~121046271&z=100057506",
+   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=1965179754&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F1%2Fcalendario&ul=en-us&dt=Calendario%202026-2027%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=823554572.1791273409&tid=UA-67913270-1&_gid=2101726713.1791273409&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120385422~120469145~120469153~121046263~121046271~121125486&z=118420531",
    "https://lnpstat.domino.it/getstatisticsfiles?task=schedule&year=x2627&league=ita2&round=2"
-  ]
- },
- {
-  "url": "https://www.legapallacanestro.com/serie/1/classifica",
-  "status": 200,
-  "title": "Classifica 2026-2027 | Lega Nazionale Pallacanestro",
-  "n_requests": 57,
-  "xhr_json": [
-   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=622156120&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F1%2Fclassifica&ul=en-us&dt=Classifica%202026-2027%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938465~115938468~118897920~118897930~120385422~120469145~120469153~121046263~121046271~121125487&z=459213342",
-   "https://lnpstat.domino.it/getstatisticsfiles?task=standings&year=x2627&league=ita2&round=ista"
-  ]
- },
- {
-  "url": "https://www.legapallacanestro.com/serie/1/giocatori",
-  "status": 200,
-  "title": "Giocatori 2026-2027 | Lega Nazionale Pallacanestro",
-  "n_requests": 100,
-  "xhr_json": [
-   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=1511039323&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F1%2Fgiocatori&ul=en-us&dt=Giocatori%202026-2027%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938465~115938469~118897920~118897930~120385422~120469145~120469153~121046263~121046271&z=169447541",
-   "https://analytics.google.com/g/collect?v=2&tid=G-GRHXHLZQ9J&gtm=45je6a21h1v9126101394za20gxf1&_p=1791273260922&gcd=13l3l3l3l2l1&npa=0&dma=0&_eu=EBAIAGQ&_ng=1&cid=1195984655.1791273219&frm=0&ir=1&pscdl=noapi&rcb=9&sr=1280x720&uaa=arm&uab=64&uafvl=HeadlessChrome%3B153.0.8010.12%7CNot_A%2520Brand%3B8.0.0.0%7CChromium%3B153.0.8010.12&uam=&uamb=0&uap=iOS&uapv=17_0&uaw=0&ul=en-us&gaf=2&_s=1&tag_exp=115938465~115938468~118897920~118897930~120213116~120385422~120469145~120469153~121046263~121046271~121280971&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F1%2Fgiocatori&dt=Giocatori%202026-2027%20%7C%20Lega%20Nazionale%20Pallacanestro&sid=1791273219&sct=1&seg=1&en=page_view&_ee=1&tfd=6249"
-  ]
- },
- {
-  "url": "https://www.legapallacanestro.com/serie/1/leaders/regular/5286",
-  "status": 200,
-  "title": "Statistiche individuali | Lega Nazionale Pallacanestro",
-  "n_requests": 71,
-  "xhr_json": [
-   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=1680647052&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F1%2Fleaders%2Fregular%2F5286&ul=en-us&dt=Statistiche%20individuali%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938465~115938469~118897920~118897930~120385422~120469145~120469153~121046263~121046271&z=1967437405"
-  ]
- },
- {
-  "url": "https://www.legapallacanestro.com/serie/1/squadre",
-  "status": 200,
-  "title": "Squadre di Serie A2 stagione 2026-27 | Lega Nazionale Pallacanestro",
-  "n_requests": 76,
-  "xhr_json": [
-   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=664677152&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F1%2Fsquadre&ul=en-us&dt=Squadre%20di%20Serie%20A2%20stagione%202026-27%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938465~115938468~118897920~118897930~120385423~120469145~120469153~121046263~121046271&z=2127002950"
-  ]
- },
- {
-  "url": "https://www.legapallacanestro.com/serie/1/statistiche/regular/5286/o",
-  "status": 200,
-  "title": "Statistiche squadra | Lega Nazionale Pallacanestro",
-  "n_requests": 56,
-  "xhr_json": [
-   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=187218209&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F1%2Fstatistiche%2Fregular%2F5286%2Fo&ul=en-us&dt=Statistiche%20squadra%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=68139643&gjid=1751989215&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_r=1&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120385423~120469145~120469153~121046263~121046271&z=1080674159"
-  ]
- },
- {
-  "url": "https://www.legapallacanestro.com/serie/4/archivio-storico",
-  "status": 200,
-  "title": "Archivio storico | Lega Nazionale Pallacanestro",
-  "n_requests": 57,
-  "xhr_json": [
-   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=1372697047&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F4%2Farchivio-storico&ul=en-us&dt=Archivio%20storico%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120385422~120469145~120469153~121046263~121046271~121125487&z=660701411",
-   "https://analytics.google.com/g/collect?v=2&tid=G-GRHXHLZQ9J&gtm=45je6a21h1v9126101394za20gxf1&_p=1791273280934&_gaz=1&gcd=13l3l3l3l2l1&npa=0&dma=0&_eu=EBAIAGQ&_ng=1&cid=1195984655.1791273219&frm=0&ir=1&pscdl=noapi&rcb=19&sr=1280x720&uaa=arm&uab=64&uafvl=HeadlessChrome%3B153.0.8010.12%7CNot_A%2520Brand%3B8.0.0.0%7CChromium%3B153.0.8010.12&uam=&uamb=0&uap=iOS&uapv=17_0&uaw=0&ul=en-us&gaf=2&_s=1&tag_exp=115938466~115938468~118897920~118897930~120213116~120385422~120469145~120469153~121046263~121046271~121280969&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F4%2Farchivio-storico&dt=Archivio%20storico%20%7C%20Lega%20Nazionale%20Pallacanestro&sid=1791273219&sct=1&seg=1&en=page_view&_ee=1&tfd=479"
-  ]
- },
- {
-  "url": "https://www.legapallacanestro.com/serie/4/calendario",
-  "status": 200,
-  "title": "Calendario 2026-2027 | Lega Nazionale Pallacanestro",
-  "n_requests": 58,
-  "xhr_json": [
-   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=2042304397&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F4%2Fcalendario&ul=en-us&dt=Calendario%202026-2027%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~120385422~120469145~120469153~121046263~121046271&z=1244868608",
-   "https://lnpstat.domino.it/getstatisticsfiles?task=schedule&year=x2627&league=ita3_a&round=2"
-  ]
- },
- {
-  "url": "https://www.legapallacanestro.com/serie/4/classifica",
-  "status": 200,
-  "title": "Classifica 2026-2027 | Lega Nazionale Pallacanestro",
-  "n_requests": 57,
-  "xhr_json": [
-   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=217522275&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F4%2Fclassifica&ul=en-us&dt=Classifica%202026-2027%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938465~115938468~118897920~118897930~120385423~120412527~120469145~120469153~121046263~121046271&z=2042656693",
-   "https://lnpstat.domino.it/getstatisticsfiles?task=standings&year=x2627&league=ita3_a&round=ista"
-  ]
- },
- {
-  "url": "https://www.legapallacanestro.com/serie/4/giocatori",
-  "status": 200,
-  "title": "Giocatori 2026-2027 | Lega Nazionale Pallacanestro",
-  "n_requests": 94,
-  "xhr_json": [
-   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=661982188&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F4%2Fgiocatori&ul=en-us&dt=Giocatori%202026-2027%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616985~115938465~115938469~118897920~118897930~120385422~120469145~120469153~121046263~121046271&z=1328047345"
-  ]
- },
- {
-  "url": "https://www.legapallacanestro.com/serie/4/leaders/regular/128",
-  "status": 200,
-  "title": "Statistiche individuali | Lega Nazionale Pallacanestro",
-  "n_requests": 72,
-  "xhr_json": [
-   "https://analytics.google.com/g/collect?v=2&tid=G-GRHXHLZQ9J&gtm=45je6a21h1v9126101394za20gxf1&_p=1791273289952&gcd=13l3l3l3l2l1&npa=0&dma=0&_eu=EBAIAGQ&_ng=1&cid=1195984655.1791273219&frm=0&ir=1&pscdl=noapi&rcb=15&sr=1280x720&uaa=arm&uab=64&uafvl=HeadlessChrome%3B153.0.8010.12%7CNot_A%2520Brand%3B8.0.0.0%7CChromium%3B153.0.8010.12&uam=&uamb=0&uap=iOS&uapv=17_0&uaw=0&ul=en-us&gaf=2&_s=1&tag_exp=115938465~115938468~118897920~118897930~120213116~120385422~120469145~120469153~121046263~121046271~121280971&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F4%2Fgiocatori&dt=Giocatori%202026-2027%20%7C%20Lega%20Nazionale%20Pallacanestro&sid=1791273219&sct=1&seg=1&en=page_view&_ee=1&tfd=5646",
-   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=288382133&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F4%2Fleaders%2Fregular%2F128&ul=en-us&dt=Statistiche%20individuali%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~120385423~120469145~120469153~121046263~121046271&z=1237810725",
-   "https://analytics.google.com/g/collect?v=2&tid=G-GRHXHLZQ9J&gtm=45je6a21h1v9126101394za20gxf1&_p=1791273295412&gcd=13l3l3l3l2l1&npa=0&dma=0&_eu=EBAIAGQ&_ng=1&cid=1195984655.1791273219&frm=0&ir=1&pscdl=noapi&rcb=11&sr=1280x720&uaa=arm&uab=64&uafvl=HeadlessChrome%3B153.0.8010.12%7CNot_A%2520Brand%3B8.0.0.0%7CChromium%3B153.0.8010.12&uam=&uamb=0&uap=iOS&uapv=17_0&uaw=0&ul=en-us&gaf=2&_s=1&tag_exp=115938466~115938468~118897920~118897930~120213116~120385422~120469145~120469153~121046263~121046271~121280969&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F4%2Fleaders%2Fregular%2F128&dt=Statistiche%20individuali%20%7C%20Lega%20Nazionale%20Pallacanestro&sid=1791273219&sct=1&seg=1&en=page_view&_ee=1&tfd=5572"
-  ]
- },
- {
-  "url": "https://www.legapallacanestro.com/serie/4/squadre",
-  "status": 200,
-  "title": "Squadre di Serie B stagione 2026-27 | Lega Nazionale Pallacanestro",
-  "n_requests": 92,
-  "xhr_json": [
-   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=551061661&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F4%2Fsquadre&ul=en-us&dt=Squadre%20di%20Serie%20B%20stagione%202026-27%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938465~115938468~118897920~118897930~120385422~120469145~120469153~121046263~121046271&z=924635891"
-  ]
- },
- {
-  "url": "https://www.legapallacanestro.com/serie/4/statistiche/regular/128/o",
-  "status": 200,
-  "title": "Statistiche squadra | Lega Nazionale Pallacanestro",
-  "n_requests": 56,
-  "xhr_json": [
-   "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=1120261236&t=pageview&_s=1&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F4%2Fstatistiche%2Fregular%2F128%2Fo&ul=en-us&dt=Statistiche%20squadra%20%7C%20Lega%20Nazionale%20Pallacanestro&sr=1280x720&vp=1280x720&_u=QACAAAABAAAAAC~&jid=&gjid=&cid=1195984655.1791273219&tid=UA-67913270-1&_gid=1888064439.1791273219&_slc=1&gtm=45He6a21n71TL4XFGza200xf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616985~115938466~115938468~118897920~118897930~120032690~120385423~120469145~120469153~121046263~121046271&z=581895466"
   ]
  }
 ]

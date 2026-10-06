@@ -1,0 +1,3 @@
+https://lnpstat.domino.it/getstatisticsfiles?task=boxscore&year=x2627&league=ita2&game=ita2_412
+
+{"error":{"code":"102","message":"File richiesto non esistente. Parametri task, year, league, round obbligatori."}}
