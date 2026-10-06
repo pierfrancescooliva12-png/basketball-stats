@@ -354,6 +354,26 @@ G = {
         "Età calcolata alla data di oggi; 'italiano' = nazionalità ITA.",
         "La nazionalità non coincide sempre con lo status di formazione italiana previsto dai "
         "regolamenti: va verificato sul tesseramento."),
+    "fabbisogni": Voce(
+        "Fabbisogni della squadra",
+        "Le carenze della squadra rispetto al campionato, tradotte nel tipo di giocatore che "
+        "servirebbe (tiratore, playmaker, rimbalzista, protettore del ferro, difensore "
+        "perimetrale, attaccante del ferro, realizzatore).",
+        "Per ogni tipo si guarda la posizione della squadra nelle metriche collegate (es. per il "
+        "tiratore: eFG% e % da 3). Priorità alta = la squadra è nell'ultimo quarto del "
+        "campionato, media = sotto la metà.",
+        "È un punto di partenza statistico: va incrociato con infortuni, budget, regolamento "
+        "sugli stranieri e idee dell'allenatore."),
+    "adattamento": Voce(
+        "Adattamento al profilo",
+        "Quanto un giocatore corrisponde al tipo cercato.",
+        "Media pesata dei percentili del giocatore nelle metriche del profilo, calcolati "
+        "all'interno della sua categoria (A2 o B Nazionale). Le percentuali sono stimate in modo "
+        "prudente: con pochi tentativi vengono avvicinate alla media del campionato. Servono "
+        "almeno 10' di media e un volume minimo (es. 4 tiri da 3 per 40' per il tiratore).",
+        "90+ = profilo quasi perfetto; 70-90 = buona corrispondenza. I candidati mostrati "
+        "superano il migliore già in rosa per quel profilo. Un giocatore di B con lo stesso "
+        "punteggio di uno di A2 ha numeri ottenuti contro avversari meno forti."),
 }
 
 # Etichette di colonna delle tabelle -> voce del glossario
@@ -374,7 +394,7 @@ COLONNE = {
     "Somiglianza": "somiglianza", "Ruolo": "ruolo", "Indice": "talenti", "Età": "eta",
     "Prob. vittoria": "prob_vittoria", "Punti da perse": "origini",
     "Seconde occasioni": "origini", "Contropiede": "origini", "Break fatti": "break",
-    "Break subiti": "break", "Quintetto": "quintetti",
+    "Break subiti": "break", "Quintetto": "quintetti", "Adattamento": "adattamento",
 }
 
 

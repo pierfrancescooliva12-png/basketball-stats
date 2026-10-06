@@ -23,7 +23,7 @@ Funziona interamente nel cloud, senza un PC locale:
 | **Giocatore** | Scheda con anagrafica, percentili, +/- e On-Off, finali punto a punto, carriera, giocatori simili, note |
 | **Scouting** | Report completo sull'avversaria + **PDF per la riunione tecnica**: forza/debolezza, finali punto a punto, chi serve chi, origine dei punti, break, bonus falli, timeout, quintetti più usati, +/- e On-Off, profilo di tiro, problemi di falli, note dello staff |
 | **Anteprima** | Probabilità di vittoria e punteggio atteso, confronto voce per voce, Four Factors incrociati, giocatori chiave, precedenti, proiezione della classifica (simulazione) |
-| **Mercato** | Ricerca con filtri (categoria, ruolo stimato, età, nazionalità, minuti, usage, TS%), talenti di B Nazionale, chi è cresciuto rispetto alla stagione precedente, giocatori simili, liste di osservati del club |
+| **Mercato** | **Fabbisogni della squadra selezionata**: carenze rispetto al campionato tradotte nel tipo di giocatore utile (tiratore, playmaker, rimbalzista, protettore del ferro, difensore perimetrale, attaccante del ferro, realizzatore), con motivazione, migliore già in rosa e candidati ordinati per adattamento al profilo. Poi ricerca con filtri (categoria, ruolo stimato, età, nazionalità, minuti, usage, TS%), talenti di B Nazionale, chi è cresciuto rispetto alla stagione precedente, giocatori simili, liste di osservati del club |
 | **Avvisi** | Assenze di giocatori importanti, cambi di quintetto, minuti in crescita o calo, giocatori in forma, massimi stagionali, serie di risultati |
 | **La mia squadra** | KPI e posizione nel campionato, obiettivi Four Factors dello staff, andamento, rendimento contro le forti e contro le deboli |
 | **Partite** | Box score, statistiche avanzate, grafico dell'andamento, link al video su LNP Pass |
@@ -177,7 +177,7 @@ fonte dati** salva le pagine in `discovery/output` per adeguare il parser.
 | `basket/accesso.py`, `note.py` | Login per club, note, osservati, obiettivi |
 | `basket/glossario.py` | Spiegazioni delle statistiche (pulsanti "?") |
 | `dashboard/`, `streamlit_app.py` | Dashboard |
-| `tests/` | 25 test automatici (parser, formule, quintetti, PDF, accessi) |
+| `tests/` | 27 test automatici (parser, formule, quintetti, PDF, accessi) |
 
 ```bash
 pip install -r requirements-update.txt

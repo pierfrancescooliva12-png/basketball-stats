@@ -178,7 +178,7 @@ TIPS = {
     "Timeout": "timeout_eff", "Probabilità di vittoria": "prob_vittoria",
     "Proiezione della classifica": "simulazione", "Giocatori simili": "somiglianza",
     "Talenti di B Nazionale": "talenti", "Ruolo stimato": "ruolo", "Profilo di tiro": "t3a_rate",
-    "Andamento della partita": "break", "Clutch": "clutch",
+    "Andamento della partita": "break", "Clutch": "clutch", "Fabbisogni": "fabbisogni",
 }
 
 
@@ -261,8 +261,8 @@ def show(df: pd.DataFrame, height: int | None = None, progress: dict | None = No
                 df[c] = df[c].map(lambda v, f=f: "–" if pd.isna(v) else f.format(v))
             else:
                 cfg[c] = st.column_config.NumberColumn(format="%.2f" if two else "%.1f")
-        elif df[c].dtype == object:
-            df[c] = df[c].where(df[c].notna(), "–")
+        elif not pd.api.types.is_numeric_dtype(df[c]) and df[c].isna().any():
+            df[c] = df[c].astype(object).where(df[c].notna(), "–")
     for c, (lo, hi) in (progress or {}).items():
         if c in df.columns:
             cfg[c] = st.column_config.ProgressColumn(c, min_value=lo, max_value=hi, format="%.1f")

@@ -424,6 +424,7 @@ def render_mercato(a: App):
     if hist.empty:
         st.info("Archivio non disponibile.")
         return
+    fabbisogni(a, hist)
     stag = [s for s in config.STAGIONI if s in set(hist["stagione"])]
     c1, c2, c3, c4 = st.columns(4)
     stagione = c1.selectbox("Stagione", stag, format_func=config.STAGIONI.get, key="m_st")
@@ -624,3 +625,87 @@ def render_mia_squadra(a: App):
         note_html(f"Prossima partita: {ng['giornata']}ª giornata, {ng['data']} contro {avv}. "
                   "Il report completo è nella scheda Scouting (seleziona l'avversaria) e "
                   "nell'Anteprima.")
+
+
+# ------------------------------------------------------------------ fabbisogni della squadra
+
+PRIORITA_CLASSE = {"Alta": "neg", "Media": "pos", "Bassa": ""}
+
+
+def fabbisogni(a: App, hist: pd.DataFrame):
+    sid = a.sq if a.sq is not None else a.mia_squadra
+    if sid is None:
+        note_html("Seleziona una squadra in alto per vedere i suoi fabbisogni e i giocatori "
+                  "che potrebbero servirle.", "fabbisogni")
+        return
+    nome = a.profile.set_index("squadra_id").loc[sid, "squadra"]
+    section("Fabbisogni", f"{nome} · tipi di giocatore utili e candidati")
+
+    stag_disp = [s for s in config.STAGIONI if s in set(hist["stagione"])]
+    c1, c2, c3, c4 = st.columns(4)
+    val = c1.selectbox("Valuta i candidati su", stag_disp, format_func=config.STAGIONI.get,
+                       key=f"fb_st_{sid}",
+                       help="A inizio campionato la stagione precedente offre più partite.")
+    cat = c2.multiselect("Categoria dei candidati", ["A2", "B Nazionale"],
+                         default=["A2", "B Nazionale"], key=f"fb_cat_{sid}")
+    eta = c3.number_input("Età massima", 16, 45, 45, key=f"fb_eta_{sid}")
+    ita = c4.checkbox("Solo nazionalità ITA", key=f"fb_ita_{sid}")
+
+    # la squadra si valuta sempre sulla stagione selezionata in alto; i candidati sulla scelta
+    lines = hist.copy()
+    if val != a.stagione:
+        # squadra attuale dei candidati (se presenti nella stagione in corso)
+        ora = hist[hist["stagione"] == a.stagione].sort_values("minuti").groupby(
+            "giocatore_id").tail(1).set_index("giocatore_id")["squadra"]
+        lines = lines.assign(squadra_ora=lines["giocatore_id"].map(ora))
+        # esclude chi oggi gioca già nella squadra
+        mine = set(hist[(hist["stagione"] == a.stagione) & (hist["squadra_id"] == sid)]
+                   ["giocatore_id"])
+        lines.loc[lines["giocatore_id"].isin(mine), "squadra_id"] = sid
+    sugg = mercato.suggestions(lines, a.profile, sid, val, categorie=tuple(cat),
+                               eta_max=None if eta >= 45 else eta, solo_ita=ita)
+    if not sugg:
+        note_html("Dati insufficienti per stimare i fabbisogni.")
+        return
+    if all(s["gravita"] < mercato.SOGLIA_BISOGNO for s in sugg):
+        note_html("Nessuna carenza marcata: la squadra è nella metà alta del campionato in tutte "
+                  "le aree. Sotto, le due aree meno forti.")
+
+    for i, s in enumerate(sugg):
+        st.markdown(
+            f'<div class="pill {PRIORITA_CLASSE[s["priorita"]]}" style="margin-top:14px">'
+            f'<b style="font-family:\'Barlow Condensed\';font-size:1.25rem;text-transform:uppercase">'
+            f'{esc(s["nome"])}</b> · priorità {esc(s["priorita"].lower())}<br>'
+            f'<span class="note">{esc(s["descrizione"])}</span></div>', unsafe_allow_html=True)
+        pills(["Perché: " + m for m in s["motivi"]], "", "")
+        b = s["migliore_in_rosa"]
+        if b is None:
+            note_html("In rosa nessun giocatore corrisponde a questo profilo (con almeno 10' di "
+                      "media e il volume minimo).", "adattamento")
+        else:
+            note_html(f"In rosa il più vicino al profilo è {b['giocatore']} "
+                      f"(adattamento {b['adattamento']:.0f}): i candidati sotto fanno meglio.",
+                      "adattamento")
+        c = s["candidati"]
+        if c.empty:
+            note_html("Nessun candidato con i filtri scelti.")
+            continue
+        sq_col = "squadra_ora" if "squadra_ora" in c.columns else "squadra"
+        c = c.assign(squadra_vista=c[sq_col].fillna("non in archivio " +
+                                                    config.STAGIONI.get(a.stagione, "")))
+        cols = {"giocatore": "Giocatore", "squadra_vista": "Squadra",
+                "adattamento": "Adattamento"}
+        cols.update({m: "FTA/FGA" if m == "ft_rate" else mercato.ETICHETTE.get(m, m)
+                     for m in s["mostra"]})
+        cols.update({"minuti_pg": "Min", "partite": "PG", "categoria": "Cat.", "eta": "Età",
+                     "nazionalita": "Naz.", "ruolo": "Ruolo"})
+        show(c[list(cols)].rename(columns=cols), progress={"Adattamento": (0, 100)})
+        opts = {r.giocatore_id: f"{r.giocatore} ({r.squadra_vista})" for r in c.itertuples()}
+        k1, k2 = st.columns([3, 1])
+        scelto = k1.selectbox("Aggiungi agli osservati", list(opts), format_func=opts.get,
+                              key=f"fb_add_{sid}_{i}", label_visibility="collapsed")
+        if k2.button("☆ Osserva", key=f"fb_btn_{sid}_{i}", width="stretch"):
+            nome_g = c.set_index("giocatore_id").loc[scelto, "giocatore"]
+            a.archivio.watch(a.club, f"Fabbisogno: {s['nome']}", scelto, nome_g, a.autore)
+            st.toast(f"{nome_g} aggiunto agli osservati ({s['nome']})")
+    st.markdown("<br>", unsafe_allow_html=True)
