@@ -11,6 +11,10 @@ DB_PATH = Path(os.environ.get("LNP_DB", ROOT / "data" / "lnp.sqlite"))
 CRONACA_DIR = Path(os.environ.get("LNP_CRONACA", ROOT / "data" / "cronaca"))
 REPORTS_DIR = ROOT / "reports"
 
+BRAND = "ASSIST"
+BRAND_TAGLINE = "Analisi Statistica e Scouting Integrato per Staff Tecnici"
+LOGO_DIR = ROOT / "assets" / "logo"
+
 STAGIONE = "x2627"
 STAGIONE_LABEL = "2026/27"
 

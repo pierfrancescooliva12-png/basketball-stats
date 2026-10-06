@@ -59,7 +59,7 @@ def prepare(ctx, sub: dict) -> tuple[str, str, bytes, str] | None:
     testo = (f"Buongiorno,\n\nin allegato il report di scouting su {avv}, prossima avversaria di "
              f"{mia} ({dove}, {g['giornata']}ª giornata, {g['data']} {g['ora'] or ''}).\n\n"
              f"Dati aggiornati alle partite giocate finora (fonte legapallacanestro.com).\n\n"
-             f"LNP Stats")
+             f"{config.BRAND} · {config.BRAND_TAGLINE}")
     return oggetto, testo, pdf, f"scouting_{slug(avv)}.pdf"
 
 

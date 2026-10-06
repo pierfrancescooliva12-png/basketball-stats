@@ -129,3 +129,18 @@ def test_pdf_report(conn):
     from basket.report_pdf import build_pdf
     pdf = build_pdf(Contesto(conn, "x2627"), 10050)
     assert pdf[:4] == b"%PDF" and len(pdf) > 20_000
+
+
+def test_iterative_reconstruction_improves_old_season_game():
+    box = parse_boxscore(load("boxscore_x2526_ita2_375.html"))
+    cr = parse_pbp(load("pbp_x2526_ita2_375.html"))
+    P.align_ids(cr["eventi"], box, cr["nomi"])
+    q = {s: {g["giocatore_id"] for g in box[s]["giocatori"] if g["quintetto"]}
+         for s in ("casa", "ospite")}
+    m = {g["giocatore_id"]: g["minuti"] or 0 for s in ("casa", "ospite")
+         for g in box[s]["giocatori"]}
+    _, base = P.reconstruct(cr["eventi"], q, m)
+    st, best = P.reconstruct_best(cr["eventi"], q, m)
+    assert best["errore_minuti"] <= base["errore_minuti"]
+    assert best["quintetti_ok"]
+    assert sum(s["punti_fatti"] for s in st if s["lato"] == "casa") == 83

@@ -19,7 +19,7 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import (PageBreak, Paragraph, SimpleDocTemplate, Spacer,
+from reportlab.platypus import (Image, PageBreak, Paragraph, SimpleDocTemplate, Spacer,
                                 Table, TableStyle)
 
 from . import config, scouting
@@ -162,11 +162,21 @@ def _header(r, prossima, S, width):
             txt += (f" · probabilità di vittoria {r.squadra.split()[-1]}: {100 * p_team:.0f}% "
                     f"(stima {pv['punti_casa']:.0f}-{pv['punti_ospite']:.0f})")
         righe.append([Paragraph(txt, S["meta"])])
-    t = Table(righe, colWidths=[width])
+    testo = Table(righe, colWidths=[width - 34 * mm])
+    testo.setStyle(TableStyle([("LEFTPADDING", (0, 0), (-1, -1), 0),
+                               ("TOPPADDING", (0, 0), (-1, -1), 1),
+                               ("BOTTOMPADDING", (0, 0), (-1, -1), 1)]))
+    marchio = [Image(str(config.LOGO_DIR / "assist-mark-512.png"), 16 * mm, 16 * mm),
+               Paragraph(config.BRAND, ParagraphStyle(
+                   "brand", fontName="Condensed", fontSize=11, leading=13, alignment=1,
+                   textColor=colors.white, spaceBefore=2))]
+    t = Table([[testo, marchio]], colWidths=[width - 34 * mm, 34 * mm])
     t.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), NAVY),
-                           ("LEFTPADDING", (0, 0), (-1, -1), 12),
-                           ("TOPPADDING", (0, 0), (0, 0), 10),
-                           ("BOTTOMPADDING", (0, -1), (-1, -1), 10),
+                           ("LEFTPADDING", (0, 0), (0, 0), 12),
+                           ("TOPPADDING", (0, 0), (-1, -1), 10),
+                           ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+                           ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                           ("ALIGN", (1, 0), (1, 0), "CENTER"),
                            ("LINEBELOW", (0, -1), (-1, -1), 3, ARANCIO)]))
     return t
 
@@ -183,7 +193,7 @@ def build_pdf(ctx: Contesto, squadra_id: int) -> bytes:
     W = A4[0] - 24 * mm
     doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=12 * mm, rightMargin=12 * mm,
                             topMargin=12 * mm, bottomMargin=14 * mm,
-                            title=f"Scouting {r.squadra}", author="LNP Stats")
+                            title=f"Scouting {r.squadra}", author=config.BRAND)
     el = [_header(r, ctx.next_game(squadra_id), S, W), Spacer(1, 6)]
 
     el.append(_kpis([
@@ -343,7 +353,7 @@ def build_pdf(ctx: Contesto, squadra_id: int) -> bytes:
         canvas.saveState()
         canvas.setFont("Barlow", 7)
         canvas.setFillColor(GRIGIO)
-        canvas.drawString(12 * mm, 8 * mm, f"LNP Stats · {r.squadra} · dati legapallacanestro.com"
+        canvas.drawString(12 * mm, 8 * mm, f"{config.BRAND} · {r.squadra} · dati legapallacanestro.com"
                                            f" · {date.today().strftime('%d/%m/%Y')}")
         canvas.drawRightString(A4[0] - 12 * mm, 8 * mm, f"pagina {doc_.page}")
         canvas.restoreState()

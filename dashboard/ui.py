@@ -43,6 +43,10 @@ def inject_css():
     .hero .title {font: 700 2.3rem/1.05 'Barlow Condensed', sans-serif; color: var(--text);
       margin: 4px 0 6px; text-transform: uppercase;}
     .hero .meta {color: var(--text-2); font-size: .9rem;}
+    .hero .brand {display: flex; align-items: center; gap: 14px; margin-top: 6px;}
+    .hero .brand svg {flex: none; border-radius: 14px; box-shadow: 0 6px 18px rgba(0,0,0,.35);}
+    .hero .tagline {font: 600 .68rem 'Inter', sans-serif; letter-spacing: .14em;
+      text-transform: uppercase; color: var(--text-2); margin-top: 2px;}
 
     /* Schede numeriche */
     .kpis {display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 4px 0 18px;}
@@ -304,3 +308,16 @@ def hero(eyebrow: str, title: str, meta: str = "", small: bool = False):
 
 def note_html(text: str, key: str | None = None):
     st.markdown(f'<div class="note">{esc(text)}{tip(key)}</div>', unsafe_allow_html=True)
+
+
+def brand_hero(eyebrow: str, meta: str = ""):
+    """Testata con il marchio ASSIST."""
+    from basket import config
+    mark = (config.LOGO_DIR / "assist-mark.svg").read_text(encoding="utf-8")
+    mark = mark.replace('width="128" height="128"', 'width="64" height="64"', 1)
+    st.markdown(
+        f'<div class="hero">{COURT_SVG}<div class="eyebrow">{esc(eyebrow)}</div>'
+        f'<div class="brand">{mark}<div><div class="title" style="margin:0">'
+        f'{esc(config.BRAND)}</div><div class="tagline">{esc(config.BRAND_TAGLINE)}</div>'
+        f'</div></div><div class="meta" style="margin-top:10px">{meta}</div></div>',
+        unsafe_allow_html=True)

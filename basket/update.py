@@ -119,7 +119,7 @@ def import_pbp(conn, client, pid: str, gameid: str, league: str, season: str,
     qual = P.quality(ev, (box["casa"]["totali"]["punti"], box["ospite"]["totali"]["punti"]))
     stints, q2 = [], {"quintetti_ok": False, "errore_minuti": None}
     if all(len(v) == 5 for v in starters.values()):
-        stints, q2 = P.reconstruct(ev, starters, minuti)
+        stints, q2 = P.reconstruct_best(ev, starters, minuti)
     ids = {"casa": home_id, "ospite": away_id}
     for s_ in stints:
         s_["squadra_id"] = ids[s_["lato"]]
@@ -128,6 +128,40 @@ def import_pbp(conn, client, pid: str, gameid: str, league: str, season: str,
              "errore_minuti": q2["errore_minuti"]}
     db.save_pbp(conn, pid, home_id, away_id, cr, stints, qual)
     return qual
+
+
+def recompute_lineups(conn, base=None) -> dict:
+    """Ricalcola i quintetti di tutte le partite dalle cronache già salvate (nessuna
+    richiesta al sito). Utile quando migliora l'algoritmo di ricostruzione."""
+    rows = conn.execute("SELECT p.partita_id, p.gameid, p.stagione, p.squadra_casa_id, "
+                        "p.squadra_ospite_id FROM partite p JOIN pbp_qualita q "
+                        "USING (partita_id)").fetchall()
+    ok = 0
+    for pid, gameid, stagione, home, away in rows:
+        d = db.load_pbp_file(stagione, gameid, base)
+        if not d:
+            continue
+        campi = d["eventi"]["campi"]
+        ev = [dict(zip(campi, r)) for r in d["eventi"]["righe"]]
+        for e in ev:
+            e["lato"] = "casa" if e["squadra_id"] == home else "ospite"
+        box = box_from_db(conn, pid)
+        starters = {lato: {g["giocatore_id"] for g in box[lato]["giocatori"] if g["quintetto"]}
+                    for lato in ("casa", "ospite")}
+        minuti = {g["giocatore_id"]: g["minuti"] or 0 for lato in ("casa", "ospite")
+                  for g in box[lato]["giocatori"]}
+        qual = P.quality(ev, (box["casa"]["totali"]["punti"], box["ospite"]["totali"]["punti"]))
+        stints, q2 = [], {"quintetti_ok": False, "errore_minuti": None}
+        if all(len(v) == 5 for v in starters.values()):
+            stints, q2 = P.reconstruct_best(ev, starters, minuti)
+        ids = {"casa": home, "ospite": away}
+        for s_ in stints:
+            s_["squadra_id"] = ids[s_["lato"]]
+        qual |= {"quintetti_ok": bool(q2["quintetti_ok"] and qual["punteggio_ok"]),
+                 "errore_minuti": q2["errore_minuti"]}
+        db.save_pbp(conn, pid, home, away, {"eventi": ev}, stints, qual, base)
+        ok += qual["quintetti_ok"]
+    return {"partite": len(rows), "quintetti_ok": ok}
 
 
 def box_from_db(conn, pid: str) -> dict:
@@ -196,6 +230,8 @@ def main(argv=None) -> int:
                         help="non scaricare il play-by-play")
     parser.add_argument("--recupero-cronaca", type=int, default=150,
                         help="max partite già in archivio di cui scaricare la cronaca")
+    parser.add_argument("--ricalcola-quintetti", action="store_true",
+                        help="ricostruisce i quintetti dalle cronache salvate e termina")
     parser.add_argument("--anagrafica", type=int, default=200,
                         help="max giocatori di cui scaricare l'anagrafica")
     args = parser.parse_args(argv)
@@ -204,6 +240,9 @@ def main(argv=None) -> int:
     giornate = parse_giornate(args.giornate)
     client = RateLimitedClient()
     conn = db.connect(args.db)
+    if args.ricalcola_quintetti:
+        log.info("Quintetti ricalcolati: %s", recompute_lineups(conn))
+        return 0
     errori = []
     for league in [c.strip() for c in args.campionati.split(",") if c.strip()]:
         s = update_league(conn, client, league, args.stagione, giornate,

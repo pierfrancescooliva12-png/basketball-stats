@@ -1,4 +1,8 @@
-# 🏀 LNP Stats – piattaforma di scouting per Serie A2 e Serie B Nazionale
+<p align="center"><img src="assets/logo/assist-logo.png" alt="ASSIST" width="560"></p>
+
+# ASSIST – piattaforma di scouting per Serie A2 e Serie B Nazionale
+
+**A**nalisi **S**tatistica e **S**couting **I**ntegrato per **S**taff **T**ecnici.
 
 Piattaforma di analisi e scouting per la Serie A2 e la Serie B Nazionale (gironi A e B), con dati
 da [legapallacanestro.com](https://www.legapallacanestro.com). Pensata per gli staff tecnici
@@ -123,7 +127,7 @@ In GitHub: **Settings → Secrets and variables → Actions → New repository s
 | `SMTP_HOST` | `smtp.gmail.com` |
 | `SMTP_PORT` | `587` |
 | `SMTP_USER` / `SMTP_PASSWORD` | account e password per app |
-| `MITTENTE` | `LNP Stats <report@tuodominio.it>` |
+| `MITTENTE` | `ASSIST <report@tuodominio.it>` |
 | `ABBONATI` | `[{"email": "staff@club.it", "squadra": "Forlì"}]` |
 
 Ogni lunedì, dopo l'aggiornamento, ogni abbonato riceve il PDF sulla **prossima avversaria**
@@ -179,7 +183,8 @@ fonte dati** salva le pagine in `discovery/output` per adeguare il parser.
 | `basket/accesso.py`, `note.py` | Login per club, note, osservati, obiettivi |
 | `basket/glossario.py` | Spiegazioni delle statistiche (pulsanti "?") |
 | `dashboard/`, `streamlit_app.py` | Dashboard |
-| `tests/` | 27 test automatici (parser, formule, quintetti, PDF, accessi) |
+| `assets/logo/` | Logo ASSIST (SVG e PNG; `build_logo.py` lo rigenera) |
+| `tests/` | 28 test automatici (parser, formule, quintetti, PDF, accessi) |
 
 ```bash
 pip install -r requirements-update.txt

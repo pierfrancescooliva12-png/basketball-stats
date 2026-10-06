@@ -34,7 +34,8 @@ def game_end(eventi: list[dict]) -> int:
     return 2400 + 300 * max(0, periodi - 4)
 
 
-def reconstruct(eventi: list[dict], quintetti_base: dict, minuti_box: dict) -> tuple[list, dict]:
+def reconstruct(eventi: list[dict], quintetti_base: dict, minuti_box: dict,
+                obiettivo: dict | None = None) -> tuple[list, dict]:
     """Ricostruisce le frazioni con gli stessi 5 in campo.
 
     quintetti_base: {'casa': set(id), 'ospite': set(id)}; minuti_box: {id: minuti}.
@@ -76,7 +77,8 @@ def reconstruct(eventi: list[dict], quintetti_base: dict, minuti_box: dict) -> t
         for p in in_campo[lato]:
             na, ni = next_after(attivita[p], i, t), next_in(entrate[p], i)
             valido = na is None or (ni is not None and ni < na)
-            quota = (giocati[p] + t - entrato_a.get(p, t)) / max(60.0, 60 * minuti_box.get(p, 40))
+            target = (obiettivo or minuti_box).get(p, 40)
+            quota = (giocati[p] + t - entrato_a.get(p, t)) / max(60.0, 60 * target)
             cand.append((valido, quota, na if na is not None else n + 1, p))
         validi = [c for c in cand if c[0]]
         if validi:
@@ -131,8 +133,30 @@ def reconstruct(eventi: list[dict], quintetti_base: dict, minuti_box: dict) -> t
 
     err_min = max((abs(giocati.get(g, 0) / 60 - m) for g, m in minuti_box.items()), default=99)
     qualita = {"errori_coerenza": errori, "errore_minuti": round(float(err_min), 2),
-               "quintetti_ok": bool(err_min <= TOLLERANZA_MIN and errori <= 2)}
+               "quintetti_ok": bool(err_min <= TOLLERANZA_MIN and errori <= 2),
+               "minuti": {g: giocati.get(g, 0) / 60 for g in minuti_box}}
     return stints, qualita
+
+
+def reconstruct_best(eventi: list[dict], quintetti_base: dict, minuti_box: dict,
+                     iterazioni: int = 6) -> tuple[list, dict]:
+    """Ricostruzione con affinamento: dopo ogni tentativo gli obiettivi di minutaggio usati
+    per scegliere chi esce vengono corretti dello scarto rispetto ai minuti ufficiali; si
+    tiene il tentativo con lo scarto massimo più basso."""
+    obiettivo = dict(minuti_box)
+    best = None
+    for _ in range(iterazioni):
+        stints, q = reconstruct(eventi, quintetti_base, minuti_box, obiettivo)
+        if best is None or (q["errore_minuti"], q["errori_coerenza"]) < \
+                (best[1]["errore_minuti"], best[1]["errori_coerenza"]):
+            best = (stints, q)
+        if q["quintetti_ok"] and q["errore_minuti"] <= 1.0:
+            break
+        obiettivo = {g: max(0.5, obiettivo[g] - 0.7 * (q["minuti"][g] - m))
+                     for g, m in minuti_box.items()}
+    stints, q = best
+    q = {k: v for k, v in q.items() if k != "minuti"}
+    return stints, q
 
 
 def quality(eventi: list[dict], punti_box: tuple[int, int]) -> dict:

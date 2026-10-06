@@ -1,4 +1,4 @@
-"""LNP Stats: piattaforma di scouting per Serie A2 e Serie B Nazionale.
+"""ASSIST: piattaforma di scouting per Serie A2 e Serie B Nazionale.
 
 Ottimizzata per iPad: filtri in alto (sempre visibili, anche in verticale), schede a
 griglia che si adattano alla larghezza, grafici leggibili al tocco, pulsanti "?" con la
@@ -11,9 +11,10 @@ from basket import accesso, config, scouting
 from dashboard import nuove, schede
 from dashboard.stato import (App, archivio, archivio_url, contesto, secrets,
                              stagioni_disponibili)
-from dashboard.ui import esc, hero, inject_css, tip
+from dashboard.ui import brand_hero, esc, inject_css, tip
 
-st.set_page_config(page_title="LNP Stats", page_icon="🏀", layout="wide",
+st.set_page_config(page_title=config.BRAND, page_icon=str(config.LOGO_DIR / "assist-mark-128.png"),
+                   layout="wide",
                    initial_sidebar_state="collapsed")
 inject_css()
 
@@ -26,7 +27,7 @@ if not config.DB_PATH.exists():
 utenti = {k.lower(): dict(v) for k, v in (secrets().get("utenti") or {}).items()}
 if utenti:
     if "utente" not in st.session_state:
-        hero("Piattaforma di scouting", "LNP Stats", "Accedi con le credenziali del tuo club")
+        brand_hero("Piattaforma di scouting", "Accedi con le credenziali del tuo club")
         with st.form("login"):
             u = st.text_input("Utente")
             p = st.text_input("Password", type="password")
@@ -86,8 +87,7 @@ agg = ctx.conn.execute("SELECT MAX(scaricata_il) FROM partite").fetchone()[0]
 chi = (f" · {esc(utente['username'])} ({esc(utente['club'] or '')})"
        if not utente.get("demo") else " · modalità demo")
 with testata.container():
-    hero(f"Stagione {config.STAGIONI.get(stagione, stagione)} · {config.CAMPIONATI[camp]}",
-         "LNP Stats",
+    brand_hero(f"Stagione {config.STAGIONI.get(stagione, stagione)} · {config.CAMPIONATI[camp]}",
          f"{a.bs_c['partita_id'].nunique()} partite · fino alla {int(a.bs_c['giornata'].max())}ª "
          f"giornata · aggiornato {esc(str(agg)[:10])} · fonte legapallacanestro.com{chi}")
     if not utente.get("demo"):
