@@ -11,6 +11,7 @@ from basket import previsioni as F
 from basket.glossario import G
 from basket.report_pdf import build_pdf, slug
 
+from . import analisi
 from .stato import App, partite_df, storico
 from .ui import (ARANCIO, BLU, GRIGIO, SUPERFICIE, TESTO, esc, hero, kpis, note_html, pills,
                  plot, section, short, show)
@@ -19,7 +20,7 @@ from .ui import (ARANCIO, BLU, GRIGIO, SUPERFICIE, TESTO, esc, hero, kpis, note_
 def _f(v, d=1, signed=False, suffix=""):
     if v is None or (isinstance(v, float) and pd.isna(v)):
         return "–"
-    return (f"{v:+.{d}f}" if signed else f"{v:.{d}f}") + suffix
+    return ((f"{v:+.{d}f}" if signed else f"{v:.{d}f}") + suffix).replace(".", ",")
 
 
 def _team(df: pd.DataFrame, sid) -> pd.DataFrame:
@@ -74,11 +75,6 @@ def scouting_extra(a: App):
         return
     ctx = a.ctx
     pf = a.profile[a.profile["squadra_id"] == sq].iloc[0]
-    lega = a.profile
-    nome = pf["squadra"]
-    st.download_button("⬇ Report PDF per la riunione tecnica", _pdf(ctx, a.mtime, a.stagione, sq),
-                       file_name=f"scouting_{slug(nome)}.pdf", mime="application/pdf",
-                       type="primary")
     if not _coverage(a):
         _notes_box(a, "squadra", sq, "Note dello staff")
         return
@@ -104,51 +100,7 @@ def scouting_extra(a: App):
                                  "perse": "Perse", "assist": "Ass", "quota_tiri": "Quota tiri"}),
                 progress={"Quota tiri": (0, 100)})
 
-    c1, c2 = st.columns(2)
-    with c1:
-        section("Chi serve chi", "assist → canestro")
-        an = _team(ctx.assists, sq).head(10)
-        if an.empty:
-            note_html("Nessun assist abbinato.")
-        else:
-            lab = [f"{x.da.split()[-1]} → {x.a.split()[-1]}"
-                   for x in an.itertuples()]
-            fig = go.Figure(go.Bar(y=lab[::-1], x=an["canestri"][::-1], orientation="h",
-                                   marker=dict(color=BLU, cornerradius=4),
-                                   text=an["punti"][::-1].map(lambda p: f"{p} pt"),
-                                   textposition="outside", textfont=dict(color=TESTO),
-                                   customdata=an[["da", "a"]].values[::-1],
-                                   hovertemplate="%{customdata[0]} → %{customdata[1]}<br>"
-                                                 "%{x} canestri<extra></extra>"))
-            fig.update_xaxes(showgrid=False, showticklabels=False)
-            fig.update_yaxes(showgrid=False)
-            plot(fig, 380, bargap=0.35)
-    with c2:
-        section("Come nascono i punti", "a partita · squadra vs media")
-        voci = [("Da palle perse", "punti_da_perse_pg"),
-                ("Seconde occasioni", "punti_seconda_occasione_pg"),
-                ("Contropiede", "punti_contropiede_pg")]
-        voci = [(l, c) for l, c in voci if c in a.profile.columns]
-        if voci:
-            fig = go.Figure()
-            fig.add_bar(x=[l for l, _ in voci], y=[pf[c] for _, c in voci], name=short(nome),
-                        marker=dict(color=BLU, cornerradius=4),
-                        hovertemplate="%{x}: %{y:.1f}<extra></extra>")
-            fig.add_bar(x=[l for l, _ in voci], y=[lega[c].mean() for _, c in voci],
-                        name="Media", marker=dict(color=GRIGIO, cornerradius=4),
-                        hovertemplate="%{x}: %{y:.1f}<extra>media</extra>")
-            fig.update_xaxes(showgrid=False)
-            plot(fig, 380, barmode="group", bargap=0.3, bargroupgap=0.08)
-
-    kpis([
-        ("Break", f"{_f(pf.get('break_fatti_pg'), 2)} / {_f(pf.get('break_subiti_pg'), 2)}",
-         "8-0 piazzati / subiti a partita"),
-        ("Break massimo", f"{_f(pf.get('max_fatto'), 0)}-0", f"subito {_f(pf.get('max_subito'), 0)}-0"),
-        ("Bonus falli", _f(pf.get("quota_periodi_bonus"), 0, suffix="%"),
-         f"5° fallo in media al {_f(pf.get('minuto_medio_bonus'))}'"),
-        ("Timeout", _f(pf.get("diff_dopo"), signed=True),
-         f"punti nei 2' dopo (prima {_f(pf.get('diff_prima'), signed=True)})"),
-    ])
+    analisi.sezione_rotazioni(a, sq, ctx.nomi_giocatori)
 
     section("Quintetti più usati", "dai quintetti verificati")
     lu = _team(ctx.lineups, sq).head(8)
@@ -159,7 +111,8 @@ def scouting_extra(a: App):
         show(lu[["giocatori", "minuti", "partite", "plus_minus", "ortg", "drtg", "net_rtg"]]
              .rename(columns={"giocatori": "Quintetto", "minuti": "Min", "partite": "PG",
                               "plus_minus": "+/-", "ortg": "ORtg", "drtg": "DRtg",
-                              "net_rtg": "Net Rtg"}))
+                              "net_rtg": "Net Rtg"}), colori={"Net Rtg": True})
+    analisi.sezione_taglie(a, sq)
 
     section("+/- e On-Off", "impatto con il giocatore in campo")
     oo = a.players[(a.players["squadra_id"] == sq)]
@@ -169,9 +122,37 @@ def scouting_extra(a: App):
              "on_off"]].rename(columns={"giocatore": "Giocatore", "minuti_campo": "Min in campo",
                                         "plus_minus": "+/-", "plus_minus_40": "+/- per 40",
                                         "net_on": "Net on", "net_off": "Net off",
-                                        "on_off": "On-Off"}))
+                                        "on_off": "On-Off"}), colori={"On-Off": True})
     else:
         note_html("Non ancora disponibile.", "on_off")
+
+    section("Chi serve chi", "assist → canestro")
+    an = _team(ctx.assists, sq).head(10)
+    if an.empty:
+        note_html("Nessun assist abbinato.")
+    else:
+        lab = [f"{x.da.split()[-1]} → {x.a.split()[-1]}" for x in an.itertuples()]
+        fig = go.Figure(go.Bar(y=lab[::-1], x=an["canestri"][::-1], orientation="h",
+                               marker=dict(color=BLU, cornerradius=4),
+                               text=an["punti"][::-1].map(lambda p: f"{p} pt"),
+                               textposition="outside", textfont=dict(color=TESTO),
+                               customdata=an[["da", "a"]].values[::-1],
+                               hovertemplate="%{customdata[0]} → %{customdata[1]}<br>"
+                                             "%{x} canestri<extra></extra>"))
+        fig.update_xaxes(showgrid=False, showticklabels=False)
+        fig.update_yaxes(showgrid=False)
+        plot(fig, 340, bargap=0.35)
+    analisi.sezione_origini(a, sq)
+    analisi.sezione_momenti(a, sq)
+    kpis([
+        ("Break", f"{_f(pf.get('break_fatti_pg'), 2)} / {_f(pf.get('break_subiti_pg'), 2)}",
+         "8-0 piazzati / subiti a partita"),
+        ("Break massimo", f"{_f(pf.get('max_fatto'), 0)}-0", f"subito {_f(pf.get('max_subito'), 0)}-0"),
+        ("Bonus falli", _f(pf.get("quota_periodi_bonus"), 0, suffix="%"),
+         f"5° fallo in media al {_f(pf.get('minuto_medio_bonus'))}'"),
+        ("Timeout", _f(pf.get("diff_dopo"), signed=True),
+         f"punti nei 2' dopo (prima {_f(pf.get('diff_prima'), signed=True)})"),
+    ])
 
     c1, c2 = st.columns(2)
     with c1:
@@ -201,12 +182,14 @@ def scouting_extra(a: App):
                 columns={"giocatore": "Giocatore", "partite_problemi": "Partite con problemi",
                          "uscite_5_falli": "Uscito per 5 falli", "falli": "Falli totali"}))
 
+    analisi.sezione_fisico(a, sq)
     _notes_box(a, "squadra", sq, "Note dello staff")
 
 
 # ------------------------------------------------------------------ giocatore: extra
 
-def giocatore_extra(a: App):
+def scheda_giocatore(a: App):
+    """Anagrafica, presenze, impatto, finali e report PDF: subito sotto i numeri principali."""
     if a.gsel is None:
         return
     gid, gsq = a.gsel
@@ -221,6 +204,9 @@ def giocatore_extra(a: App):
                   ("Altezza", f"{int(bio['altezza_cm'])} cm" if pd.notna(bio.get("altezza_cm"))
                    else "–", f"{int(bio['peso_kg'])} kg" if pd.notna(bio.get("peso_kg")) else ""),
                   ("Ruolo stimato", bio.get("ruolo") or "–", "da altezza e statistiche")]
+    pres = analisi.presenze_giocatore(a, gid, gsq)
+    if pres:
+        items.append(pres)
     if "plus_minus" in me and pd.notna(me.get("plus_minus")):
         items += [("+/-", _f(me["plus_minus"], 0, signed=True),
                    f"{_f(me['plus_minus_40'], signed=True)} per 40'"),
@@ -234,8 +220,23 @@ def giocatore_extra(a: App):
             items.append(("Clutch", f"{int(c['punti'])} pt",
                           f"{int(c['fgm'])}/{int(c['fga'])} al tiro · quota {_f(c['quota_tiri'], 0)}%"))
     if items:
-        section("Scheda", "anagrafica, impatto, finali")
+        section("Scheda", "anagrafica, presenze, impatto, finali")
         kpis(items)
+    st.download_button("⬇ Report individuale per il giocatore (PDF)",
+                       analisi.pdf_giocatore(a, gid, gsq, hist),
+                       file_name=f"giocatore_{analisi.slug(me['giocatore'])}.pdf",
+                       mime="application/pdf",
+                       help="Profilo, ultime partite, carriera e spazio per gli obiettivi di "
+                            "crescita concordati con lo staff.")
+
+
+def giocatore_extra(a: App):
+    if a.gsel is None:
+        return
+    gid, gsq = a.gsel
+    me = a.players[(a.players["giocatore_id"] == gid) & (a.players["squadra_id"] == gsq)].iloc[0]
+    hist = storico(a.mtime)
+    mine = hist[hist["giocatore_id"] == gid] if not hist.empty else hist
 
     if len(mine) > 1:
         section("Carriera in archivio", "stagioni presenti nel database")
@@ -311,7 +312,8 @@ def render_anteprima(a: App):
     nomi = dict(zip(teams["squadra_id"], teams["squadra"]))
     ids = list(nomi)
     default_a, default_b = (ids[0], ids[1]) if len(ids) > 1 else (ids[0], ids[0])
-    ng = ctx.next_game(a.sq) if a.sq else None
+    rif = a.sq if a.sq is not None else a.mia_squadra
+    ng = ctx.next_game(rif) if rif is not None else None
     if ng and ng["casa_id"] in nomi and ng["ospite_id"] in nomi:
         default_a, default_b = ng["casa_id"], ng["ospite_id"]
     c1, c2 = st.columns(2)
@@ -332,12 +334,18 @@ def render_anteprima(a: App):
     if config.LINK_LNP_PASS and ng and {ng["casa_id"], ng["ospite_id"]} == {casa, ospite} \
             and ng.get("stream_url"):
         st.link_button("▶ Diretta su LNP Pass", ng["stream_url"])
+    fis = analisi.fisico_prossima(a, ng) if ng and {ng["casa_id"], ng["ospite_id"]} == \
+        {casa, ospite} else {}
     kpis([("Probabilità di vittoria", f"{100 * pv['prob_casa']:.0f}% – {100 * (1 - pv['prob_casa']):.0f}%",
            "casa – ospite"),
           ("Punteggio atteso", f"{pv['punti_casa']:.0f}-{pv['punti_ospite']:.0f}",
            f"margine {pv['margine']:+.1f}"),
           ("Possessi attesi", f"{pv['possessi']:.0f}", "ritmo medio delle due squadre"),
-          ("Vantaggio campo", f"{ctx.hca(a.camp):+.1f}", "punti, dal campionato")])
+          ("Vantaggio campo", f"{ctx.hca(a.camp):+.1f}", "punti, dal campionato")]
+         + ([("Riposo", f"{_f(fis[casa]['giorni_riposo'], 0)} – {_f(fis[ospite]['giorni_riposo'], 0)}",
+              "giorni dalla partita precedente"),
+             ("Trasferta ospite", f"{_f(fis[ospite]['km'], 0)} km", "stima su strada")]
+            if fis and fis.get(casa, {}).get("giorni_riposo") is not None else []))
 
     pa = a.profile.set_index("squadra_id")
     A_, B_ = pa.loc[casa], pa.loc[ospite]
@@ -429,7 +437,10 @@ def render_mercato(a: App):
     fabbisogni(a, hist)
     stag = [s for s in config.STAGIONI if s in set(hist["stagione"])]
     c1, c2, c3, c4 = st.columns(4)
-    stagione = c1.selectbox("Stagione", stag, format_func=config.STAGIONI.get, key="m_st")
+    stagione = c1.selectbox("Stagione", stag, format_func=config.STAGIONI.get, key="m_st",
+                            index=_indice_stagione(a, stag),
+                            help="A inizio campionato si parte dalla stagione precedente, "
+                                 "che ha più partite.")
     cat = c2.multiselect("Categoria", ["A2", "B Nazionale"], default=["A2", "B Nazionale"])
     ruoli = c3.multiselect("Ruolo stimato", ["Play / guardia", "Esterno / ala", "Lungo"],
                            default=["Play / guardia", "Esterno / ala", "Lungo"])
@@ -437,16 +448,19 @@ def render_mercato(a: App):
     c1, c2, c3, c4 = st.columns(4)
     solo_ita = c1.checkbox("Solo nazionalità ITA")
     min_min = c2.slider("Minuti di media ≥", 0, 35, 12)
+    min_pg = c1.number_input("Partite giocate ≥", 0, 40, 3, key="m_pg",
+                             help="Con poche partite i numeri sono poco affidabili.")
     usg = c3.slider("Usage ≥", 0, 35, 0)
     ts = c4.slider("TS% ≥", 0, 75, 0)
     d = hist[(hist["stagione"] == stagione) & hist["categoria"].isin(cat) &
              hist["ruolo"].isin(ruoli) & (hist["minuti_pg"] >= min_min) &
+             (hist["partite"] >= min_pg) &
              (hist["usg_pct"].fillna(0) >= usg) & (hist["ts_pct"].fillna(0) >= ts)]
     if eta_max < 45:
         d = d[d["eta"].notna() & (d["eta"] <= eta_max)]
     if solo_ita:
         d = d[d["italiano"].fillna(False)]
-    if d.empty or d["eta"].isna().all():
+    if hist["eta"].isna().all():
         note_html("Anagrafica (età, altezza, nazionalità) in arrivo con il prossimo "
                   "aggiornamento: per ora i filtri anagrafici sono vuoti.", "eta")
     section("Ricerca", f"{len(d)} giocatori")
@@ -454,9 +468,15 @@ def render_mercato(a: App):
             "nazionalita": "Naz.", "altezza_cm": "Alt.", "ruolo": "Ruolo", "partite": "PG",
             "minuti_pg": "Min", "punti_pg": "Punti", "rimb_tot_pg": "RT", "assist_pg": "Ass",
             "ts_pct": "TS%", "usg_pct": "USG%", "ast_pct": "AST%", "trb_pct": "REB%",
-            "game_score_p40": "Game Score"}
+            "game_score_p40": "Game Score", "presenze_pct": "Presenze %"}
+    cols = {k: v for k, v in cols.items() if k in d.columns}
+    d = d.assign(dati=(d["partite"] < 3).map({True: "⚠ pochi dati", False: ""}))
+    cols = {"giocatore": "Giocatore", "dati": "Dati", **cols}
     show(d.sort_values("game_score_p40", ascending=False)[list(cols)].rename(columns=cols),
-         height=520, progress={"USG%": (0, 40), "TS%": (0, 80)})
+         height=520, progress={"USG%": (0, 40), "TS%": (0, 80)},
+         colori={"Game Score": True, "Punti": True})
+
+    analisi.dalla_b_alla_a2(a, hist, stagione)
 
     section("Talenti di B Nazionale", "giovani con minuti e rendimento da A2")
     tal = mercato.prospects(hist, stagione, eta_max=min(eta_max, 25))
@@ -522,6 +542,18 @@ def render_mercato(a: App):
                 st.rerun()
 
 
+def _indice_stagione(a: App, stagioni: list[str]) -> int:
+    """Stagione proposta per il mercato: quella in corso, o la precedente se il campionato
+    è appena iniziato (meno di 5 giornate)."""
+    if not stagioni:
+        return 0
+    i = stagioni.index(a.stagione) if a.stagione in stagioni else 0
+    giornate = int(a.bs_c["giornata"].max()) if not a.bs_c.empty else 0
+    if giornate < 5 and i + 1 < len(stagioni):
+        return i + 1
+    return i
+
+
 # ------------------------------------------------------------------ avvisi
 
 ICONE = {"assenza": "🚑", "quintetto": "🔁", "minuti": "⏱", "forma": "📈", "massimo": "🔥",
@@ -559,8 +591,8 @@ METRICHE_OBIETTIVI = {"efg_pct": "eFG% in attacco", "tov_pct": "Palle perse %",
 def render_mia_squadra(a: App):
     sid = a.mia_squadra
     if sid is None:
-        st.info("Seleziona la tua squadra nel filtro in alto (con gli accessi per club è "
-                "impostata automaticamente).")
+        st.info("Scegli la tua squadra nella Home, oppure una squadra nel filtro in alto "
+                "(con gli accessi per club è impostata automaticamente).")
         return
     pr = a.profile.set_index("squadra_id")
     me = pr.loc[sid]
@@ -624,9 +656,9 @@ def render_mia_squadra(a: App):
     ng = a.ctx.next_game(sid)
     if ng:
         avv = ng["ospite"] if ng["casa_id"] == sid else ng["casa"]
-        note_html(f"Prossima partita: {ng['giornata']}ª giornata, {ng['data']} contro {avv}. "
-                  "Il report completo è nella scheda Scouting (seleziona l'avversaria) e "
-                  "nell'Anteprima.")
+        note_html(f"Prossima partita: {ng['giornata']}ª giornata, "
+                  f"{pd.Timestamp(ng['data']).strftime('%d/%m/%Y')} contro {avv}. Lo scouting "
+                  "dell'avversaria e l'anteprima sono nella Home e nell'area Avversaria.")
 
 
 # ------------------------------------------------------------------ fabbisogni della squadra
@@ -646,7 +678,7 @@ def fabbisogni(a: App, hist: pd.DataFrame):
     stag_disp = [s for s in config.STAGIONI if s in set(hist["stagione"])]
     c1, c2, c3, c4 = st.columns(4)
     val = c1.selectbox("Valuta i candidati su", stag_disp, format_func=config.STAGIONI.get,
-                       key=f"fb_st_{sid}",
+                       key=f"fb_st_{sid}", index=_indice_stagione(a, stag_disp),
                        help="A inizio campionato la stagione precedente offre più partite.")
     cat = c2.multiselect("Categoria dei candidati", ["A2", "B Nazionale"],
                          default=["A2", "B Nazionale"], key=f"fb_cat_{sid}")
@@ -676,8 +708,8 @@ def fabbisogni(a: App, hist: pd.DataFrame):
     for i, s in enumerate(sugg):
         st.markdown(
             f'<div class="pill {PRIORITA_CLASSE[s["priorita"]]}" style="margin-top:14px">'
-            f'<b style="font-family:\'Barlow Condensed\';font-size:1.25rem;text-transform:uppercase">'
-            f'{esc(s["nome"])}</b> · priorità {esc(s["priorita"].lower())}<br>'
+            f'<span class="fb-t">{esc(s["nome"])}</span> · priorità '
+            f'{esc(s["priorita"].lower())}<br>'
             f'<span class="note">{esc(s["descrizione"])}</span></div>', unsafe_allow_html=True)
         pills(["Perché: " + m for m in s["motivi"]], "", "")
         b = s["migliore_in_rosa"]

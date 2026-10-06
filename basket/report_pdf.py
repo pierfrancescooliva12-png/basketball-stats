@@ -76,9 +76,10 @@ def _fmt(v, d=1, signed=False):
     if isinstance(v, (int,)) and not isinstance(v, bool):
         return f"{v:+d}" if signed else str(v)
     try:
-        return f"{float(v):+.{d}f}" if signed else f"{float(v):.{d}f}"
+        s = f"{float(v):+.{d}f}" if signed else f"{float(v):.{d}f}"
     except (TypeError, ValueError):
         return str(v)
+    return s.replace(".", ",")      # decimali all'italiana
 
 
 def _table(rows, widths, header=True, align_right_from=1, zebra=True, align_left=()):

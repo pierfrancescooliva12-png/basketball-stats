@@ -284,6 +284,63 @@ G = {
         "Ogni assist della cronaca è abbinato al canestro registrato nello stesso istante.",
         "Una coppia dominante (es. play → centro) indica un'azione ricorrente da preparare in "
         "difesa: togliere quella linea di passaggio."),
+    "rotazioni": Voce(
+        "Rotazioni",
+        "Come l'allenatore distribuisce i minuti: chi parte titolare, quando entrano i cambi, "
+        "chi è in campo nei finali.",
+        "Dalla cronaca si ricostruisce chi è in campo secondo per secondo (solo partite con "
+        "quintetti verificati sui minuti ufficiali). Per ogni minuto di gioco si conta in quale "
+        "percentuale di partite ogni giocatore era in campo.",
+        "Una riga accesa da inizio a fine quarto indica un titolare con minuti stabili; "
+        "macchie a metà quarto indicano i cambi abituali. Utile per prevedere quando entrerà "
+        "un giocatore e preparare i quintetti di risposta."),
+    "taglia": Voce(
+        "Quintetti alti e bassi",
+        "Come rende una squadra a seconda dell'altezza dei cinque in campo.",
+        "Per ogni quintetto si calcola l'altezza media (anagrafica ufficiale). Le soglie tra "
+        "piccolo, medio e grande sono i terzili del campionato, pesati per minuti. Poi si "
+        "calcolano punti fatti e subiti ogni 100 possessi con ciascuna taglia.",
+        "Se una squadra soffre quando gioca piccola, conviene forzarla a quei quintetti (per "
+        "esempio con falli sui lunghi). Sotto i 10 minuti giocati il dato non è mostrato."),
+    "momenti": Voce(
+        "Momenti della partita",
+        "Quanto vince o perde una squadra nei momenti che spesso decidono le partite.",
+        "Dalla cronaca: punti fatti meno subiti, a partita, nei primi 3 minuti, negli ultimi 2 "
+        "minuti di ogni quarto, nei primi 3 minuti del terzo quarto e negli ultimi 5 minuti.",
+        "Un valore negativo nei primi minuti del terzo quarto indica rientri dallo spogliatoio "
+        "difficili; uno positivo negli ultimi 2 minuti dei quarti indica buona gestione dei "
+        "possessi finali. Il badge indica la posizione nel campionato."),
+    "post_partita": Voce(
+        "Report post-partita",
+        "La partita confrontata con la media della squadra e con gli obiettivi dello staff.",
+        "Four Factors della partita contro la media stagionale e gli obiettivi impostati in "
+        "La mia squadra; Game Score di ogni giocatore contro la sua media stagionale.",
+        "La voce che ha pesato di più è quella che si discosta di più dalla media, nel verso "
+        "che spiega il risultato. Differenze di Game Score oltre ±5 sono partite molto sopra "
+        "o sotto il rendimento abituale."),
+    "traduzione": Voce(
+        "Dalla B all'A2",
+        "Stima di come cambiano le statistiche di un giocatore passando dalla B Nazionale "
+        "all'A2.",
+        "Si confrontano le statistiche per 40 minuti dei giocatori che hanno giocato in entrambe "
+        "le categorie (nella stessa stagione o in due consecutive): per punti, rimbalzi, assist "
+        "e Game Score il rapporto mediano, per TS% e usage la differenza mediana.",
+        "È una stima media: un giocatore può fare meglio o peggio. Più giocatori ci sono nel "
+        "confronto, più la stima è affidabile."),
+    "presenze": Voce(
+        "Presenze",
+        "Quanto spesso un giocatore è stato disponibile.",
+        "Partite della squadra dalla prima all'ultima volta in cui il giocatore è a referto, "
+        "meno quelle in cui non era a referto (infortunio, squalifica, scelta tecnica, "
+        "trasferimento).",
+        "Sotto l'85% conviene approfondire il motivo delle assenze prima di un ingaggio."),
+    "riposo": Voce(
+        "Riposo e trasferte",
+        "Come rende una squadra con poco riposo o dopo trasferte lunghe.",
+        "Giorni dalla partita precedente (qualsiasi competizione presente nei dati) e distanza "
+        "tra la città della squadra e quella del palazzetto, stimata su strada (linea d'aria "
+        "+ 25%).",
+        "Con poche partite per categoria i numeri vanno letti come indicazioni, non certezze."),
     "origini": Voce(
         "Origine dei punti",
         "Da quali situazioni nascono i punti: dopo una palla persa avversaria, da un rimbalzo "
@@ -395,6 +452,13 @@ COLONNE = {
     "Prob. vittoria": "prob_vittoria", "Punti da perse": "origini",
     "Seconde occasioni": "origini", "Contropiede": "origini", "Break fatti": "break",
     "Break subiti": "break", "Quintetto": "quintetti", "Adattamento": "adattamento",
+    "% da titolare": "rotazioni", "Entra al minuto": "rotazioni",
+    "% in campo negli ultimi 5'": "rotazioni", "Presenze %": "presenze",
+    "Tiro (TS%)": "ts", "Possessi usati (USG%)": "usg", "Assist % (AST%)": "ast_pct",
+    "Rimbalzi % (REB%)": "reb_ind", "Attacco (ORtg)": "ortg", "Difesa (DRtg)": "drtg",
+    "Net rating": "net_rtg", "Tiro (eFG%)": "efg", "Palle perse %": "tov",
+    "Rimb. offensivi %": "orb", "Ritmo": "pace", "Valutazione": "valutazione",
+    "Punti/40 attesi in A2": "traduzione", "Game Score/40 atteso in A2": "traduzione",
 }
 
 
