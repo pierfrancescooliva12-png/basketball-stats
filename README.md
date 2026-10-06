@@ -180,7 +180,7 @@ Allineale alla formula ufficiale in `basket/config.py` (`ZONE_CLASSIFICA`).
 - **Automatico**: ogni **lunedì alle 07:00** (ora legale; 06:00 con l'ora solare).
 - **Manuale**: **Actions → Aggiornamento dati → Run workflow**, con campi facoltativi per
   campionati, giornate, stagioni e numero massimo di anagrafiche.
-- **Excel**: `reports/riepilogo_x2627.xlsx` (14 fogli).
+- **Excel**: `reports/riepilogo_x2627.xlsx` (17 fogli, con rotazioni, momenti della partita e presenze).
 
 Se qualcosa non si riesce a importare, il resto viene salvato comunque, il workflow risulta
 **fallito** e GitHub invia una notifica. Se il sito cambia struttura, **Actions → Ricognizione
