@@ -1,4 +1,0 @@
-https://ad.doubleclick.net/ccm/s/collect?auid=2088367979.1791280274&gtm=45be6a21v898703511za20ozb71703256zd71703256xecxf1&fmt=8
-
-Response.text: Protocol error (Network.getResponseBody): No data found for resource with given identifier
-Response body is not available for a response that was navigated away from. Read response.body() before triggering any navigation.

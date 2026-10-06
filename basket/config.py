@@ -27,8 +27,13 @@ CAMPIONATI = {
 SITE_BASE = "https://www.legapallacanestro.com"
 DOMINO_URL = "https://lnpstat.domino.it/getstatisticsfiles"
 
-# Al massimo una richiesta al secondo verso il sito
-MIN_INTERVAL_S = 1.0
+# Intervallo minimo tra le richieste: il robots.txt di legapallacanestro.com chiede
+# "Crawl-delay: 10" (10 secondi), che va rispettato
+MIN_INTERVAL_S = 10.0
+
+# I termini di LNP Pass vietano i link diretti ai contenuti senza consenso scritto:
+# i pulsanti verso le partite su LNP Pass restano disattivati finché non c'è un accordo
+LINK_LNP_PASS = False
 USER_AGENT = (
     "basketball-stats/1.0 (analisi statistica personale; "
     "https://github.com/pierfrancescooliva12-png/basketball-stats)"

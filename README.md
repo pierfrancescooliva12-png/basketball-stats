@@ -43,7 +43,9 @@ calcola, come leggerla). Il glossario completo è in `basket/glossario.py`.
 Codici: `ita2` = Serie A2, `ita3_a` / `ita3_b` = Serie B Nazionale girone A / B; stagioni
 `x2627` = 2026/27, `x2526` = 2025/26, `x2425` = 2024/25.
 
-Estrazione **incrementale** (solo dati nuovi), al massimo **1 richiesta al secondo**.
+Estrazione **incrementale** (solo dati nuovi), con **10 secondi tra una richiesta e l'altra**
+come chiesto dal `robots.txt` del sito (`Crawl-delay: 10`). Il recupero dello storico avviene
+a blocchi, nell'arco di più esecuzioni.
 Controlli di qualità automatici:
 
 - **Box score**: punti dei giocatori = totale squadra = risultato ufficiale. Le partite con box

@@ -194,9 +194,9 @@ def main(argv=None) -> int:
     parser.add_argument("--db", default=str(config.DB_PATH))
     parser.add_argument("--senza-cronaca", action="store_true",
                         help="non scaricare il play-by-play")
-    parser.add_argument("--recupero-cronaca", type=int, default=400,
+    parser.add_argument("--recupero-cronaca", type=int, default=150,
                         help="max partite già in archivio di cui scaricare la cronaca")
-    parser.add_argument("--anagrafica", type=int, default=400,
+    parser.add_argument("--anagrafica", type=int, default=200,
                         help="max giocatori di cui scaricare l'anagrafica")
     args = parser.parse_args(argv)
 

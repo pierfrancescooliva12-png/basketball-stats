@@ -37,7 +37,7 @@ LEGAL_PATTERN = re.compile(r'href="([^"#]+)"[^>]*>([^<]*(?:[Nn]ote legali|[Pp]ri
 JS_KEYWORDS = ("domino", "getstatistics")
 LINK_PATTERN = re.compile(r'href="([^"#]*/(?:serie/\d+|wp/)[^"#]*)"', re.I)
 MAX_EXTRA_PAGES = 0
-MIN_INTERVAL = 1.0
+MIN_INTERVAL = 10.0   # robots.txt: Crawl-delay 10
 MAX_BODY = 300_000
 
 

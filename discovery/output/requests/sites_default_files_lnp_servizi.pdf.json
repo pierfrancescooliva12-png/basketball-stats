@@ -1,9 +1,0 @@
-[
- {
-  "url": "https://static.legapallacanestro.com/sites/default/files/lnp_servizi.pdf",
-  "method": "GET",
-  "type": "document",
-  "status": 200,
-  "content_type": "application/pdf"
- }
-]

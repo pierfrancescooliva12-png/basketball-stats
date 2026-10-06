@@ -1,9 +1,0 @@
-[
- {
-  "url": "https://www.legapallacanestro.com/sites/default/files/informativa_privacy.pdf",
-  "method": "GET",
-  "type": "document",
-  "status": 200,
-  "content_type": "application/pdf"
- }
-]

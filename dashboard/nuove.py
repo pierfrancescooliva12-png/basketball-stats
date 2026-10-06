@@ -275,7 +275,8 @@ def partita_extra(a: App, pid: str | None):
     ev = a.ctx.ev
     pg = partite_df(a.mtime, a.stagione)
     row = pg[pg["partita_id"] == pid]
-    if not row.empty and isinstance(row.iloc[0].get("stream_url"), str) and row.iloc[0]["stream_url"]:
+    if config.LINK_LNP_PASS and not row.empty and isinstance(row.iloc[0].get("stream_url"), str) \
+            and row.iloc[0]["stream_url"]:
         st.link_button("▶ Guarda la partita su LNP Pass", row.iloc[0]["stream_url"])
     if ev is None or ev.empty or pid not in set(ev["partita_id"]):
         return
@@ -328,7 +329,8 @@ def render_anteprima(a: App):
     if ng and {ng["casa_id"], ng["ospite_id"]} == {casa, ospite}:
         meta = f"{ng['giornata']}ª giornata · {esc(ng['data'])} {esc(ng['ora'] or '')}"
     hero("Anteprima", f"{nomi[casa]} – {nomi[ospite]}", meta, small=True)
-    if ng and {ng["casa_id"], ng["ospite_id"]} == {casa, ospite} and ng.get("stream_url"):
+    if config.LINK_LNP_PASS and ng and {ng["casa_id"], ng["ospite_id"]} == {casa, ospite} \
+            and ng.get("stream_url"):
         st.link_button("▶ Diretta su LNP Pass", ng["stream_url"])
     kpis([("Probabilità di vittoria", f"{100 * pv['prob_casa']:.0f}% – {100 * (1 - pv['prob_casa']):.0f}%",
            "casa – ospite"),

@@ -1,3 +1,0 @@
-https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location
-
-{"country":"US","state":"IA","stateName":"Iowa","continent":"NA"}

@@ -22,7 +22,7 @@ on:
       anagrafica:
         description: "Massimo giocatori di cui scaricare l'anagrafica"
         required: false
-        default: "400"
+        default: "200"
 
   # Collaudo sul branch di sviluppo (da rimuovere dopo il merge)
   push:
@@ -41,7 +41,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 240
+    timeout-minutes: 340
     steps:
       - uses: actions/checkout@v4
 
@@ -65,15 +65,16 @@ jobs:
           GIORNATE: ${{ inputs.giornate }}
           # Sul branch di sviluppo: recupero completo della stagione precedente
           STAGIONI: ${{ github.event_name == 'push' && 'x2627,x2526' || inputs.stagioni }}
-          ANAGRAFICA: ${{ github.event_name == 'push' && '3000' || inputs.anagrafica || '400' }}
+          ANAGRAFICA: ${{ github.event_name == 'push' && '300' || inputs.anagrafica || '200' }}
         run: |
           ARGS=()
           if [ -n "$CAMPIONATI" ]; then ARGS+=(--campionati "$CAMPIONATI"); fi
           if [ -n "$GIORNATE" ]; then ARGS+=(--giornate "$GIORNATE"); fi
           RC=0
           for S in ${STAGIONI//,/ }; do
+            # con 10" tra le richieste: al massimo 500 cronache arretrate per esecuzione
             python -m basket.update "${ARGS[@]}" --stagione "$S" --anagrafica 0 \
-              --recupero-cronaca 2000 || RC=1
+              --recupero-cronaca 500 || RC=1
           done
           if [ -z "$STAGIONI" ]; then python -m basket.update "${ARGS[@]}" --anagrafica 0 || RC=1; fi
           python -m basket.update --campionati "" --anagrafica "$ANAGRAFICA" || RC=1

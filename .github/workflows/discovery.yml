@@ -3,11 +3,6 @@ name: Ricognizione fonte dati
 # Ricognizione della struttura del sito: da avviare a mano se il sito cambia
 on:
   workflow_dispatch:
-  # Ricognizione sul branch di sviluppo (da rimuovere dopo il merge)
-  push:
-    branches: [claude/basket-stats-analysis-tool-z0mcls]
-    paths:
-      - discovery/discover.py
 
 permissions:
   contents: write
