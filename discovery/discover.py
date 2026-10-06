@@ -18,19 +18,28 @@ BASE = "https://www.legapallacanestro.com"
 OUT = Path(__file__).parent / "output"
 
 SEED_PAGES = [
-    BASE + "/",
-    # Partite 2026/27: prime partite di A2 e B Nazionale (codici ipotizzati)
-    BASE + "/wp/match/ita2_1/ita2/x2627",
-    BASE + "/wp/match/ita2_1/ita2/x2627/tabellino",
-    BASE + "/wp/match/ita2_2/ita2/x2627/tabellino",
-    BASE + "/wp/match/ita3_a_1/ita3_a/x2627/tabellino",
-    BASE + "/wp/match/ita3_b_1/ita3_b/x2627/tabellino",
-    # Partita certamente esistente (2025/26) come controllo
-    BASE + "/wp/match/ita2_375/ita2/x2526/tabellino",
-    BASE + "/wp/match/ita3_a_408/ita3_a/x2627/tabellino",
+    # Partite 2026/27 giocate (codici presi dal calendario JSON)
+    BASE + "/wp/match/ita2_412/ita2/x2627",
+    BASE + "/wp/match/ita2_412/ita2/x2627/play-by-play",
+    BASE + "/wp/match/ita3_a_410/ita3_a/x2627",
+    BASE + "/serie/1/calendario",
 ]
+DOMINO = "https://lnpstat.domino.it/getstatisticsfiles"
+# Chiamate dirette all'endpoint JSON per capire quali "task" esistono
+PROBE_URLS = [
+    DOMINO + "?task=schedule&year=x2627&league=ita2&round=1",
+    DOMINO + "?task=schedule&year=x2627&league=ita3_b&round=1",
+] + [
+    DOMINO + f"?task={t}&year=x2627&league=ita2&game={g}"
+    for t in ("boxscore", "game", "match", "stats", "pbp", "playbyplay")
+    for g in ("ita2_412",)
+] + [
+    DOMINO + "?task=boxscore&year=x2627&league=ita2&gameid=ita2_412",
+    DOMINO + "?task=boxscore&year=x2627&league=ita2&round=ita2_412",
+]
+JS_KEYWORDS = ("domino", "getstatistics", "boxscore")
 LINK_PATTERN = re.compile(r'href="([^"#]*/(?:serie/\d+|wp/)[^"#]*)"', re.I)
-MAX_EXTRA_PAGES = 14
+MAX_EXTRA_PAGES = 0
 MIN_INTERVAL = 1.0
 MAX_BODY = 300_000
 
@@ -54,6 +63,14 @@ def visit(page, url, summary):
             "status": resp.status,
             "content_type": ctype,
         }
+        if req.resource_type == "script" and "legapallacanestro" in resp.url:
+            try:
+                js = resp.text()
+                if any(k in js for k in JS_KEYWORDS):
+                    (OUT / "js").mkdir(exist_ok=True)
+                    (OUT / "js" / (slug(resp.url) + ".js")).write_text(js, encoding="utf-8")
+            except Exception:  # noqa: BLE001
+                pass
         if req.resource_type in ("xhr", "fetch") or "json" in ctype:
             try:
                 body = resp.text()
@@ -131,6 +148,23 @@ def main():
                             "legapallacanestro.com"):
                         queue.append(link)
                         extra += 1
+        probes = []
+        for url in PROBE_URLS:
+            time.sleep(MIN_INTERVAL)
+            print("probe", url, flush=True)
+            try:
+                r = page.request.get(url, headers={"Referer": BASE + "/"})
+                body = r.text()
+                probes.append({"url": url, "status": r.status,
+                               "content_type": r.headers.get("content-type", ""),
+                               "body_len": len(body), "head": body[:1500]})
+                (OUT / "probe").mkdir(exist_ok=True)
+                (OUT / "probe" / (re.sub(r"[^A-Za-z0-9]+", "_", url[len(DOMINO):]) + ".txt")
+                 ).write_text(url + "\n\n" + body[:MAX_BODY], encoding="utf-8")
+            except Exception as exc:  # noqa: BLE001
+                probes.append({"url": url, "error": str(exc)})
+        (OUT / "probes.json").write_text(
+            json.dumps(probes, indent=1, ensure_ascii=False), encoding="utf-8")
         browser.close()
     (OUT / "summary.json").write_text(
         json.dumps(summary, indent=1, ensure_ascii=False), encoding="utf-8")
