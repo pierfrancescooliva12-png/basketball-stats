@@ -102,6 +102,11 @@ gid = f3.selectbox("Giocatore", [None] + list(g_names),
 n_partite = partite[partite["campionato_id"] == camp].shape[0]
 st.caption(f"{n_partite} partite · ultima giornata {int(bs_c['giornata'].max())} · "
            f"aggiornato {str(aggiornato)[:10]} · fonte legapallacanestro.com")
+n_incomplete = bs_c.loc[~bs_c["affidabile"], "partita_id"].nunique()
+if n_incomplete:
+    st.caption(f"ⓘ {n_incomplete} partite con box score ufficiale incompleto: valgono per "
+               "risultati, punti e totali, ma sono escluse da percentuali e metriche avanzate "
+               "(vedi scheda Partite).")
 
 tab_cl, tab_sq, tab_gi, tab_g1, tab_sc, tab_pa = st.tabs(
     ["Classifica", "Squadre", "Giocatori", "Giocatore", "Scouting", "Partite"])
@@ -280,6 +285,9 @@ with tab_pa:
         if parz:
             st.caption("Parziali: " + ", ".join(f"{p['casa']}-{p['ospite']}" for p in parz))
         st.markdown(f"[Box score sul sito ufficiale]({row['url']})")
+        if not bs.loc[bs["partita_id"] == pid, "affidabile"].all():
+            st.warning("Box score ufficiale incompleto (tiri tentati, rimbalzi o perse non "
+                       "registrati del tutto): partita esclusa da percentuali e metriche avanzate.")
         cols = {"numero": "#", "giocatore": "Giocatore", "quintetto": "Q", "minuti": "Min",
                 "punti": "Pt", "t2m": "2PM", "t2a": "2PA", "t3m": "3PM", "t3a": "3PA",
                 "tlm": "TLM", "tla": "TLA", "rimb_off": "RO", "rimb_dif": "RD",

@@ -67,17 +67,18 @@ def build_report(conn, squadra_id: int) -> ScoutingReport:
     rows, forza, deboli = [], [], []
     for col, (label, higher_better) in FACTORS.items():
         val, media = me[col], tot[col].mean()
-        if higher_better is None:
-            rank = int(tot[col].rank(ascending=False, method="min")[me.name])
-        else:
-            rank = int(tot[col].rank(ascending=not higher_better, method="min")[me.name])
+        asc = False if higher_better is None else not higher_better
+        r = tot[col].rank(ascending=asc, method="min")[me.name]
+        rank = int(r) if pd.notna(r) else None
         rows.append({"Metrica": label, "Valore": val, "Media campionato": media,
-                     "Posizione": f"{rank}/{n}"})
-        if higher_better is not None and n >= 4:
+                     "Posizione": f"{rank}/{n}" if rank else "-"})
+        if higher_better is not None and n >= 4 and rank:
+            fmt = ".2f" if col.endswith("ft_rate") else ".1f"
+            testo = f"{label}: {val:{fmt}} ({rank}° su {n}, media {media:{fmt}})"
             if rank <= max(1, round(n * 0.25)):
-                forza.append(f"{label}: {val:.1f} ({rank}° su {n}, media {media:.1f})")
+                forza.append(testo)
             elif rank > n - max(1, round(n * 0.25)):
-                deboli.append(f"{label}: {val:.1f} ({rank}° su {n}, media {media:.1f})")
+                deboli.append(testo)
     profilo = pd.DataFrame(rows)
 
     pl = A.player_summary(bg[bg["squadra_id"] == squadra_id], bs)
@@ -97,7 +98,10 @@ def build_report(conn, squadra_id: int) -> ScoutingReport:
         "Dove": last["casa"].map({1: "Casa", 0: "Trasferta"}),
         "Risultato": [f"{'V' if v else 'P'} {p}-{s}" for v, p, s in
                       zip(last["vinta"], last["punti"], last["punti_subiti"])],
-        "ORtg": last["ortg"], "DRtg": last["drtg"], "eFG%": last["efg_pct"],
+        "ORtg": last["ortg"].where(last["affidabile"]),
+        "DRtg": last["drtg"].where(last["affidabile"]),
+        "eFG%": last["efg_pct"].where(last["affidabile"]),
+        "Note": last["affidabile"].map({True: "", False: "box score incompleto"}),
     }).iloc[::-1]
 
     split = A.team_summary(team_rows, by=["casa"])

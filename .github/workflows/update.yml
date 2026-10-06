@@ -53,8 +53,8 @@ jobs:
         id: update
         continue-on-error: true
         env:
-          CAMPIONATI: ${{ github.event_name == 'push' && 'ita2' || inputs.campionati }}
-          GIORNATE: ${{ github.event_name == 'push' && '1-2' || inputs.giornate }}
+          CAMPIONATI: ${{ inputs.campionati }}
+          GIORNATE: ${{ inputs.giornate }}
         run: |
           ARGS=()
           if [ -n "$CAMPIONATI" ]; then ARGS+=(--campionati "$CAMPIONATI"); fi

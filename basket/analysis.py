@@ -22,6 +22,18 @@ COUNT_STATS = [
 ]
 FT = 0.44
 
+# Controllo qualità: sotto questo ritmo (possessi per 40') il box score ufficiale è
+# considerato incompleto (tiri tentati / rimbalzi / perse non registrati del tutto).
+# Queste partite restano valide per risultati, punti e totali, ma sono escluse
+# da percentuali e metriche avanzate.
+MIN_PACE_AFFIDABILE = 58.0
+
+TEAM_ADV = ["fg_pct", "t2_pct", "t3_pct", "tl_pct", "efg_pct", "ts_pct", "possessi", "pace",
+            "ortg", "drtg", "net_rtg", "tov_pct", "orb_pct", "ft_rate", "opp_efg_pct",
+            "opp_tov_pct", "drb_pct", "opp_ft_rate", "ast_ratio"]
+PLAYER_ADV = ["fg_pct", "t2_pct", "t3_pct", "tl_pct", "efg_pct", "ts_pct", "usg_pct",
+              "ast_ratio"]
+
 
 # ------------------------------------------------------------------ caricamento
 
@@ -45,6 +57,8 @@ def load_box_giocatore(conn: sqlite3.Connection) -> pd.DataFrame:
     df["giocata"] = df["minuti"] > 0
     nomi = dict(conn.execute("SELECT squadra_id, nome FROM squadre").fetchall())
     df["avversario"] = df["avversario_id"].map(nomi)
+    df = df.merge(game_quality(conn)[["partita_id", "affidabile"]], on="partita_id", how="left")
+    df["affidabile"] = df["affidabile"].fillna(True).astype(bool)
     return df
 
 
@@ -65,7 +79,22 @@ def load_box_squadra(conn: sqlite3.Connection) -> pd.DataFrame:
     bs = bs.merge(opp, on=["partita_id", "avversario_id"], how="left")
     bs = bs.rename(columns={"opp_squadra": "avversario"})
     bs["vinta"] = bs["punti"] > bs["punti_subiti"]
+    bs = bs.merge(_quality(bs), on="partita_id", how="left")
     return bs.sort_values(["data", "partita_id"]).reset_index(drop=True)
+
+
+def _quality(bs: pd.DataFrame) -> pd.DataFrame:
+    """Ritmo della partita e flag di affidabilità del box score."""
+    poss = (possessi_grezzi(bs) + possessi_grezzi(bs, "opp_")) / 2
+    q = pd.DataFrame({"partita_id": bs["partita_id"],
+                      "pace_partita": 40 * _div(poss, bs["minuti"].where(bs["minuti"] > 0, 200) / 5)})
+    q = q.groupby("partita_id", as_index=False)["pace_partita"].mean()
+    q["affidabile"] = q["pace_partita"] >= MIN_PACE_AFFIDABILE
+    return q
+
+
+def game_quality(conn: sqlite3.Connection) -> pd.DataFrame:
+    return load_box_squadra(conn)[["partita_id", "pace_partita", "affidabile"]].drop_duplicates()
 
 
 # ------------------------------------------------------------------ formule
@@ -134,7 +163,23 @@ def team_ratings(df: pd.DataFrame) -> pd.DataFrame:
 def team_summary(bs: pd.DataFrame, by: list[str] | None = None) -> pd.DataFrame:
     """Riepilogo di squadra: record, medie a partita, per 40 minuti e avanzate.
 
-    Le metriche avanzate si calcolano sulle somme (non come media delle percentuali)."""
+    Le metriche avanzate si calcolano sulle somme (non come media delle percentuali)
+    e solo sulle partite con box score affidabile."""
+    keys = ["campionato_id", "squadra_id", "squadra"] + (by or [])
+    out = _team_summary(bs, by)
+    return _replace_adv(out, _team_summary(bs[bs["affidabile"]], by), keys, TEAM_ADV)
+
+
+def _replace_adv(base: pd.DataFrame, rel: pd.DataFrame, keys: list[str],
+                 cols: list[str]) -> pd.DataFrame:
+    """Sostituisce le metriche avanzate con quelle calcolate sulle sole partite affidabili."""
+    rel = rel[keys + cols + ["partite"]].rename(columns={"partite": "partite_avanzate"})
+    out = base.drop(columns=cols).merge(rel, on=keys, how="left")
+    out["partite_avanzate"] = out["partite_avanzate"].fillna(0).astype(int)
+    return out
+
+
+def _team_summary(bs: pd.DataFrame, by: list[str] | None = None) -> pd.DataFrame:
     keys = ["campionato_id", "squadra_id", "squadra"] + (by or [])
     sum_cols = (["minuti", "punti", "punti_subiti"] + COUNT_STATS[1:]
                 + [c for c in bs.columns if c.startswith("opp_")])
@@ -183,7 +228,19 @@ def player_summary(bg: pd.DataFrame, bs: pd.DataFrame, by: list[str] | None = No
                    min_partite: int = 0) -> pd.DataFrame:
     """Riepilogo giocatori: totali, medie a partita, per 40 minuti, avanzate.
 
-    Si contano solo le partite in cui il giocatore è entrato (minuti > 0)."""
+    Si contano solo le partite in cui il giocatore è entrato (minuti > 0).
+    Percentuali e metriche avanzate escludono le partite con box score incompleto."""
+    keys = ["campionato_id", "giocatore_id", "giocatore", "squadra_id", "squadra"] + (by or [])
+    out = _player_summary(bg, bs, by)
+    rel = _player_summary(bg[bg["affidabile"]], bs, by)
+    out = _replace_adv(out, rel, keys, PLAYER_ADV)
+    if min_partite:
+        out = out[out["partite"] >= min_partite]
+    return out.sort_values("punti_pg", ascending=False).reset_index(drop=True)
+
+
+def _player_summary(bg: pd.DataFrame, bs: pd.DataFrame, by: list[str] | None = None
+                    ) -> pd.DataFrame:
     played = bg[bg["giocata"]].merge(_team_game_totals(bs), on=["partita_id", "squadra_id"],
                                      how="left")
     played["poss_used"] = played["t2a"] + played["t3a"] + FT * played["tla"] + played["perse"]
@@ -202,10 +259,7 @@ def player_summary(bg: pd.DataFrame, bs: pd.DataFrame, by: list[str] | None = No
     for c in COUNT_STATS + ["fgm", "fga"]:
         tot[f"{c}_pg"] = tot[c] / tot["partite"]
         tot[f"{c}_p40"] = 40 * _div(tot[c], tot["minuti"])
-    tot = tot.drop(columns=["poss_used", "tm_poss_share"])
-    if min_partite:
-        tot = tot[tot["partite"] >= min_partite]
-    return tot.sort_values("punti_pg", ascending=False).reset_index(drop=True)
+    return tot.drop(columns=["poss_used", "tm_poss_share"])
 
 
 def player_trend(bg: pd.DataFrame, bs: pd.DataFrame, n: int = 5) -> pd.DataFrame:

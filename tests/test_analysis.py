@@ -58,3 +58,15 @@ def test_report_and_excel(conn, tmp_path):
     export_excel.write_excel(sheets, tmp_path / "r.xlsx")
     assert (tmp_path / "r.xlsx").stat().st_size > 0
     assert len(sheets["Giocatori medie"]) == 20
+
+
+def test_incomplete_boxscore_excluded_from_advanced(conn):
+    # Simula un box score con tiri tentati non registrati (come ita2_411 sul sito)
+    conn.execute("UPDATE box_squadra SET t2a = t2m, t3a = t3m, perse = 0")
+    bs = A.load_box_squadra(conn)
+    assert not bs["affidabile"].any()
+    t = A.team_summary(bs).set_index("squadra_id")
+    # Risultati e punti restano, le avanzate no
+    assert t.loc[10050, "vinte"] == 1 and t.loc[10050, "punti_pg"] == 80
+    assert t.loc[10050, "partite_avanzate"] == 0
+    assert t["ortg"].isna().all()
