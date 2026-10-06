@@ -18,26 +18,33 @@ BASE = "https://www.legapallacanestro.com"
 OUT = Path(__file__).parent / "output"
 
 SEED_PAGES = [
-    # Partite 2026/27 giocate (codici presi dal calendario JSON)
-    BASE + "/wp/match/ita2_412/ita2/x2627",
-    BASE + "/wp/match/ita2_412/ita2/x2627/play-by-play",
-    BASE + "/wp/match/ita3_a_410/ita3_a/x2627",
-    BASE + "/serie/1/calendario",
+    # Pagine giocatore (anagrafica) e squadra (rosa)
+    BASE + "/giocatore/wp/A402160",
+    BASE + "/giocatore/wp/A94224",
+    BASE + "/giocatore/wp/A110338",
+    BASE + "/serie-a2/unieuro-forl%C3%AC",
+    BASE + "/serie/1/giocatori",
+    # Cronache di altre partite (vocabolario eventi, supplementari)
+    BASE + "/wp/match/ita2_403/ita2/x2627/play-by-play",
+    BASE + "/wp/match/ita2_414/ita2/x2627/play-by-play",
+    BASE + "/wp/match/ita2_419/ita2/x2627/play-by-play",
+    BASE + "/wp/match/ita3_a_410/ita3_a/x2627/play-by-play",
+    BASE + "/wp/match/ita3_b_404/ita3_b/x2627/play-by-play",
+    # Stagione precedente
+    BASE + "/wp/match/ita2_375/ita2/x2526",
+    BASE + "/wp/match/ita2_375/ita2/x2526/play-by-play",
 ]
 DOMINO = "https://lnpstat.domino.it/getstatisticsfiles"
-# Chiamate dirette all'endpoint JSON per capire quali "task" esistono
 PROBE_URLS = [
-    DOMINO + "?task=schedule&year=x2627&league=ita2&round=1",
-    DOMINO + "?task=schedule&year=x2627&league=ita3_b&round=1",
-] + [
-    DOMINO + f"?task={t}&year=x2627&league=ita2&game={g}"
-    for t in ("boxscore", "game", "match", "stats", "pbp", "playbyplay")
-    for g in ("ita2_412",)
-] + [
-    DOMINO + "?task=boxscore&year=x2627&league=ita2&gameid=ita2_412",
-    DOMINO + "?task=boxscore&year=x2627&league=ita2&round=ita2_412",
+    DOMINO + "?task=schedule&year=x2526&league=ita2&round=1",
+    DOMINO + "?task=schedule&year=x2526&league=ita2&round=38",
+    DOMINO + "?task=schedule&year=x2526&league=ita3_a&round=1",
+    DOMINO + "?task=schedule&year=x2526&league=ita3_b&round=1",
+    DOMINO + "?task=schedule&year=x2526&league=ita2_poff&round=1",
+    DOMINO + "?task=schedule&year=x2425&league=ita2&round=1",
+    DOMINO + "?task=standings&year=x2526&league=ita2&round=ista",
 ]
-JS_KEYWORDS = ("domino", "getstatistics", "boxscore")
+JS_KEYWORDS = ("domino", "getstatistics")
 LINK_PATTERN = re.compile(r'href="([^"#]*/(?:serie/\d+|wp/)[^"#]*)"', re.I)
 MAX_EXTRA_PAGES = 0
 MIN_INTERVAL = 1.0
