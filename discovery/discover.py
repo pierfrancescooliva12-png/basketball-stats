@@ -18,32 +18,22 @@ BASE = "https://www.legapallacanestro.com"
 OUT = Path(__file__).parent / "output"
 
 SEED_PAGES = [
-    # Pagine giocatore (anagrafica) e squadra (rosa)
-    BASE + "/giocatore/wp/A402160",
-    BASE + "/giocatore/wp/A94224",
-    BASE + "/giocatore/wp/A110338",
-    BASE + "/serie-a2/unieuro-forl%C3%AC",
-    BASE + "/serie/1/giocatori",
-    # Cronache di altre partite (vocabolario eventi, supplementari)
-    BASE + "/wp/match/ita2_403/ita2/x2627/play-by-play",
-    BASE + "/wp/match/ita2_414/ita2/x2627/play-by-play",
-    BASE + "/wp/match/ita2_419/ita2/x2627/play-by-play",
-    BASE + "/wp/match/ita3_a_410/ita3_a/x2627/play-by-play",
-    BASE + "/wp/match/ita3_b_404/ita3_b/x2627/play-by-play",
-    # Stagione precedente
-    BASE + "/wp/match/ita2_375/ita2/x2526",
-    BASE + "/wp/match/ita2_375/ita2/x2526/play-by-play",
+    # Documenti legali e accordi sui dati (verifica diritti per uso commerciale)
+    BASE + "/",
+    BASE + "/regolamento-media",
+    BASE + "/lnp-rinnova-la-partnership-con-webpont-come-fornitore-statistico-e-introduce-il-servizio-fullfield",
+    BASE + "/serie/1/wp-stats-live",
+    "https://www.hudl.com/blog/hudl-lnp-servizi-srl-announce-three-season-partnership",
 ]
 DOMINO = "https://lnpstat.domino.it/getstatisticsfiles"
 PROBE_URLS = [
-    DOMINO + "?task=schedule&year=x2526&league=ita2&round=1",
-    DOMINO + "?task=schedule&year=x2526&league=ita2&round=38",
-    DOMINO + "?task=schedule&year=x2526&league=ita3_a&round=1",
-    DOMINO + "?task=schedule&year=x2526&league=ita3_b&round=1",
-    DOMINO + "?task=schedule&year=x2526&league=ita2_poff&round=1",
-    DOMINO + "?task=schedule&year=x2425&league=ita2&round=1",
-    DOMINO + "?task=standings&year=x2526&league=ita2&round=ista",
+    BASE + "/robots.txt",
+    "https://lnpstat.domino.it/robots.txt",
+    "https://static.legapallacanestro.com/robots.txt",
+    "https://lnppass.legapallacanestro.com/about/terms",
 ]
+LEGAL_PATTERN = re.compile(r'href="([^"#]+)"[^>]*>([^<]*(?:[Nn]ote legali|[Pp]rivacy|[Tt]ermini|'
+                           r'[Cc]ondizioni|[Cc]opyright|[Cc]ookie|[Dd]isclaimer|[Ll]egal)[^<]*)<')
 JS_KEYWORDS = ("domino", "getstatistics")
 LINK_PATTERN = re.compile(r'href="([^"#]*/(?:serie/\d+|wp/)[^"#]*)"', re.I)
 MAX_EXTRA_PAGES = 0
@@ -100,6 +90,12 @@ def visit(page, url, summary):
 
     name = slug(url)
     (OUT / "html" / f"{name}.html").write_text(html, encoding="utf-8")
+    try:
+        testo = page.inner_text("body")
+        (OUT / "testo").mkdir(exist_ok=True)
+        (OUT / "testo" / f"{name}.txt").write_text(testo, encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        pass
     interesting = [r for r in requests if "body" in r or "body_error" in r]
     for i, r in enumerate(interesting):
         (OUT / "json" / f"{name}__{i:02d}.txt").write_text(
@@ -147,6 +143,11 @@ def main():
             print("->", url, flush=True)
             html = visit(page, url, summary)
             if url == BASE + "/":
+                legali = sorted({urljoin(BASE, m.group(1)) for m in LEGAL_PATTERN.finditer(html)})
+                (OUT / "legal_links.txt").write_text("\n".join(legali), encoding="utf-8")
+                for link in legali[:8]:
+                    if link not in queue:
+                        queue.append(link)
                 links = sorted({urljoin(BASE, m.group(1))
                                 for m in LINK_PATTERN.finditer(html)})
                 (OUT / "home_links.txt").write_text("\n".join(links), encoding="utf-8")
@@ -166,7 +167,7 @@ def main():
                                "content_type": r.headers.get("content-type", ""),
                                "body_len": len(body), "head": body[:1500]})
                 (OUT / "probe").mkdir(exist_ok=True)
-                (OUT / "probe" / (re.sub(r"[^A-Za-z0-9]+", "_", url[len(DOMINO):]) + ".txt")
+                (OUT / "probe" / (re.sub(r"[^A-Za-z0-9]+", "_", url)[-80:] + ".txt")
                  ).write_text(url + "\n\n" + body[:MAX_BODY], encoding="utf-8")
             except Exception as exc:  # noqa: BLE001
                 probes.append({"url": url, "error": str(exc)})
