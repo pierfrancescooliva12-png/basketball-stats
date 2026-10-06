@@ -1,0 +1,94 @@
+from pathlib import Path
+
+import pytest
+
+from basket import analysis as A
+from basket import db, export_excel, scouting
+from basket.scraper import parse_boxscore
+
+FIX = Path(__file__).parent / "fixtures"
+
+
+@pytest.fixture
+def conn(tmp_path):
+    conn = db.connect(tmp_path / "t.sqlite")
+    box = parse_boxscore((FIX / "boxscore_ita2_412.html").read_text(encoding="utf-8"))
+    game = dict(gameid="ita2_412", campionato="ita2", stagione="x2627", giornata=2,
+                data="2026-10-03", ora="20:30", squadra_casa_id=10050,
+                squadra_casa="Unieuro Forlì", squadra_ospite_id=100118,
+                squadra_ospite="Sella Cento", punti_casa=80, punti_ospite=73,
+                palazzetto="Unieuro Arena", stato="finished")
+    db.upsert_campionato(conn, "ita2", "x2627", "Serie A2")
+    db.save_calendario(conn, [game])
+    db.save_partita(conn, game, box, "url")
+    return conn
+
+
+def test_team_ratings(conn):
+    t = A.team_summary(A.load_box_squadra(conn)).set_index("squadra_id")
+    forli, cento = t.loc[10050], t.loc[100118]
+    # Possessi identici per le due squadre; ORtg di una = DRtg dell'altra
+    assert forli["possessi"] == pytest.approx(cento["possessi"])
+    assert forli["ortg"] == pytest.approx(cento["drtg"])
+    assert forli["net_rtg"] == pytest.approx(-cento["net_rtg"])
+    # Possessi: Forlì 60 FGA - 10 OREB + 13 TOV + 0.44*20 = 71.8; Cento 65-13+14+7.04 = 73.04
+    assert forli["possessi"] == pytest.approx((71.8 + 73.04) / 2)
+    assert forli["efg_pct"] == pytest.approx(100 * (27 + 5) / 60)
+    assert forli["orb_pct"] + cento["drb_pct"] == pytest.approx(100)
+
+
+def test_player_metrics(conn):
+    bs, bg = A.load_box_squadra(conn), A.load_box_giocatore(conn)
+    p = A.player_summary(bg, bs)
+    # L'usage medio pesato sui minuti è ~20% (5 giocatori in campo)
+    for _, g in p.groupby("squadra_id"):
+        assert (g["usg_pct"] * g["minuti"]).sum() / g["minuti"].sum() == pytest.approx(20, abs=0.5)
+    woodson = p[p["giocatore"] == "Avery Woodson"].iloc[0]
+    assert woodson["ts_pct"] == pytest.approx(100 * 26 / (2 * (14 + 0.44 * 4)))
+    assert woodson["punti_p40"] == pytest.approx(26 * 40 / 33)
+    # Chi non è entrato non viene conteggiato
+    assert p["partite"].min() == 1 and (p["minuti"] > 0).all()
+
+
+def test_report_and_excel(conn, tmp_path):
+    r = scouting.build_report(conn, 10050)
+    assert r.record == "1-0" and r.posizione == 1
+    assert "Scouting: Unieuro Forlì" in scouting.to_markdown(r)
+    sheets = export_excel.build_sheets(conn)
+    export_excel.write_excel(sheets, tmp_path / "r.xlsx")
+    assert (tmp_path / "r.xlsx").stat().st_size > 0
+    assert len(sheets["Giocatori medie"]) == 20
+
+
+def test_incomplete_boxscore_excluded_from_advanced(conn):
+    # Simula un box score con tiri tentati non registrati (come ita2_411 sul sito)
+    conn.execute("UPDATE box_squadra SET t2a = t2m, t3a = t3m, perse = 0")
+    bs = A.load_box_squadra(conn)
+    assert not bs["affidabile"].any()
+    t = A.team_summary(bs).set_index("squadra_id")
+    # Risultati e punti restano, le avanzate no
+    assert t.loc[10050, "vinte"] == 1 and t.loc[10050, "punti_pg"] == 80
+    assert t.loc[10050, "partite_avanzate"] == 0
+    assert t["ortg"].isna().all()
+
+
+def test_new_player_and_team_metrics(conn):
+    bs, bg = A.load_box_squadra(conn), A.load_box_giocatore(conn)
+    p = A.player_summary(bg, bs).set_index("giocatore")
+    w = p.loc["Avery Woodson"]
+    # Game Score: 26 + 0.4*9 - 0.7*14 - 0.4*0 + 0 + 0.3*2 + 3 + 0.7*2 + 0.7*0 - 0.4*F - 2
+    row = bg[bg["giocatore"] == "Avery Woodson"].iloc[0]
+    expected = (26 + 0.4 * 9 - 0.7 * 14 - 0.4 * (row.tla - row.tlm) + 0.7 * row.rimb_off
+                + 0.3 * row.rimb_dif + row.recuperate + 0.7 * row.assist + 0.7 * row.stoppate
+                - 0.4 * row.falli_commessi - row.perse)
+    assert w["game_score_pg"] == pytest.approx(expected)
+    # La somma dei rimbalzi % pesata sui minuti dà la quota catturata dai giocatori (≈ 1/5 del totale)
+    for _, g in p.groupby("squadra_id"):
+        assert 0 < (g["trb_pct"] * g["minuti"]).sum() / g["minuti"].sum() < 25
+    prof = A.team_profile(bs, bg, A.load_quarters(conn)).set_index("squadra_id")
+    f = prof.loc[10050]
+    assert f["quota_punti_2"] + f["quota_punti_3"] + f["quota_punti_tl"] == pytest.approx(100)
+    assert f["record_pp"] == "0-0"  # vinta di 7
+    assert f["diff_q1"] == 31 - 18
+    pc = A.percentiles(p.reset_index(), w["giocatore_id"], w["squadra_id"])
+    assert pc["Percentile"].between(0, 100).all()

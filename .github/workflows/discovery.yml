@@ -1,0 +1,32 @@
+name: Ricognizione fonte dati
+
+# Ricognizione della struttura del sito: da avviare a mano se il sito cambia
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Installa Playwright
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Esegui ricognizione
+        run: python discovery/discover.py
+      - name: Commit risultati
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add discovery/output
+          git commit -m "Ricognizione: risultati da legapallacanestro.com" || exit 0
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
