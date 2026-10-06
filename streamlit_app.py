@@ -14,6 +14,7 @@ import streamlit as st
 
 from basket import analysis as A
 from basket import config, db, scouting
+from basket.glossario import G, voci_per_colonne
 from basket import views as V
 
 # Palette dei grafici (validata per il fondo scuro: contrasto e daltonismo)
@@ -102,6 +103,38 @@ button[data-baseweb="tab"] {font: 600 1.02rem 'Barlow Condensed', sans-serif;
 div[role="radiogroup"] label {padding: .25rem .55rem;}
 [data-testid="stMetricValue"] {font-family: 'Barlow Condensed', sans-serif;}
 .note {color: var(--text-2); font-size: .82rem; margin: -4px 0 10px;}
+
+/* Pulsante "?" e finestra di spiegazione (funziona al tocco, si chiude toccando fuori) */
+details.tip {display: inline-block; vertical-align: middle; margin-left: 6px;}
+details.tip > summary {list-style: none; cursor: pointer; display: inline-flex;
+  align-items: center; justify-content: center; width: 21px; height: 21px; border-radius: 50%;
+  border: 1px solid #33415f; background: var(--surface-2); color: var(--text-2);
+  font: 600 12px/1 'Inter', sans-serif; text-transform: none; letter-spacing: 0;
+  -webkit-tap-highlight-color: transparent;}
+details.tip > summary::-webkit-details-marker {display: none;}
+details.tip > summary:hover, details.tip[open] > summary {border-color: var(--accent);
+  color: var(--accent);}
+details.tip[open] > summary::before {content: ""; position: fixed; inset: 0; z-index: 999990;
+  background: rgba(4, 8, 16, .62); cursor: default;}
+details.tip .bubble {position: fixed; z-index: 999991; left: 50%; top: 50%;
+  transform: translate(-50%, -50%); width: min(460px, 90vw); max-height: 78vh; overflow: auto;
+  background: #18223a; border: 1px solid #2f3d5e; border-radius: 16px; padding: 18px 20px 14px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .55); text-align: left; text-transform: none;
+  letter-spacing: normal; white-space: normal; color: var(--text);
+  font: 400 .93rem/1.5 'Inter', sans-serif;}
+.bubble .bt {font: 700 1.35rem/1.15 'Barlow Condensed', sans-serif; text-transform: uppercase;
+  letter-spacing: .02em; color: var(--text); margin-bottom: 10px; padding-right: 20px;}
+.bubble .bk {font: 600 .68rem 'Inter', sans-serif; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--accent); margin-top: 10px;}
+.bubble p {margin: 2px 0 0; color: var(--text);}
+.bubble .entry + .entry {border-top: 1px solid #2a3654; margin-top: 14px; padding-top: 12px;}
+.bubble .bx {color: var(--muted); font-size: .75rem; margin-top: 14px; text-align: center;}
+details.tip.legend {display: block; margin: 0 0 6px;}
+details.tip.legend > summary {width: auto; height: auto; padding: 5px 12px; border-radius: 999px;
+  font-size: .8rem; gap: 6px;}
+details.tip.legend > summary b {display: inline-flex; width: 17px; height: 17px;
+  border-radius: 50%; align-items: center; justify-content: center; border: 1px solid currentColor;
+  font-size: 11px;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -137,14 +170,57 @@ def esc(x) -> str:
     return html.escape(str(x))
 
 
-def section(title: str, desc: str = ""):
-    st.markdown(f'<div class="sec"><span class="t">{esc(title)}</span>'
+# Etichette mostrate in dashboard -> voce del glossario (per il pulsante "?")
+TIPS = {
+    "Ritmo": "pace", "Rating offensivo": "ortg", "Miglior Net Rtg": "net_rtg",
+    "Net rating": "net_rtg", "Leader": "leader", "Mappa del campionato": "mappa",
+    "Da dove arrivano i punti": "distribuzione", "Differenza punti per quarto": "quarti",
+    "Quarto per quarto": "quarti", "Game Score": "game_score",
+    "True shooting % (≥ 6 tiri)": "ts", "True shooting": "ts", "Usage %": "usg",
+    "Usage": "usg", "Valutazione": "valutazione", "Profilo": "percentili",
+    "Punto a punto": "punto_a_punto", "Fortuna": "fortuna", "Punti panchina": "panchina",
+    "Top 2 realizzatori": "top2", "Four Factors": "four_factors", "Possessi": "possessi",
+    "ORtg": "ortg", "eFG%": "efg", "Palle perse %": "tov", "Rimb. offensivi %": "orb",
+}
+
+
+def _entry(v) -> str:
+    return (f'<div class="entry"><div class="bt">{esc(v.titolo)}</div>'
+            f'<div class="bk">Cosa misura</div><p>{esc(v.cosa)}</p>'
+            f'<div class="bk">Come si calcola</div><p>{esc(v.calcolo)}</p>'
+            f'<div class="bk">Come leggerlo</div><p>{esc(v.lettura)}</p></div>')
+
+
+def tip(key: str | None) -> str:
+    """Pulsante "?" che apre la spiegazione della statistica."""
+    v = G.get(key) if key else None
+    if v is None:
+        return ""
+    return (f'<details class="tip"><summary aria-label="Spiegazione: {esc(v.titolo)}">?</summary>'
+            f'<div class="bubble">{_entry(v)}<div class="bx">Tocca fuori per chiudere</div>'
+            '</div></details>')
+
+
+def legend(voci) -> str:
+    """Pulsante unico con la spiegazione di più statistiche (per le tabelle)."""
+    if not voci:
+        return ""
+    body = "".join(_entry(v) for v in voci)
+    return ('<details class="tip legend"><summary><b>?</b> Cosa significano le colonne</summary>'
+            f'<div class="bubble">{body}<div class="bx">Tocca fuori per chiudere</div>'
+            '</div></details>')
+
+
+def section(title: str, desc: str = "", key: str | None = None):
+    k = key or TIPS.get(title)
+    st.markdown(f'<div class="sec"><span class="t">{esc(title)}</span>{tip(k)}'
                 f'<span class="d">{esc(desc)}</span></div>', unsafe_allow_html=True)
 
 
 def kpis(items: list[tuple[str, str, str]]):
-    cards = "".join(f'<div class="kpi"><div class="l">{esc(l)}</div><div class="v">{esc(v)}</div>'
-                    f'<div class="s">{esc(s)}</div></div>' for l, v, s in items)
+    cards = "".join(f'<div class="kpi"><div class="l">{esc(l)}{tip(TIPS.get(l))}</div>'
+                    f'<div class="v">{esc(v)}</div><div class="s">{esc(s)}</div></div>'
+                    for l, v, s in items)
     st.markdown(f'<div class="kpis">{cards}</div>', unsafe_allow_html=True)
 
 
@@ -157,7 +233,8 @@ def leader_cards(cards: list[tuple[str, pd.DataFrame, str, str]]):
             f'<small>{esc(r.squadra)}</small></span>'
             f'<span class="x">{getattr(r, col):{fmt}}</span></div>'
             for i, r in enumerate(df.itertuples(), start=1))
-        out.append(f'<div class="lcard"><div class="h">{esc(title)}</div>{rows}</div>')
+        out.append(f'<div class="lcard"><div class="h">{esc(title)}{tip(TIPS.get(title))}</div>'
+                   f'{rows}</div>')
     st.markdown(f'<div class="leaders">{"".join(out)}</div>', unsafe_allow_html=True)
 
 
@@ -167,8 +244,13 @@ def pills(items: list[str], kind: str, empty: str):
     st.markdown(f'<div class="pill-list">{body}</div>', unsafe_allow_html=True)
 
 
-def show(df: pd.DataFrame, height: int | None = None, progress: dict | None = None):
-    """Tabella a tutta larghezza. progress: {colonna: (min, max)} per le barre nelle celle."""
+def show(df: pd.DataFrame, height: int | None = None, progress: dict | None = None,
+         voci: list | None = None):
+    """Tabella a tutta larghezza. progress: {colonna: (min, max)} per le barre nelle celle.
+    Sopra la tabella compare il pulsante "?" con la spiegazione delle colonne complesse."""
+    spiegazioni = voci if voci is not None else voci_per_colonne(df.columns)
+    if spiegazioni:
+        st.markdown(legend(spiegazioni), unsafe_allow_html=True)
     cfg = {}
     for c in df.select_dtypes("float").columns:
         two = any(k in c for k in ("rate", "FTA/FGA", "Variabilità"))
@@ -275,9 +357,9 @@ hero.markdown(
     unsafe_allow_html=True)
 n_incomplete = bs_c.loc[~bs_c["affidabile"], "partita_id"].nunique()
 if n_incomplete:
-    st.markdown(f'<div class="note">ⓘ {n_incomplete} partite con box score ufficiale incompleto: '
-                'contano per risultati e totali, non per percentuali e metriche avanzate.</div>',
-                unsafe_allow_html=True)
+    st.markdown(f'<div class="note">{n_incomplete} partite con box score ufficiale incompleto: '
+                'contano per risultati e totali, non per percentuali e metriche avanzate.'
+                f'{tip("incompleto")}</div>', unsafe_allow_html=True)
 
 tab_pan, tab_cl, tab_sq, tab_gi, tab_g1, tab_sc, tab_pa = st.tabs(
     ["Panoramica", "Classifica", "Squadre", "Giocatori", "Giocatore", "Scouting", "Partite"])
@@ -357,12 +439,6 @@ with tab_cl:
             "drtg": "DRtg", "partite": "PG"}
     show(V.select(cl, cols), height=36 * (len(cl) + 1) + 4,
          progress={"V% attesa": (0, 100)})
-    st.markdown('<div class="note"><b>V% attesa</b>: vittorie attese in base a punti fatti e '
-                'subiti (formula pitagorica). <b>Fortuna</b>: vittorie reali − attese (positivo = '
-                'più vittorie del previsto, spesso grazie alle partite punto a punto). '
-                '<b>Calendario</b>: Net rating medio degli avversari affrontati (positivo = '
-                'calendario difficile).</div>', unsafe_allow_html=True)
-
 # ------------------------------------------------------------------ squadre
 with tab_sq:
     vista = st.radio("Vista", ["Avanzate", "Profilo", "Quarti", "Medie", "Per 40'",
@@ -432,13 +508,8 @@ with tab_gi:
     else:
         if vista == "Per 40'":
             p = p[p["minuti_pg"] >= 10]
-            st.markdown('<div class="note">Per 40\': solo giocatori con almeno 10\' di media.</div>',
-                        unsafe_allow_html=True)
-        if vista == "Ruolo":
-            st.markdown('<div class="note">Percentuali individuali: quota delle occasioni di '
-                        'squadra sfruttate mentre il giocatore è in campo (es. REB% = rimbalzi '
-                        'catturati sul totale disponibile). Variabilità punti: più è bassa, più il '
-                        'giocatore è costante.</div>', unsafe_allow_html=True)
+            st.markdown('<div class="note">Per 40\': solo giocatori con almeno 10\' di media.'
+                        f'{tip("per40")}</div>', unsafe_allow_html=True)
         mapping = {"Medie": V.PLAYER_MEDIE, "Totali": V.PLAYER_TOTALI, "Per 40'": V.PLAYER_P40,
                    "Ruolo": V.PLAYER_RUOLO}.get(vista, V.PLAYER_AVANZATE)
         t = V.select(p, mapping)
@@ -598,7 +669,8 @@ with tab_sc:
             section("Casa / trasferta")
             show(r.casa_trasferta)
         section("Profilo completo", "posizione nel campionato per ogni metrica")
-        show(r.profilo)
+        show(r.profilo, voci=[G[k] for k in ("ortg", "drtg", "net_rtg", "pace", "four_factors",
+                                             "efg", "tov", "orb", "drb", "ft_rate", "ast_ratio")])
         st.download_button("⬇ Scarica report (Markdown)", scouting.to_markdown(r),
                            file_name=f"scouting_{r.squadra}.md", mime="text/markdown")
 

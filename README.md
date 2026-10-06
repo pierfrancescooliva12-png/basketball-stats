@@ -119,7 +119,10 @@ La dashboard si aggiorna da sola: a ogni commit del workflow, Streamlit Cloud ri
 ### Usare la dashboard
 
 In alto ci sono i filtri **Campionato**, **Squadra** e **Giocatore**, sempre visibili anche con
-l'iPad in verticale. Le schede:
+l'iPad in verticale. Accanto alle statistiche più complesse c'è un **?**: toccandolo si apre una
+spiegazione (cosa misura, come si calcola, come leggerla con i valori di riferimento); sopra le
+tabelle, **? Cosa significano le colonne** spiega tutte le colonne avanzate. Il glossario completo
+è in `basket/glossario.py`. Le schede:
 
 - **Panoramica**: numeri del campionato, leader in 9 categorie, mappa attacco/difesa (ORtg vs DRtg).
 - **Classifica**: con forma (ultime 5), Net rating, vittorie attese, fortuna, punto a punto, calendario.
