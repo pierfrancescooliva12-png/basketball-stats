@@ -1,12 +1,8 @@
 name: Ricognizione fonte dati
 
+# Ricognizione della struttura del sito: da avviare a mano se il sito cambia
 on:
   workflow_dispatch:
-  push:
-    branches: [claude/basket-stats-analysis-tool-z0mcls]
-    paths:
-      - discovery/discover.py
-      - .github/workflows/discovery.yml
 
 permissions:
   contents: write

@@ -1,4 +1,0 @@
-https://analytics.google.com/g/collect?v=2&tid=G-GRHXHLZQ9J&gtm=45je6a21h1v9126101394za20gxf1&_p=1791273295412&gcd=13l3l3l3l2l1&npa=0&dma=0&_eu=EBAIAGQ&_ng=1&cid=1195984655.1791273219&frm=0&ir=1&pscdl=noapi&rcb=11&sr=1280x720&uaa=arm&uab=64&uafvl=HeadlessChrome%3B153.0.8010.12%7CNot_A%2520Brand%3B8.0.0.0%7CChromium%3B153.0.8010.12&uam=&uamb=0&uap=iOS&uapv=17_0&uaw=0&ul=en-us&gaf=2&_s=1&tag_exp=115938466~115938468~118897920~118897930~120213116~120385422~120469145~120469153~121046263~121046271~121280969&dl=https%3A%2F%2Fwww.legapallacanestro.com%2Fserie%2F4%2Fleaders%2Fregular%2F128&dt=Statistiche%20individuali%20%7C%20Lega%20Nazionale%20Pallacanestro&sid=1791273219&sct=1&seg=1&en=page_view&_ee=1&tfd=5572
-
-Response.text: Protocol error (Network.getResponseBody): No data found for resource with given identifier
-Response body is not available for a response that was navigated away from. Read response.body() before triggering any navigation.
