@@ -240,6 +240,9 @@ def giocatore_extra(a: App):
     hist = storico(a.mtime)
     mine = hist[hist["giocatore_id"] == gid] if not hist.empty else hist
 
+    from . import tiri_ui
+    tiri_ui.render_giocatore(a, gid, gsq)
+
     if len(mine) > 1:
         section("Carriera in archivio", "stagioni presenti nel database")
         show(mine.sort_values("stagione", ascending=False)[
@@ -304,6 +307,9 @@ def partita_extra(a: App, pid: str | None):
     fig.update_xaxes(title="minuto", showgrid=False)
     fig.update_yaxes(title="vantaggio casa")
     plot(fig, 320)
+
+    from . import tiri_ui
+    tiri_ui.render_partita(a, pid)
 
 
 # ------------------------------------------------------------------ anteprima

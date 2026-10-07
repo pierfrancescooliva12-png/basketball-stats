@@ -31,6 +31,9 @@ SCHEMA = [
         club TEXT NOT NULL, gioco_id TEXT NOT NULL, riferimento TEXT NOT NULL,
         nome TEXT, dati TEXT NOT NULL, autore TEXT, aggiornato_il TEXT NOT NULL,
         PRIMARY KEY (club, gioco_id))""",
+    """CREATE TABLE IF NOT EXISTS video_sync (
+        club TEXT NOT NULL, partita_id TEXT NOT NULL, inizi TEXT NOT NULL,
+        PRIMARY KEY (club, partita_id))""",
 ]
 
 
@@ -127,6 +130,22 @@ class Archivio:
             rows = c.execute(text("SELECT dati FROM giochi WHERE club = :c AND riferimento = :r "
                                   "ORDER BY nome"), {"c": club, "r": str(riferimento)}).fetchall()
         return [json.loads(r[0]) for r in rows]
+
+    # ------------------------------------------------------------ sincronizzazione video
+    def set_video_sync(self, club: str, partita_id: str, inizi: dict):
+        """Minuto del video (in secondi) in cui inizia ogni periodo: {periodo: secondi}."""
+        with self.engine.begin() as c:
+            c.execute(text("DELETE FROM video_sync WHERE club = :c AND partita_id = :p"),
+                      {"c": club, "p": partita_id})
+            c.execute(text("INSERT INTO video_sync VALUES (:c, :p, :i)"),
+                      {"c": club, "p": partita_id,
+                       "i": json.dumps({str(k): v for k, v in inizi.items() if v is not None})})
+
+    def video_sync(self, club: str, partita_id: str) -> dict:
+        with self.engine.connect() as c:
+            r = c.execute(text("SELECT inizi FROM video_sync WHERE club = :c AND partita_id = :p"),
+                          {"c": club, "p": partita_id}).fetchone()
+        return {int(k): v for k, v in json.loads(r[0]).items()} if r else {}
 
     def delete_play(self, club: str, gioco_id: str):
         with self.engine.begin() as c:

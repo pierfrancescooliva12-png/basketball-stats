@@ -50,3 +50,23 @@ def test_componente_aggiornato():
     from dashboard import lavagna_ui
     base = Path(__file__).resolve().parent.parent / "dashboard" / "lavagna"
     assert (base / "componente" / "index.html").read_text() == lavagna_ui.pagina_componente()
+
+
+def test_schemi_pronti_coerenti():
+    from dashboard.lavagna.schemi import SCHEMI
+    assert len(SCHEMI) >= 10 and len({s["id"] for s in SCHEMI}) == len(SCHEMI)
+    for s in SCHEMI:
+        assert s["categoria"] and s["descrizione"] and len(s["fasi"]) >= 2
+        for i, f in enumerate(s["fasi"]):
+            ids = {g["id"] for g in f["giocatori"]}
+            for g in f["giocatori"]:
+                assert 0 <= g["x"] <= 150 and 0 <= g["y"] <= 140, (s["nome"], g)
+            for l in f["linee"]:
+                assert l["da"] in ids
+                for x, y in l["punti"]:
+                    assert 0 <= x <= 150 and 0 <= y <= 140, (s["nome"], l)
+                if l["tipo"] == "passaggio":
+                    assert l["da"] == f["palla"], (s["nome"], i, l)   # passa chi ha la palla
+            assert f["palla"] in ids
+        # ogni schema si disegna anche nel PDF
+        assert L.disegno_fase(s["fasi"][0], False, 150).width == 150

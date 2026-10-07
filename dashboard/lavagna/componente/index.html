@@ -136,6 +136,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
     <textarea class="nota" id="nota" aria-label="Note della fase" placeholder="Note della fase: letture, tempi, chiamata…"></textarea>
 
     <div class="biblioteca">
+      <select id="schemi" aria-label="Schemi pronti"></select>
       <select id="elenco" aria-label="Giochi salvati"></select>
       <button class="btn primario" id="salva">Salva gioco</button>
       <button class="btn" id="nuovo">Nuovo</button>
@@ -556,6 +557,31 @@ function aggiornaElenco() {
   s.value = giochi.some(g => g.id === gioco.id) ? gioco.id : "";
 }
 function avvisa(t) { $("avviso").textContent = t; }
+// schemi pronti: si caricano come nuovo gioco, da modificare e salvare con il proprio nome
+let schemi = Array.isArray(window.LAVAGNA_SCHEMI) ? window.LAVAGNA_SCHEMI : [];
+function aggiornaSchemi() {
+  const s = $("schemi"); s.textContent = "";
+  s.hidden = !schemi.length;
+  const o0 = document.createElement("option"); o0.value = ""; o0.textContent = "Schemi pronti…";
+  s.appendChild(o0);
+  const gruppi = {};
+  for (const x of schemi) (gruppi[x.categoria || "Altri"] ||= []).push(x);
+  for (const [cat, lista] of Object.entries(gruppi)) {
+    const g = document.createElement("optgroup"); g.label = cat;
+    for (const x of lista) {
+      const o = document.createElement("option"); o.value = x.id; o.textContent = x.nome; g.appendChild(o);
+    }
+    s.appendChild(g);
+  }
+}
+$("schemi").addEventListener("change", (e) => {
+  const x = schemi.find(v => v.id === e.target.value); if (!x) return;
+  ricorda();
+  gioco = clona(x); delete gioco.categoria; delete gioco.descrizione;
+  gioco.id = "g" + Date.now(); gioco.tipo = contesto || "nostro";
+  faseIdx = 0; tutto(); e.target.value = "";
+  avvisa(`Schema caricato: ${x.nome}. ${x.descrizione || ""} Premi ▶ Riproduci, poi modificalo e salvalo con il tuo nome.`);
+});
 $("elenco").addEventListener("change", (e) => {
   const g = giochi.find(x => x.id === e.target.value); if (!g) return;
   gioco = clona(g); faseIdx = 0; storia = []; tutto();
@@ -602,6 +628,7 @@ if (MODALITA === "streamlit") {
     if (d.type !== "streamlit:render") return;
     const a = d.args || {};
     giochi = Array.isArray(a.giochi) ? a.giochi : [];
+    if (Array.isArray(a.schemi)) { schemi = a.schemi; aggiornaSchemi(); }
     if (a.tema === "dark") document.documentElement.setAttribute("data-theme", "dark");
     if (a.contesto) {                    // la pagina decide di chi sono i giochi
       contesto = a.contesto;
@@ -628,7 +655,7 @@ function tutto() {
   $("nome").value = gioco.nome || "";
   tipo(contesto || gioco.tipo || "nostro");
   $("difesa").setAttribute("aria-pressed", !!gioco.difesa);
-  aggiornaFasi(); aggiornaElenco(); disegna(); suggerisci();
+  aggiornaFasi(); aggiornaElenco(); aggiornaSchemi(); disegna(); suggerisci();
 }
 tutto();
 })();
