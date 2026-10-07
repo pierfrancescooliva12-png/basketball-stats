@@ -109,7 +109,7 @@ SCHEMI = [
            [
                ("4 e 5 bloccano ai lati dell'area; 2 legge la difesa ed esce a destra.",
                 [("blocco", 4, [(54, 32)]), ("blocco", 5, [(98, 32)]),
-                 ("taglio", 2, [(88, 30), (108, 46), (124, 70)])]),
+                 ("taglio", 2, [(90, 22), (108, 26), (116, 46), (124, 70)])]),
                ("1 serve 2 in ala per il tiro; 5 si gira e cerca il mismatch in post.",
                 [("passaggio", 1, 2), ("taglio", 5, [(104, 30)])]),
            ]),
@@ -131,7 +131,7 @@ SCHEMI = [
                ("4 blocca in linea di fondo per 3, che taglia verso il ferro (taglio flex). "
                 "5 scende a bloccare per 4, che sale in ala sinistra.",
                 [("blocco", 4, [(46, 24)]), ("taglio", 3, [(34, 18), (60, 22), (92, 26)]),
-                 ("blocco", 5, [(50, 40)]), ("taglio", 4, [(52, 64), (50, 90)]),
+                 ("blocco", 5, [(50, 40)]), ("taglio", 4, [(40, 40), (46, 64), (50, 90)]),
                  ("passaggio", 2, 3)]),
            ]),
     schema("Chicago (blocco e consegnato)", "Metà campo",
@@ -142,7 +142,7 @@ SCHEMI = [
                 [("blocco", 4, [(50, 40)]), ("taglio", 2, [(42, 46), (40, 74)]),
                  ("palleggio", 1, [(44, 84)])]),
                ("1 consegna a 2 (dribble hand-off) e taglia; 5 sale a bloccare per 2.",
-                [("passaggio", 1, 2), ("taglio", 1, [(28, 60), (20, 30)]),
+                [("passaggio", 1, 2), ("taglio", 1, [(30, 88), (16, 60), (14, 30)]),
                  ("blocco", 5, [(60, 74)])]),
                ("2 attacca il centro sul blocco di 5, che rolla: 2 legge il roll o lo scarico.",
                 [("palleggio", 2, [(56, 82), (76, 74)]), ("taglio", 5, [(70, 48), (74, 28)]),
@@ -163,7 +163,7 @@ SCHEMI = [
            "lunetta.", {1: "top", 2: "ala_d", 3: "ala_s", 4: "ang_s", 5: "ft"}, 1, [
                ("1 passa a 2 in ala destra.", [("passaggio", 1, 2)]),
                ("5 blocca per 1, che taglia al ferro (taglio UCLA). 5 poi sale in punta.",
-                [("blocco", 5, [(82, 66)]), ("taglio", 1, [(84, 70), (82, 30)]),
+                [("blocco", 5, [(82, 66)]), ("taglio", 1, [(68, 72), (72, 30)]),
                  ("passaggio", 2, 1)]),
                ("Se 1 non è libero, 5 si apre in punta e riceve per ribaltare il lato.",
                 [("taglio", 5, [(75, 98)]), ("taglio", 1, [(104, 20)])]),
@@ -184,7 +184,7 @@ SCHEMI = [
                                                      4: "gom_s", 5: "gom_d"}, 1, [
                ("4 scende a bloccare per 2, che esce nell'angolo; 3 blocca in diagonale per 5.",
                 [("blocco", 4, [(50, 34)]), ("taglio", 2, [(30, 22), (12, 16)]),
-                 ("blocco", 3, [(86, 44)]), ("taglio", 5, [(84, 48), (68, 22)])]),
+                 ("blocco", 3, [(86, 44)]), ("taglio", 5, [(76, 46), (68, 22)])]),
                ("1 sceglie: 5 al ferro o 2 nell'angolo per il tiro.", [("passaggio", 1, 5)]),
            ]),
     schema("Rimessa laterale · stack", "Rimesse",
@@ -192,7 +192,7 @@ SCHEMI = [
            "in direzioni opposte.", {1: (150, 78), 2: (112, 70), 3: (104, 64), 4: (96, 58),
                                      5: "top"}, 1, [
                ("4 blocca verso il basso; 3 esce verso il canestro e 2 sale verso la palla.",
-                [("blocco", 4, [(96, 44)]), ("taglio", 3, [(92, 40), (86, 24)]),
+                [("blocco", 4, [(96, 44)]), ("taglio", 3, [(108, 44), (100, 24)]),
                  ("taglio", 2, [(124, 86)])]),
                ("1 rimette a 2, poi entra; 5 si apre per il ribaltamento.",
                 [("passaggio", 1, 2), ("taglio", 1, [(136, 60), (128, 40)]),
@@ -206,7 +206,7 @@ SCHEMI = [
            {1: (88, 1), 2: "blo_s", 3: "gom_d", 4: "gom_s", 5: "blo_d"}, 1, [
                ("2 blocca alle spalle di 4 (back screen): 4 taglia al ferro per il lob. 3 sale "
                 "in punta come sicurezza.",
-                [("blocco", 2, [(54, 48)]), ("taglio", 4, [(62, 40), (70, 24)]),
+                [("blocco", 2, [(54, 48)]), ("taglio", 4, [(64, 46), (70, 24)]),
                  ("taglio", 3, [(88, 80), (75, 100)])]),
                ("Subito dopo 5 blocca per 2 (blocco per il bloccante), che esce nell'angolo. "
                 "1 sceglie: lob a 4, 2 nell'angolo o 3 in punta per ripartire.",
@@ -309,7 +309,7 @@ SCHEMI = [
                ("2 taglia backdoor alle spalle del difensore e 5 lo serve con un passaggio "
                 "a terra; 4 scende a riempire l'ala.",
                 [("taglio", 2, [(116, 60), (84, 24)]), ("passaggio", 5, 2),
-                 ("taglio", 4, [(124, 80)])]),
+                 ("taglio", 4, [(120, 96)])]),
            ]),
     schema("Contro la zona 2-3 · short corner e high-low", "Giochi avanzati",
            "Sovraccarico di un lato contro la zona: palla nello short corner, il centro "

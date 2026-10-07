@@ -570,7 +570,7 @@ function aggiornaSchemi() {
   const gruppi = {};
   for (const x of schemi) (gruppi[x.categoria || "Altri"] ||= []).push(x);
   for (const [cat, lista] of Object.entries(gruppi)) {
-    const g = document.createElement("optgroup"); g.label = cat;
+    const g = document.createElement("optgroup"); g.label = `${cat} (${lista.length})`;
     for (const x of lista) {
       const o = document.createElement("option"); o.value = x.id; o.textContent = x.nome; g.appendChild(o);
     }
