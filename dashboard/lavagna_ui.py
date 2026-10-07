@@ -13,7 +13,7 @@ import streamlit.components.v1 as components
 
 from basket.report_pdf import build_giochi, slug
 
-from .lavagna.schemi import SCHEMI
+from .lavagna.catalogo import SCHEMI
 from .stato import App
 from .ui import note_html, section
 
@@ -43,6 +43,11 @@ def _prepara():
 
 _prepara()
 _lavagna = components.declare_component("lavagna_assist", path=str(CARTELLA))
+
+
+@st.cache_data(show_spinner=False)
+def _pdf_archivio() -> bytes:
+    return build_giochi(SCHEMI, "Archivio schemi ASSIST")
 
 
 def giochi(a: App, riferimento) -> list[dict]:
@@ -75,6 +80,9 @@ def render(a: App, riferimento: int, contesto: str, titolo: str, nome_squadra: s
 
 
 def render_nostri(a: App):
+    st.download_button(f"⬇ Archivio degli schemi pronti in PDF ({len(SCHEMI)})", _pdf_archivio(),
+                       file_name="archivio_schemi_assist.pdf", mime="application/pdf",
+                       key="pdf_archivio_schemi")
     sid = a.mia_squadra
     if sid is None:
         st.info("Scegli la tua squadra nella Home per disegnare i vostri giochi.")
