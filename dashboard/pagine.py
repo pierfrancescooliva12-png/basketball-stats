@@ -199,7 +199,9 @@ def home():
             section("Avvisi della settimana", "tua squadra e prossima avversaria")
             pills([f"{r.squadra} · {r.giocatore + ': ' if isinstance(r.giocatore, str) else ''}"
                    f"{r.testo}" for r in mine.head(8).itertuples()], "pos", "")
-    pulsante(st.columns(4)[0], "Vai a La mia squadra →", "mia")
+    c = st.columns(4)
+    pulsante(c[0], "Vai a La mia squadra →", "mia")
+    pulsante(c[1], "Lavagna dei giochi →", "lavagna")
 
 
 def _card(h: str, t: str, m: str, righe: list[tuple[str, str]]) -> str:
