@@ -230,7 +230,6 @@ def p_scouting():
         scegli_squadra(a, "Scegli la squadra da analizzare.")
         return
     schede.render_scouting(a)
-    chiavi_ui.render(a, a.sq)
     nuove.scouting_extra(a)
 
 

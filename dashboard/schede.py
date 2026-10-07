@@ -362,13 +362,16 @@ def render_scouting(a: App):
             ("Punti panchina", f"{pf['quota_punti_panchina']:.0f}%", "sul totale di squadra"),
             ("Top 2 realizzatori", f"{pf['quota_top2']:.0f}%", "dei punti di squadra"),
         ])
-        a, b = st.columns(2)
-        with a:
+        col_f, col_d = st.columns(2)
+        with col_f:
             section("Punti di forza")
             pills(r.punti_forza, "pos", "Nessuno marcato (servono più partite)")
-        with b:
+        with col_d:
             section("Punti deboli")
             pills(r.punti_deboli, "neg", "Nessuno marcato")
+
+        from . import chiavi_ui
+        chiavi_ui.render(a, sq)
 
         c1, c2 = st.columns(2)
         with c1:
