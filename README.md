@@ -51,7 +51,7 @@ La dashboard è organizzata in **aree**, con la navigazione in alto (comoda al t
 
 Il modello stima la forza di ogni squadra (Net rating ristretto verso la stagione precedente) e
 ne ricava margine atteso e probabilità di vittoria. È validato su tutte le partite delle
-stagioni 2024/25 e 2025/26 di A2 e B Nazionale, usando ogni volta solo le partite giocate
+stagioni 2024/25 e 2025/26 e delle prime giornate del 2026/27, in A2 e B Nazionale, usando ogni volta solo le partite giocate
 prima (`python -m basket.validazione --salva`):
 
 | Metrica (2.179 partite) | ASSIST | Vince sempre la squadra di casa | Vince chi ha il record migliore |
