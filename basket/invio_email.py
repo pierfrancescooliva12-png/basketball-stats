@@ -20,6 +20,7 @@ from email.message import EmailMessage
 
 from . import config, scouting
 from .contesto import open_readonly
+from .report_extra import build_post_partita
 from .report_pdf import build_pdf, slug
 
 log = logging.getLogger("basket.email")
@@ -37,8 +38,9 @@ def abbonati() -> list[dict]:
     return [d for d in data if d.get("email") and d.get("squadra")]
 
 
-def prepare(ctx, sub: dict) -> tuple[str, str, bytes, str] | None:
-    """(oggetto, testo, pdf, nome file) del report sulla prossima avversaria dell'abbonato."""
+def prepare(ctx, sub: dict) -> tuple[str, str, list[tuple[bytes, str]]] | None:
+    """(oggetto, testo, allegati) per l'abbonato: report sulla prossima avversaria e, se la
+    squadra ha già giocato, report post-partita sull'ultima partita."""
     teams = scouting.find_team(ctx.conn, sub["squadra"])
     if len(teams) != 1:
         log.warning("Squadra '%s' non trovata o ambigua: %s", sub["squadra"], teams)
@@ -53,17 +55,23 @@ def prepare(ctx, sub: dict) -> tuple[str, str, bytes, str] | None:
     if avv_id not in set(ctx.bs["squadra_id"]):
         log.info("%s: l'avversaria %s non ha ancora partite giocate", mia, avv)
         return None
-    pdf = build_pdf(ctx, avv_id)
+    allegati = [(build_pdf(ctx, avv_id), f"scouting_{slug(avv)}.pdf")]
+    try:
+        allegati.append((build_post_partita(ctx, mia_id), f"post_partita_{slug(mia)}.pdf"))
+    except ValueError:
+        pass
     dove = "in casa" if g["casa_id"] == mia_id else "in trasferta"
     oggetto = f"Scouting {avv} · {g['giornata']}ª giornata ({g['data']})"
     testo = (f"Buongiorno,\n\nin allegato il report di scouting su {avv}, prossima avversaria di "
              f"{mia} ({dove}, {g['giornata']}ª giornata, {g['data']} {g['ora'] or ''}).\n\n"
+             + ("Trovate anche il report post-partita sull'ultima partita giocata.\n\n"
+                if len(allegati) > 1 else "") +
              f"Dati aggiornati alle partite giocate finora (fonte legapallacanestro.com).\n\n"
              f"{config.BRAND} · {config.BRAND_TAGLINE}")
-    return oggetto, testo, pdf, f"scouting_{slug(avv)}.pdf"
+    return oggetto, testo, allegati
 
 
-def send(msgs: list[tuple[str, str, str, bytes, str]]):
+def send(msgs: list[tuple[str, str, str, list[tuple[bytes, str]]]]):
     host = os.environ["SMTP_HOST"]
     port = int(os.environ.get("SMTP_PORT", "587"))
     user, pwd = os.environ.get("SMTP_USER"), os.environ.get("SMTP_PASSWORD")
@@ -72,11 +80,12 @@ def send(msgs: list[tuple[str, str, str, bytes, str]]):
         smtp.starttls()
         if user:
             smtp.login(user, pwd)
-        for to, oggetto, testo, pdf, nome in msgs:
+        for to, oggetto, testo, allegati in msgs:
             m = EmailMessage()
             m["From"], m["To"], m["Subject"] = mittente, to, oggetto
             m.set_content(testo)
-            m.add_attachment(pdf, maintype="application", subtype="pdf", filename=nome)
+            for pdf, nome in allegati:
+                m.add_attachment(pdf, maintype="application", subtype="pdf", filename=nome)
             smtp.send_message(m)
             log.info("Inviato a %s: %s", to, oggetto)
 
@@ -98,8 +107,9 @@ def main(argv=None) -> int:
             msgs.append((sub["email"], *p))
     out = config.REPORTS_DIR / "pdf"
     out.mkdir(parents=True, exist_ok=True)
-    for _, _, _, pdf, nome in msgs:
-        (out / nome).write_bytes(pdf)
+    for *_, allegati in msgs:
+        for pdf, nome in allegati:
+            (out / nome).write_bytes(pdf)
     if args.prova or not os.environ.get("SMTP_HOST"):
         log.info("Modalità prova o SMTP non configurato: %d report generati in %s", len(msgs), out)
         return 0

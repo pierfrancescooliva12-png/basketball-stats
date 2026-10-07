@@ -43,7 +43,42 @@ def build_sheets(conn, stagione: str = config.STAGIONE) -> dict[str, pd.DataFram
         "Giocatori trend 5": V.select(trend, V.TREND),
         "Giocatori casa-trasf.": V.casa_trasferta_giocatori(bg, bs),
         "Partite": V.partite(conn, stagione),
+        **_approfondimenti(conn, stagione),
     }
+
+
+def _approfondimenti(conn, stagione: str) -> dict[str, pd.DataFrame]:
+    """Rotazioni, momenti della partita e presenze (se la cronaca è disponibile)."""
+    from .contesto import Contesto
+    ctx = Contesto(conn, stagione)
+    nomi_g, nomi_s = ctx.nomi_giocatori, ctx.nomi_squadre
+    out = {}
+    pres = ctx.presenze
+    if not pres.empty:
+        p = pres.assign(giocatore=pres["giocatore_id"].map(nomi_g),
+                        squadra=pres["squadra_id"].map(nomi_s))
+        out["Presenze"] = p[["giocatore", "squadra", "partite_periodo", "a_referto", "giocate",
+                             "saltate", "senza_entrare", "presenze_pct"]].rename(columns={
+            "giocatore": "Giocatore", "squadra": "Squadra", "partite_periodo": "Partite squadra",
+            "a_referto": "A referto", "giocate": "Giocate", "saltate": "Saltate",
+            "senza_entrare": "Senza entrare", "presenze_pct": "Presenze %"}).sort_values(
+            ["Squadra", "Giocatore"])
+    rot = ctx.rotazioni["giocatori"]
+    if not rot.empty:
+        r = rot.assign(giocatore=rot["giocatore_id"].map(nomi_g),
+                       squadra=rot["squadra_id"].map(nomi_s))
+        out["Rotazioni"] = r[["squadra", "giocatore", "partite_giocate", "minuti_pg",
+                              "quota_titolare", "minuto_ingresso", "quota_finale"]].rename(columns={
+            "squadra": "Squadra", "giocatore": "Giocatore", "partite_giocate": "PG",
+            "minuti_pg": "Minuti", "quota_titolare": "% da titolare",
+            "minuto_ingresso": "Entra al minuto", "quota_finale": "% ultimi 5'"}).sort_values(
+            ["Squadra", "Minuti"], ascending=[True, False])
+    m = ctx.momenti
+    if not m.empty:
+        w = m.assign(squadra=m["squadra_id"].map(nomi_s)).pivot_table(
+            index="squadra", columns="etichetta", values="diff_pg").reset_index()
+        out["Momenti partita"] = w.rename(columns={"squadra": "Squadra"})
+    return out
 
 
 def write_excel(sheets: dict[str, pd.DataFrame], path):

@@ -393,6 +393,14 @@ def possession_origins(ev: pd.DataFrame) -> pd.DataFrame:
     """Origine dei punti di ogni squadra (stima dalla cronaca):
     da palla persa avversaria, da seconda occasione (rimbalzo offensivo), in contropiede
     (entro 8 secondi da rimbalzo difensivo o recupero)."""
+    d = origins_by_game(ev)
+    if d.empty:
+        return d
+    return _aggregate_origins(d)
+
+
+def origins_by_game(ev: pd.DataFrame) -> pd.DataFrame:
+    """Una riga per ogni canestro (o libero): partita, squadra, punti, origine del possesso."""
     rows = []
     for pid, g in ev.groupby("partita_id", sort=False):
         start = {}   # squadra -> (tipo inizio possesso, secondi)
@@ -413,10 +421,11 @@ def possession_origins(ev: pd.DataFrame) -> pd.DataFrame:
                 rows.append((e.campionato_id, pid, sid, e.punti, origine, contropiede))
                 # Dopo un canestro (o un libero) la palla passa all'avversario su rimessa
                 start[opp] = ("rimessa", t)
-    d = pd.DataFrame(rows, columns=["campionato_id", "partita_id", "squadra_id", "punti",
-                                    "origine", "contropiede"])
-    if d.empty:
-        return d
+    return pd.DataFrame(rows, columns=["campionato_id", "partita_id", "squadra_id", "punti",
+                                       "origine", "contropiede"])
+
+
+def _aggregate_origins(d: pd.DataFrame) -> pd.DataFrame:
     tot = d.groupby(["campionato_id", "squadra_id"])["punti"].sum()
     n_g = d.groupby(["campionato_id", "squadra_id"])["partita_id"].nunique()
     out = pd.DataFrame({

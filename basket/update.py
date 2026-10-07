@@ -49,6 +49,9 @@ def _round_complete(conn, league: str, season: str, giornata: int) -> list[dict]
     return None
 
 
+GIORNATE_MANCANTI_STOP = 4
+
+
 def update_league(conn, client, league: str, season: str, giornate: set[int] | None,
                   with_pbp: bool = True) -> dict:
     stats = {"giornate": 0, "nuove": 0, "errori": []}
@@ -70,7 +73,9 @@ def update_league(conn, client, league: str, season: str, giornate: set[int] | N
         if not games:
             missing_in_a_row += 1
             log.info("%s giornata %d: non presente", league, giornata)
-            if missing_in_a_row >= 2:
+            # alcune stagioni hanno buchi nella numerazione delle giornate (soste, turni
+            # spostati): ci si ferma solo dopo 4 giornate consecutive non presenti
+            if missing_in_a_row >= GIORNATE_MANCANTI_STOP:
                 break
             continue
         missing_in_a_row = 0

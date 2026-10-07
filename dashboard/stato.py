@@ -62,6 +62,7 @@ class App:
     profile: pd.DataFrame = field(default=None)
     bs_c: pd.DataFrame = field(default=None)
     bg_c: pd.DataFrame = field(default=None)
+    esperto: bool = False
 
     @property
     def club(self) -> str:

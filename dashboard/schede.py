@@ -8,13 +8,15 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from basket import analysis as A
+from basket import approfondimenti as X
 from basket import scouting
 from basket import views as V
 from basket.glossario import G
 
 from .stato import App, partite_df, report
-from .ui import (ACQUA, ARANCIO, BLU, COURT_SVG, GRIGIO, NEUTRO, SUPERFICIE, TESTO, esc, kpis,
-                 leader_cards, pills, plot, section, short, show, tip)
+from .ui import (ACQUA, ARANCIO, BLU, COURT_SVG, GRIGIO, NEUTRO, SUPERFICIE, TESTO, badge,
+                 badge_pos, esc, frase, it, kpis, leader_cards, num, pills, plot, section, short,
+                 show, tip)
 
 
 def render_panoramica(a: App):
@@ -82,14 +84,18 @@ def render_panoramica(a: App):
     plot(fig, 460)
 
 
-def render_classifica(a: App):
+def classifica(a: App) -> pd.DataFrame:
     bs_c = a.bs_c
-    profile = a.profile
     cl = A.standings(bs_c).merge(
-        profile[["squadra_id", "pyth_pct", "fortuna", "record_pp", "sos"]], on="squadra_id")
+        a.profile[["squadra_id", "pyth_pct", "fortuna", "record_pp", "sos"]], on="squadra_id")
     forma = (bs_c.sort_values(["data", "partita_id"]).groupby("squadra_id")["vinta"]
              .apply(lambda s: " ".join("V" if v else "P" for v in s.tail(5))))
     cl["forma"] = cl["squadra_id"].map(forma)
+    return cl
+
+
+def render_classifica(a: App):
+    cl = classifica(a)
     cols = {"pos": "Pos", "squadra": "Squadra", "punti_classifica": "Pt", "vinte": "V",
             "perse_partite": "P", "forma": "Ultime 5", "diff": "Diff", "net_rtg": "Net Rtg",
             "pyth_pct": "V% attesa", "fortuna": "Fortuna", "record_pp": "Punto a punto",
@@ -103,8 +109,9 @@ def render_squadre(a: App):
     bs_c = a.bs_c
     profile = a.profile
     sq = a.sq
-    vista = st.radio("Vista", ["Avanzate", "Profilo", "Quarti", "Medie", "Per 40'",
-                               "Casa/Trasferta", "Ultime 5"], horizontal=True, key="vista_sq")
+    viste = ["Avanzate", "Profilo", "Quarti", "Medie", "Per 40'", "Casa/Trasferta",
+             "Ultime 5"] if a.esperto else ["Essenziale", "Quarti", "Casa/Trasferta", "Ultime 5"]
+    vista = st.radio("Vista", viste, horizontal=True, key="vista_sq")
     sel = profile if sq is None else profile[profile["squadra_id"] == sq]
     if vista == "Profilo":
         show(V.select(sel.sort_values("net_rtg", ascending=False), V.TEAM_PROFILO)
@@ -149,8 +156,34 @@ def render_squadre(a: App):
         if sq is not None:
             src = src[src["squadra_id"] == sq]
         mapping = {"Medie": V.TEAM_MEDIE, "Per 40'": V.TEAM_P40}.get(vista, V.TEAM_AVANZATE)
+        if not a.esperto:
+            mapping = V.TEAM_ESSENZIALE
         show(V.select(src.sort_values("net_rtg", ascending=False), mapping)
-             .drop(columns="Campionato"))
+             .drop(columns="Campionato", errors="ignore"),
+             colori={"Net rating": True, "Net Rtg": True, "Attacco (ORtg)": True,
+                     "ORtg": True, "Difesa (DRtg)": False, "DRtg": False})
+
+
+COLORI_GIOCATORI = {"Punti": True, "Rimbalzi": True, "Assist": True, "Palle perse": False,
+                    "% da 3": True, "Valutazione": True, "Tiro (TS%)": True, "Game Score": True,
+                    "TS%": True, "Val": True}
+
+
+def pochi_dati(df: pd.DataFrame, minuti: float = 60) -> pd.Series:
+    """Segnala i campioni troppo piccoli rispetto agli altri: meno della metà delle partite
+    giocate dai più presenti, o meno di 60 minuti in totale."""
+    soglia = max(1, df["partite"].max() / 2) if not df.empty else 1
+    return ((df["partite"] < soglia) | (df["minuti"] < minuti)).map(
+        {True: "⚠ pochi dati", False: ""})
+
+
+def avviso_inizio_stagione(a: App):
+    g = int(a.bs_c["giornata"].max()) if not a.bs_c.empty else 0
+    if g < 5:
+        st.markdown(f'<div class="note">{badge("Inizio stagione", "warn")} con {g} giornate '
+                    'giocate medie e percentuali cambiano molto da una partita all\'altra: '
+                    'per il mercato confronta anche la stagione precedente.</div>',
+                    unsafe_allow_html=True)
 
 
 def render_giocatori(a: App):
@@ -161,11 +194,14 @@ def render_giocatori(a: App):
     gsel = a.gsel
     pool = players if sq is None else players[players["squadra_id"] == sq]
     c1, c2 = st.columns([4, 1])
-    vista = c1.radio("Vista", ["Medie", "Avanzate", "Ruolo", "Per 40'", "Totali", "Trend ult. 5",
-                               "Casa/Trasferta"], horizontal=True, key="vista_gi")
+    viste = ["Medie", "Avanzate", "Ruolo", "Per 40'", "Totali", "Trend ult. 5",
+             "Casa/Trasferta"] if a.esperto else ["Medie", "Avanzate", "Trend ult. 5",
+                                                  "Casa/Trasferta"]
+    vista = c1.radio("Vista", viste, horizontal=True, key="vista_gi")
     min_pg = c2.number_input("Min. partite", 0, 40, 1 if sq else 2)
     bg_f = bg_c if sq is None else bg_c[bg_c["squadra_id"] == sq]
     p = pool[pool["partite"] >= min_pg].sort_values("punti_pg", ascending=False)
+    p = p.assign(dati=pochi_dati(p))
     if vista == "Casa/Trasferta":
         t = V.casa_trasferta_giocatori(bg_f, bs)
         t = t[t["PG"] >= min_pg]
@@ -178,14 +214,26 @@ def render_giocatori(a: App):
             p = p[p["minuti_pg"] >= 10]
             st.markdown('<div class="note">Per 40\': solo giocatori con almeno 10\' di media.'
                         f'{tip("per40")}</div>', unsafe_allow_html=True)
-        mapping = {"Medie": V.PLAYER_MEDIE, "Totali": V.PLAYER_TOTALI, "Per 40'": V.PLAYER_P40,
-                   "Ruolo": V.PLAYER_RUOLO}.get(vista, V.PLAYER_AVANZATE)
+        if a.esperto:
+            mapping = {"Medie": V.PLAYER_MEDIE, "Totali": V.PLAYER_TOTALI,
+                       "Per 40'": V.PLAYER_P40, "Ruolo": V.PLAYER_RUOLO}.get(
+                           vista, V.PLAYER_AVANZATE)
+        else:
+            mapping = V.PLAYER_ESSENZIALE if vista == "Medie" else V.PLAYER_AVANZATE_ESS
+        mapping = {**{k: v for k, v in mapping.items() if k in ("campionato", "giocatore",
+                                                                "squadra")},
+                   "dati": "Dati", **mapping}
         t = V.select(p, mapping)
     if gsel is not None:
         nome = players.loc[players["giocatore_id"] == gsel[0], "giocatore"].iloc[0]
         t = t[t["Giocatore"] == nome]
-    show(t.drop(columns="Campionato"), height=620,
-         progress={"USG%": (0, 40), "TS%": (0, 80)} if vista == "Avanzate" else None)
+    avviso_inizio_stagione(a)
+    if not a.esperto:
+        st.markdown('<div class="note">Vista essenziale: attiva <b>Esperto</b> in alto per tutte '
+                    'le colonne e le viste.</div>', unsafe_allow_html=True)
+    show(t.drop(columns="Campionato", errors="ignore"), height=620,
+         progress={"USG%": (0, 40), "TS%": (0, 80)} if vista == "Avanzate" and a.esperto
+         else None, colori=COLORI_GIOCATORI)
 
 
 def render_giocatore(a: App):
@@ -204,8 +252,14 @@ def render_giocatore(a: App):
             f'<div class="hero" style="padding:16px 20px">{COURT_SVG}<div class="eyebrow">'
             f'{esc(me["squadra"])}</div><div class="title" style="font-size:2rem">'
             f'{esc(me["giocatore"])}</div><div class="meta">{int(me["partite"])} partite · '
-            f'{int(me["quintetti"])} in quintetto · {me["minuti_pg"]:.1f} minuti di media · '
+            f'{int(me["quintetti"])} in quintetto · {num(me["minuti_pg"])} minuti di media · '
             f'massimo {int(me["max_punti"])} punti</div></div>', unsafe_allow_html=True)
+
+        frase("In una frase", X.frase_giocatore(players, gid, gsq))
+        if me["partite"] < 3 or me["minuti"] < 60:
+            st.markdown('<div class="note">' + badge("⚠ pochi dati", "warn") +
+                        ' con meno di 3 partite o 60 minuti i numeri possono cambiare molto.'
+                        '</div>', unsafe_allow_html=True)
 
         def f1_(v, suffix=""):
             return "–" if pd.isna(v) else f"{v:.1f}{suffix}"
@@ -218,6 +272,8 @@ def render_giocatore(a: App):
             ("Usage", f1_(me["usg_pct"], "%"), f"TOV% {f1_(me['tov_pct'])}"),
             ("Game Score", f1_(me["game_score_pg"]), f"valutazione {f1_(me['valutazione_pg'])}"),
         ])
+        from .nuove import scheda_giocatore
+        scheda_giocatore(a)
 
         c1, c2 = st.columns(2)
         with c1:
@@ -285,10 +341,21 @@ def render_scouting(a: App):
             f'Report di scouting · {esc(r.campionato)}</div><div class="title" '
             f'style="font-size:2rem">{esc(r.squadra)}</div><div class="meta">Record '
             f'{esc(r.record)} · {r.posizione}° posto'
-            + (f' · prossima: {esc(r.prossima)}' if r.prossima else "") + '</div></div>',
+            + (f' · prossima: {esc(it(r.prossima))}' if r.prossima else "") + '</div></div>',
             unsafe_allow_html=True)
+        frase("In una frase", X.frase_squadra(profile, sq))
+        from .nuove import _pdf
+        from basket.report_pdf import slug
+        st.download_button("⬇ Report PDF per la riunione tecnica",
+                           _pdf(a.ctx, a.mtime, a.stagione, sq),
+                           file_name=f"scouting_{slug(r.squadra)}.pdf", mime="application/pdf",
+                           type="primary")
+        pr = profile.set_index("squadra_id")
         kpis([
-            ("Net rating", f"{pf['net_rtg']:+.1f}", f"ORtg {pf['ortg']:.1f} · DRtg {pf['drtg']:.1f}"),
+            ("Net rating", f"{pf['net_rtg']:+.1f}", badge_pos(X.posizione(pr["net_rtg"], sq))),
+            ("Rating offensivo", f"{pf['ortg']:.1f}", badge_pos(X.posizione(pr["ortg"], sq))),
+            ("Rating difensivo", f"{pf['drtg']:.1f}",
+             badge_pos(X.posizione(pr["drtg"], sq, piu_alto_meglio=False))),
             ("Ritmo", f"{pf['pace']:.1f}", "possessi per 40'"),
             ("Punto a punto", pf["record_pp"], f"partite con margine ≤ {A.CLOSE_MARGIN}"),
             ("Fortuna", f"{pf['fortuna']:+.1f}", f"vittorie attese {pf['vinte_attese']:.1f}"),
@@ -335,7 +402,8 @@ def render_scouting(a: App):
             plot(fig, 400, bargap=0.45)
 
         section("Giocatori chiave", "ordinati per minuti")
-        show(r.giocatori, progress={"USG%": (0, 40)})
+        show(r.giocatori, progress={"USG%": (0, 40)},
+             colori={"Punti": True, "TS%": True, "Val": True})
         c1, c2 = st.columns(2)
         with c1:
             section("Ultime 5 partite")

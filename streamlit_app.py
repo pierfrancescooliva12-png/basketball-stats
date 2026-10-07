@@ -1,17 +1,18 @@
 """ASSIST: piattaforma di scouting per Serie A2 e Serie B Nazionale.
 
-Ottimizzata per iPad: filtri in alto (sempre visibili, anche in verticale), schede a
-griglia che si adattano alla larghezza, grafici leggibili al tocco, pulsanti "?" con la
-spiegazione delle statistiche. Accesso per club configurabile nei secrets di Streamlit.
+Ottimizzata per iPad: navigazione in alto per aree (Home, Avversaria, Giocatori, La mia
+squadra, Campionato), filtri compatti sempre visibili, pagine calcolate solo quando aperte,
+pulsanti "?" con la spiegazione delle statistiche, link condivisibili (la pagina e i filtri
+sono nell'indirizzo). Accesso per club configurabile nei secrets di Streamlit.
 """
 
 import streamlit as st
 
 from basket import accesso, config, scouting
-from dashboard import nuove, schede
+from dashboard import pagine
 from dashboard.stato import (App, archivio, archivio_url, contesto, secrets,
                              stagioni_disponibili)
-from dashboard.ui import brand_hero, esc, inject_css, tip
+from dashboard.ui import brand_hero, esc, inject_css, tip, topbar
 
 st.set_page_config(page_title=config.BRAND, page_icon=str(config.LOGO_DIR / "assist-mark-128.png"),
                    layout="wide",
@@ -42,13 +43,18 @@ if utenti:
 else:
     utente = {"username": "demo", "club": None, "ruolo": "admin", "demo": True}
 
-# ------------------------------------------------------------------ dati e filtri
+# ------------------------------------------------------------------ filtri (dall'indirizzo)
 
+nav = st.navigation(pagine.mappa(), position="top")
+qp = st.query_params
 mtime = config.DB_PATH.stat().st_mtime
 stagioni = stagioni_disponibili()
-testata = st.empty()
-f0, f1, f2, f3 = st.columns([1, 1.3, 1.5, 1.6])
-stagione = f0.selectbox("Stagione", stagioni, format_func=config.STAGIONI.get)
+if "f_stag" not in st.session_state and qp.get("stagione") in stagioni:
+    st.session_state["f_stag"] = qp["stagione"]
+
+barra = st.container()
+f0, f1, f2, f3, f4 = st.columns([1, 1.25, 1.6, 1.8, 0.9], vertical_alignment="bottom")
+stagione = f0.selectbox("Stagione", stagioni, format_func=config.STAGIONI.get, key="f_stag")
 ctx = contesto(mtime, stagione)
 bs = ctx.bs
 if bs.empty:
@@ -59,75 +65,94 @@ if bs.empty:
 if utente.get("club") and "squadra_id" not in utente:
     trovate = scouting.find_team(ctx.conn, utente["club"])
     utente["squadra_id"] = trovate[0][0] if len(trovate) == 1 else None
+if utente.get("demo") and st.session_state.get("mia_demo") is not None:
+    utente["squadra_id"] = st.session_state["mia_demo"]
 
 camp_disp = [c for c in config.CAMPIONATI if c in set(bs["campionato_id"])]
-camp_default = 0
-if utente.get("squadra_id") in set(bs["squadra_id"]):
-    mio_camp = bs.loc[bs["squadra_id"] == utente["squadra_id"], "campionato_id"].iloc[0]
-    camp_default = camp_disp.index(mio_camp)
-camp = f1.selectbox("Campionato", camp_disp, index=camp_default,
-                    format_func=lambda c: config.CAMPIONATI[c])
+if st.session_state.get("f_camp") not in camp_disp:
+    camp_default = camp_disp[0]
+    if qp.get("campionato") in camp_disp:
+        camp_default = qp["campionato"]
+    elif utente.get("squadra_id") in set(bs["squadra_id"]):
+        camp_default = bs.loc[bs["squadra_id"] == utente["squadra_id"], "campionato_id"].iloc[0]
+    st.session_state["f_camp"] = camp_default
+camp = f1.selectbox("Campionato", camp_disp, format_func=lambda c: config.CAMPIONATI[c],
+                    key="f_camp")
 players = ctx.players[ctx.players["campionato_id"] == camp]
 profile = ctx.profile[ctx.profile["campionato_id"] == camp]
 squadre = profile.sort_values("squadra")
 sq_names = dict(zip(squadre["squadra_id"], squadre["squadra"]))
-sq = f2.selectbox("Squadra", [None] + list(sq_names),
+opzioni_sq = [None] + list(sq_names)
+if "f_sq" not in st.session_state and qp.get("squadra"):
+    try:
+        st.session_state["f_sq"] = int(qp["squadra"])
+    except ValueError:
+        pass
+if st.session_state.get("f_sq") not in opzioni_sq:
+    st.session_state["f_sq"] = None
+# Scouting senza squadra scelta: si apre sulla prossima avversaria della squadra del club
+if nav.url_path == "scouting" and st.session_state.get("f_sq") is None \
+        and utente.get("squadra_id"):
+    ng = ctx.next_game(utente["squadra_id"])
+    if ng:
+        avv = ng["ospite_id"] if ng["casa_id"] == utente["squadra_id"] else ng["casa_id"]
+        if avv in sq_names:
+            st.session_state["f_sq"] = avv
+sq = f2.selectbox("Squadra", opzioni_sq, key="f_sq",
                   format_func=lambda s: "Tutte" if s is None else sq_names[s])
 pool = (players if sq is None else players[players["squadra_id"] == sq]).sort_values("giocatore")
 g_names = {(r.giocatore_id, r.squadra_id): f"{r.giocatore} ({r.squadra})"
            for r in pool.itertuples()}
-gsel = f3.selectbox("Giocatore", [None] + list(g_names),
+opzioni_g = [None] + list(g_names)
+if "f_g" not in st.session_state and qp.get("giocatore"):
+    trovati = [k for k in g_names if k[0] == qp["giocatore"]]
+    if trovati:
+        st.session_state["f_g"] = trovati[0]
+if st.session_state.get("f_g") not in opzioni_g:
+    st.session_state["f_g"] = None
+gsel = f3.selectbox("Giocatore", opzioni_g, key="f_g",
                     format_func=lambda g: "Tutti" if g is None else g_names[g])
+esperto = f4.toggle("Esperto", key="esperto",
+                    help="Vista esperto: tutte le colonne e le metriche avanzate. "
+                         "Spenta: solo le voci essenziali, con nomi per esteso.")
+
+# filtri nell'indirizzo: la pagina si può condividire così com'è
+nuovi = {"stagione": stagione, "campionato": camp}
+if sq is not None:
+    nuovi["squadra"] = str(sq)
+if gsel is not None:
+    nuovi["giocatore"] = gsel[0]
+for k in ("squadra", "giocatore"):
+    if k not in nuovi and k in qp:
+        del qp[k]
+for k, v in nuovi.items():
+    if qp.get(k) != v:
+        qp[k] = v
 
 a = App(ctx=ctx, mtime=mtime, stagione=stagione, camp=camp, sq=sq, gsel=gsel, utente=utente,
         archivio=archivio(archivio_url()), players=players, profile=profile,
-        bs_c=bs[bs["campionato_id"] == camp], bg_c=ctx.bg[ctx.bg["campionato_id"] == camp])
+        bs_c=bs[bs["campionato_id"] == camp], bg_c=ctx.bg[ctx.bg["campionato_id"] == camp],
+        esperto=esperto)
 
 agg = ctx.conn.execute("SELECT MAX(scaricata_il) FROM partite").fetchone()[0]
 chi = (f" · {esc(utente['username'])} ({esc(utente['club'] or '')})"
        if not utente.get("demo") else " · modalità demo")
-with testata.container():
-    brand_hero(f"Stagione {config.STAGIONI.get(stagione, stagione)} · {config.CAMPIONATI[camp]}",
-         f"{a.bs_c['partita_id'].nunique()} partite · fino alla {int(a.bs_c['giornata'].max())}ª "
-         f"giornata · aggiornato {esc(str(agg)[:10])} · fonte legapallacanestro.com{chi}")
-    if not utente.get("demo"):
-        if st.button("Esci", key="logout"):
-            st.session_state.pop("utente", None)
-            st.rerun()
-
 n_incomplete = a.bs_c.loc[~a.bs_c["affidabile"], "partita_id"].nunique()
-if n_incomplete:
-    st.markdown(f'<div class="note">{n_incomplete} partite con box score ufficiale incompleto: '
-                'contano per risultati e totali, non per percentuali e metriche avanzate.'
-                f'{tip("incompleto")}</div>', unsafe_allow_html=True)
+with barra:
+    c1, c2 = st.columns([6, 1], vertical_alignment="center")
+    with c1:
+        meta = (f"{config.STAGIONI.get(stagione, stagione)} · {config.CAMPIONATI[camp]} · "
+                f"{a.bs_c['partita_id'].nunique()} partite, fino alla "
+                f"{int(a.bs_c['giornata'].max())}ª giornata · aggiornato "
+                f"{esc(pagine.data_it(agg))}{chi}")
+        if n_incomplete:
+            meta += (f' · {n_incomplete} box score incompleti{tip("incompleto")}')
+        topbar(meta)
+    if not utente.get("demo") and c2.button("Esci", key="logout"):
+        st.session_state.pop("utente", None)
+        st.rerun()
 
-# ------------------------------------------------------------------ schede
+# ------------------------------------------------------------------ pagine
 
-nomi_tab = ["Panoramica", "Classifica", "Squadre", "Giocatori", "Giocatore", "Scouting",
-            "Anteprima", "Mercato", "Avvisi", "La mia squadra", "Partite"]
-tabs = dict(zip(nomi_tab, st.tabs(nomi_tab)))
-
-with tabs["Panoramica"]:
-    schede.render_panoramica(a)
-with tabs["Classifica"]:
-    schede.render_classifica(a)
-with tabs["Squadre"]:
-    schede.render_squadre(a)
-with tabs["Giocatori"]:
-    schede.render_giocatori(a)
-with tabs["Giocatore"]:
-    schede.render_giocatore(a)
-    nuove.giocatore_extra(a)
-with tabs["Scouting"]:
-    schede.render_scouting(a)
-    nuove.scouting_extra(a)
-with tabs["Anteprima"]:
-    nuove.render_anteprima(a)
-with tabs["Mercato"]:
-    nuove.render_mercato(a)
-with tabs["Avvisi"]:
-    nuove.render_avvisi(a)
-with tabs["La mia squadra"]:
-    nuove.render_mia_squadra(a)
-with tabs["Partite"]:
-    nuove.partita_extra(a, schede.render_partite(a))
+pagine.APP = a
+nav.run()

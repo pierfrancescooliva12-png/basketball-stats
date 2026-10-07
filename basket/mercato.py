@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from . import analysis as A
+from . import approfondimenti as X
 from . import config
 
 # Caratteristiche usate per la somiglianza tra giocatori (profilo statistico)
@@ -38,6 +39,10 @@ def season_lines(conn, stagioni: list[str] | None = None) -> pd.DataFrame:
             continue
         bg = A.load_box_giocatore(conn, st)
         p = A.player_summary(bg, bs)
+        pres = X.presenze(bg, bs)
+        if not pres.empty:
+            p = p.merge(pres[["squadra_id", "giocatore_id", "partite_periodo", "saltate",
+                              "presenze_pct"]], on=["squadra_id", "giocatore_id"], how="left")
         p["stagione"] = st
         frames.append(p)
     if not frames:

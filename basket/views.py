@@ -67,6 +67,25 @@ TEAM_PROFILO = TEAM_BASE | {
     "quota_minuti_panchina": "% minuti panchina", "quota_top2": "% punti top 2",
     "diff_q1": "Diff Q1", "diff_q2": "Diff Q2", "diff_q3": "Diff Q3", "diff_q4": "Diff Q4",
 }
+# Viste essenziali: poche colonne, nomi per esteso (vista "Esperto" spenta)
+PLAYER_ESSENZIALE = {
+    "campionato": "Campionato", "giocatore": "Giocatore", "squadra": "Squadra",
+    "partite": "Partite", "minuti_pg": "Minuti", "punti_pg": "Punti", "rimb_tot_pg": "Rimbalzi",
+    "assist_pg": "Assist", "perse_pg": "Palle perse", "recuperate_pg": "Recuperi",
+    "t2_pct": "% da 2", "t3_pct": "% da 3", "tl_pct": "% liberi", "valutazione_pg": "Valutazione",
+}
+PLAYER_AVANZATE_ESS = {
+    "campionato": "Campionato", "giocatore": "Giocatore", "squadra": "Squadra",
+    "partite": "Partite", "minuti_pg": "Minuti", "punti_pg": "Punti",
+    "ts_pct": "Tiro (TS%)", "usg_pct": "Possessi usati (USG%)", "ast_pct": "Assist % (AST%)",
+    "trb_pct": "Rimbalzi % (REB%)", "game_score_pg": "Game Score",
+}
+TEAM_ESSENZIALE = {
+    "campionato": "Campionato", "squadra": "Squadra", "partite": "Partite", "vinte": "Vinte",
+    "perse_partite": "Perse", "punti_pg": "Punti fatti", "punti_subiti_pg": "Punti subiti",
+    "pace": "Ritmo", "ortg": "Attacco (ORtg)", "drtg": "Difesa (DRtg)", "net_rtg": "Net rating",
+    "efg_pct": "Tiro (eFG%)", "tov_pct": "Palle perse %", "orb_pct": "Rimb. offensivi %",
+}
 TREND = {
     "campionato": "Campionato", "giocatore": "Giocatore", "squadra": "Squadra", "partite": "PG",
     "punti_pg": "Punti stag.", "punti_pg_ult5": "Punti ult.5", "punti_pg_delta": "Δ Punti",

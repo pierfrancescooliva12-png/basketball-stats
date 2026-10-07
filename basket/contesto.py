@@ -6,6 +6,7 @@ from functools import cached_property
 import pandas as pd
 
 from . import analysis as A
+from . import approfondimenti as X
 from . import avvisi, config, db
 from . import pbp as P
 from . import previsioni as F
@@ -139,6 +140,50 @@ class Contesto:
         if not s.empty:
             s["giocatore"] = s["giocatore_id"].map(self.nomi_giocatori)
         return s
+
+    # ---------------------------------------------------------------- approfondimenti
+    @cached_property
+    def altezze(self) -> dict:
+        if not P._has_table(self.conn, "giocatori_info"):
+            return {}
+        return {g: h for g, h in self.conn.execute(
+            "SELECT giocatore_id, altezza_cm FROM giocatori_info WHERE altezza_cm > 150")}
+
+    @cached_property
+    def rotazioni(self) -> dict:
+        return X.rotazioni(self.stints)
+
+    @cached_property
+    def taglie(self) -> pd.DataFrame:
+        return X.taglia_quintetti(self.stints, self.altezze)
+
+    @cached_property
+    def momenti(self) -> pd.DataFrame:
+        return X.momenti(self.ev)
+
+    @cached_property
+    def origini_partita(self) -> pd.DataFrame:
+        return self._ev(P.origins_by_game)
+
+    @cached_property
+    def origini_concesse(self) -> pd.DataFrame:
+        return X.origini_concesse(self.origini_partita, self.ev) if not self.ev.empty \
+            else pd.DataFrame()
+
+    @cached_property
+    def partite(self) -> pd.DataFrame:
+        return pd.read_sql_query(
+            "SELECT partita_id, campionato_id, giornata, data, squadra_casa_id, "
+            "squadra_ospite_id, palazzetto FROM partite WHERE stagione = ?",
+            self.conn, params=(self.stagione,))
+
+    @cached_property
+    def calendario_fisico(self) -> pd.DataFrame:
+        return X.calendario_fisico(self.bs, self.partite)
+
+    @cached_property
+    def presenze(self) -> pd.DataFrame:
+        return X.presenze(self.bg, self.bs)
 
     # ---------------------------------------------------------------- previsioni e avvisi
     @cached_property

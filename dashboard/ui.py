@@ -1,6 +1,7 @@
 """Componenti grafici condivisi della dashboard: stile, schede, tabelle, grafici, "?"."""
 
 import html
+import re
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -26,7 +27,49 @@ def inject_css():
       --text: #e6eaf2; --text-2: #97a1b5; --muted: #6b7489; --accent: #ff7a1a;
       --pos: #3987e5; --neg: #d95926;
     }
-    .block-container {padding-top: 3.4rem; padding-left: 1rem; padding-right: 1rem; max-width: 1400px;}
+    .block-container {padding-top: 3.6rem; padding-left: 1rem; padding-right: 1rem; max-width: 1400px;}
+
+    /* Barra del marchio compatta (tutte le pagine tranne la Home) */
+    .topbar {display: flex; align-items: center; gap: 12px; margin: 0 0 8px; flex-wrap: wrap;}
+    .topbar svg {flex: none; width: 34px; height: 34px; border-radius: 9px;}
+    .topbar .nome {font: 700 1.45rem/1 'Barlow Condensed', sans-serif; letter-spacing: .04em;
+      color: var(--text);}
+    .topbar .meta {color: var(--text-2); font-size: .82rem;}
+    .pagina {font: 700 1.9rem/1.05 'Barlow Condensed', sans-serif; text-transform: uppercase;
+      letter-spacing: .02em; color: var(--text); margin: 4px 0 2px;}
+    .pagina-d {color: var(--text-2); font-size: .9rem; margin-bottom: 10px;}
+
+    /* Frase di sintesi */
+    .frase {background: linear-gradient(90deg, rgba(255,122,26,.12), rgba(255,122,26,0) 70%);
+      border-left: 3px solid var(--accent); border-radius: 10px; padding: 12px 16px;
+      margin: 6px 0 14px; color: var(--text); font-size: 1rem; line-height: 1.45;}
+    .frase b {font: 700 .72rem 'Inter', sans-serif; letter-spacing: .12em; color: var(--accent);
+      text-transform: uppercase; display: block; margin-bottom: 4px;}
+
+    /* Badge (posizione, campione ridotto) */
+    .badge {display: inline-block; font: 600 .72rem 'Inter', sans-serif; padding: 2px 8px;
+      border-radius: 999px; background: var(--surface-2); color: var(--text-2);
+      border: 1px solid var(--line); margin-left: 6px; vertical-align: middle;}
+    .badge.top {color: #9cc3f5; border-color: rgba(57,135,229,.5);}
+    .badge.low {color: #f0a07e; border-color: rgba(217,89,38,.5);}
+    .badge.warn {color: #f3c77a; border-color: rgba(243,199,122,.45);}
+
+    /* Schede della Home */
+    .cards {display: grid; grid-template-columns: 1fr; gap: 12px; margin: 6px 0 14px;}
+    @media (min-width: 760px) {.cards {grid-template-columns: repeat(2, 1fr);}}
+    @media (min-width: 1150px) {.cards.tre {grid-template-columns: repeat(3, 1fr);}}
+    .card {background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+      padding: 16px 18px;}
+    .card .h {font: 600 .72rem 'Inter', sans-serif; letter-spacing: .12em; color: var(--accent);
+      text-transform: uppercase;}
+    .card .t {font: 700 1.6rem/1.1 'Barlow Condensed', sans-serif; color: var(--text);
+      margin: 6px 0 4px; text-transform: uppercase;}
+    .card .m {color: var(--text-2); font-size: .88rem; line-height: 1.5;}
+    .card .big {font: 700 2.4rem/1 'Barlow Condensed', sans-serif; color: var(--text);}
+    .card .row {display: flex; gap: 22px; flex-wrap: wrap; margin-top: 10px;}
+    .card .row div {min-width: 90px;}
+    .card .row small {display: block; color: var(--muted); font-size: .72rem; text-transform: uppercase;
+      letter-spacing: .08em;}
     h1, h2, h3, h4 {font-family: 'Barlow Condensed', sans-serif !important; letter-spacing: .01em;}
 
     /* Testata */
@@ -88,12 +131,22 @@ def inject_css():
     .pill-list {display: flex; flex-direction: column; gap: 6px;}
     .pill {background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
       padding: 8px 12px; font-size: .88rem; color: var(--text);}
+    .fb-t {font: 700 1.25rem 'Barlow Condensed', sans-serif; text-transform: uppercase;
+      letter-spacing: .02em;}
     .pill.pos {border-left: 3px solid var(--pos);} .pill.neg {border-left: 3px solid var(--neg);}
 
     /* Controlli più grandi per il tocco */
     div[data-baseweb="select"] > div {min-height: 46px; font-size: 1.02rem;}
+    [data-testid="stSelectbox"] [role="group"] {min-height: 46px;}
+    [data-testid="stSelectbox"] input[role="combobox"] {font-size: 1.02rem;}
     button[data-baseweb="tab"] {font: 600 1.02rem 'Barlow Condensed', sans-serif;
       text-transform: uppercase; letter-spacing: .05em; padding: .6rem .9rem;}
+    /* Navigazione in alto: voci più grandi al tocco */
+    header [data-testid="stTopNavLink"], header [data-testid="stTopNavSection"] {
+      font: 600 1.05rem 'Barlow Condensed', sans-serif !important; letter-spacing: .04em;
+      text-transform: uppercase; min-height: 44px;}
+    [data-testid="stPageLink"] a {min-height: 44px; border: 1px solid var(--line);
+      border-radius: 10px; padding: 6px 12px; background: var(--surface-2);}
     div[role="radiogroup"] label {padding: .25rem .55rem;}
     [data-testid="stMetricValue"] {font-family: 'Barlow Condensed', sans-serif;}
     .note {color: var(--text-2); font-size: .82rem; margin: -4px 0 10px;}
@@ -101,9 +154,9 @@ def inject_css():
     /* Pulsante "?" e finestra di spiegazione (funziona al tocco, si chiude toccando fuori) */
     details.tip {display: inline-block; vertical-align: middle; margin-left: 6px;}
     details.tip > summary {list-style: none; cursor: pointer; display: inline-flex;
-      align-items: center; justify-content: center; width: 21px; height: 21px; border-radius: 50%;
+      align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%;
       border: 1px solid #33415f; background: var(--surface-2); color: var(--text-2);
-      font: 600 12px/1 'Inter', sans-serif; text-transform: none; letter-spacing: 0;
+      font: 600 13px/1 'Inter', sans-serif; text-transform: none; letter-spacing: 0;
       -webkit-tap-highlight-color: transparent;}
     details.tip > summary::-webkit-details-marker {display: none;}
     details.tip > summary:hover, details.tip[open] > summary {border-color: var(--accent);
@@ -183,6 +236,7 @@ TIPS = {
     "Proiezione della classifica": "simulazione", "Giocatori simili": "somiglianza",
     "Talenti di B Nazionale": "talenti", "Ruolo stimato": "ruolo", "Profilo di tiro": "t3a_rate",
     "Andamento della partita": "break", "Clutch": "clutch", "Fabbisogni": "fabbisogni",
+    "Riposo": "riposo", "Trasferte": "riposo", "Presenze": "presenze",
 }
 
 
@@ -219,9 +273,34 @@ def section(title: str, desc: str = "", key: str | None = None):
                 f'<span class="d">{esc(desc)}</span></div>', unsafe_allow_html=True)
 
 
+_DEC = re.compile(r"(?<![\d.])(\d+)\.(\d+)(?![\d.])")
+
+
+_ISO = re.compile(r"\b(\d{4})-(\d{2})-(\d{2})\b")
+
+
+def it(testo) -> str:
+    """Testi all'italiana: decimali con la virgola ("75.8" -> "75,8") e date gg/mm/aaaa."""
+    return _DEC.sub(r"\1,\2", _ISO.sub(r"\3/\2/\1", str(testo)))
+
+
+def num(v, d: int = 1, signed: bool = False, suffix: str = "") -> str:
+    """Numero formattato all'italiana; "–" se mancante."""
+    if v is None or (isinstance(v, float) and pd.isna(v)):
+        return "–"
+    try:
+        s = f"{float(v):+.{d}f}" if signed else f"{float(v):.{d}f}"
+    except (TypeError, ValueError):
+        return str(v)
+    return s.replace(".", ",") + suffix
+
+
 def kpis(items: list[tuple[str, str, str]]):
+    """Schede numeriche: (etichetta, valore, sottotitolo). Il sottotitolo accetta HTML
+    già sicuro (es. un badge di posizione)."""
     cards = "".join(f'<div class="kpi"><div class="l">{esc(l)}{tip(TIPS.get(l))}</div>'
-                    f'<div class="v">{esc(v)}</div><div class="s">{esc(s)}</div></div>'
+                    f'<div class="v">{esc(it(v))}</div><div class="s">'
+                    f'{s if str(s).startswith("<") else esc(it(s))}</div></div>'
                     for l, v, s in items)
     st.markdown(f'<div class="kpis">{cards}</div>', unsafe_allow_html=True)
 
@@ -233,7 +312,7 @@ def leader_cards(cards: list[tuple[str, pd.DataFrame, str, str]]):
         rows = "".join(
             f'<div class="lrow"><span class="r">{i}</span><span class="n">{esc(r.giocatore)}'
             f'<small>{esc(r.squadra)}</small></span>'
-            f'<span class="x">{getattr(r, col):{fmt}}</span></div>'
+            f'<span class="x">{it(format(getattr(r, col), fmt))}</span></div>'
             for i, r in enumerate(df.itertuples(), start=1))
         out.append(f'<div class="lcard"><div class="h">{esc(title)}{tip(TIPS.get(title))}</div>'
                    f'{rows}</div>')
@@ -241,42 +320,79 @@ def leader_cards(cards: list[tuple[str, pd.DataFrame, str, str]]):
 
 
 def pills(items: list[str], kind: str, empty: str):
-    body = "".join(f'<div class="pill {kind}">{esc(x)}</div>' for x in items) or \
+    body = "".join(f'<div class="pill {kind}">{esc(it(x))}</div>' for x in items) or \
         f'<div class="pill">{esc(empty)}</div>'
     st.markdown(f'<div class="pill-list">{body}</div>', unsafe_allow_html=True)
 
 
+CHIAVI_NOME = ("Giocatore", "Squadra", "Quintetto", "Voce", "Metrica", "Fattore")
+
+
+def _colori(df: pd.DataFrame, colori: dict) -> pd.DataFrame:
+    """CSS di sfondo: blu per i valori migliori, arancio per i peggiori (tenue)."""
+    css = pd.DataFrame("", index=df.index, columns=df.columns)
+    for c, alto in colori.items():
+        if c not in df.columns or not pd.api.types.is_numeric_dtype(df[c]):
+            continue
+        r = df[c].rank(pct=True)
+        if not alto:
+            r = 1 - r
+        for i, v in r.items():
+            if pd.isna(v) or df[c].notna().sum() < 4:
+                continue
+            forza = abs(v - 0.5) * 2
+            if forza < 0.35:
+                continue
+            rgb = "57,135,229" if v > 0.5 else "217,89,38"
+            css.at[i, c] = f"background-color: rgba({rgb},{0.10 + 0.32 * forza:.2f})"
+    return css
+
+
 def show(df: pd.DataFrame, height: int | None = None, progress: dict | None = None,
-         voci: list | None = None):
-    """Tabella a tutta larghezza. progress: {colonna: (min, max)} per le barre nelle celle.
+         voci: list | None = None, colori: dict | None = None):
+    """Tabella a tutta larghezza. progress: {colonna: (min, max)} per le barre nelle celle;
+    colori: {colonna: True se più alto è meglio} per evidenziare migliori e peggiori.
     Sopra la tabella compare il pulsante "?" con la spiegazione delle colonne complesse.
-    I valori mancanti sono mostrati come "–"."""
+    I numeri seguono il formato del dispositivo (virgola per i decimali in italiano);
+    i valori mancanti sono mostrati come "–"."""
     spiegazioni = voci if voci is not None else voci_per_colonne(df.columns)
     if spiegazioni:
         st.markdown(legend(spiegazioni), unsafe_allow_html=True)
     df = df.reset_index(drop=True).copy()
+    css = _colori(df, colori) if colori else None
     cfg = {}
     for c in df.columns:
         if pd.api.types.is_float_dtype(df[c]):
             two = any(k in str(c) for k in ("rate", "FTA/FGA", "Variabilità"))
-            f = "{:.2f}" if two else "{:.1f}"
+            d = 2 if two else 1
             if df[c].isna().any() and c not in (progress or {}):
                 # colonne con valori mancanti: testo formattato, "–" al posto del vuoto
-                df[c] = df[c].map(lambda v, f=f: "–" if pd.isna(v) else f.format(v))
+                df[c] = df[c].map(lambda v, d=d: num(v, d))
             else:
-                cfg[c] = st.column_config.NumberColumn(format="%.2f" if two else "%.1f")
-        elif not pd.api.types.is_numeric_dtype(df[c]) and df[c].isna().any():
-            df[c] = df[c].astype(object).where(df[c].notna(), "–")
+                df[c] = df[c].round(d)
+                cfg[c] = st.column_config.NumberColumn(format="localized")
+        elif not pd.api.types.is_numeric_dtype(df[c]):
+            if str(c).startswith("Data"):
+                df[c] = df[c].map(lambda v: it(v) if isinstance(v, str) else v)
+            if df[c].isna().any():
+                df[c] = df[c].astype(object).where(df[c].notna(), "–")
     for c, (lo, hi) in (progress or {}).items():
         if c in df.columns:
-            cfg[c] = st.column_config.ProgressColumn(c, min_value=lo, max_value=hi, format="%.1f")
-    st.dataframe(df, hide_index=True, width="stretch", column_config=cfg,
+            cfg[c] = st.column_config.ProgressColumn(c, min_value=lo, max_value=hi,
+                                                     format="localized")
+    if len(df.columns) > 6:
+        for c in df.columns[:2]:
+            if c in CHIAVI_NOME:
+                cfg[c] = st.column_config.TextColumn(c, pinned=True, width="medium")
+                break
+    data = df.style.apply(lambda _: css, axis=None) if css is not None else df
+    st.dataframe(data, hide_index=True, width="stretch", column_config=cfg,
                  height=height or min(36 * (len(df) + 1) + 4, 640))
 
 
 def plot(fig, height=380, **layout):
     fig.update_layout(height=height, paper_bgcolor="rgba(0,0,0,0)",
-                      plot_bgcolor="rgba(0,0,0,0)", **layout)
+                      plot_bgcolor="rgba(0,0,0,0)", separators=",.", **layout)
     st.plotly_chart(fig, width="stretch", theme=None,
                     config={"displayModeBar": False})
 
@@ -321,3 +437,40 @@ def brand_hero(eyebrow: str, meta: str = ""):
         f'{esc(config.BRAND)}</div><div class="tagline">{esc(config.BRAND_TAGLINE)}</div>'
         f'</div></div><div class="meta" style="margin-top:10px">{meta}</div></div>',
         unsafe_allow_html=True)
+
+
+def topbar(meta: str = ""):
+    """Barra compatta con il marchio (al posto della testata grande)."""
+    from basket import config
+    mark = (config.LOGO_DIR / "assist-mark.svg").read_text(encoding="utf-8")
+    st.markdown(f'<div class="topbar">{mark}<span class="nome">{esc(config.BRAND)}</span>'
+                f'<span class="meta">{meta}</span></div>', unsafe_allow_html=True)
+
+
+def titolo_pagina(titolo: str, desc: str = ""):
+    st.markdown(f'<div class="pagina">{esc(titolo)}</div>'
+                + (f'<div class="pagina-d">{esc(desc)}</div>' if desc else ""),
+                unsafe_allow_html=True)
+
+
+def frase(titolo: str, voci: list[str]):
+    """Riquadro "in una frase" con le caratteristiche più marcate."""
+    if not voci:
+        return
+    testo = voci[0] if len(voci) == 1 else ", ".join(voci[:-1]) + " e " + voci[-1]
+    testo = testo[0].upper() + testo[1:]
+    st.markdown(f'<div class="frase"><b>{esc(titolo)}</b>{esc(testo)}.</div>',
+                unsafe_allow_html=True)
+
+
+def badge_pos(pos: tuple[int, int] | None) -> str:
+    """Badge "3° su 20": blu nel primo quarto, arancio nell'ultimo."""
+    if not pos:
+        return ""
+    r, n = pos
+    cls = "top" if r <= max(1, round(n / 4)) else ("low" if r > n - max(1, round(n / 4)) else "")
+    return f'<span class="badge {cls}">{r}° su {n}</span>'
+
+
+def badge(testo: str, cls: str = "") -> str:
+    return f'<span class="badge {cls}">{esc(testo)}</span>'

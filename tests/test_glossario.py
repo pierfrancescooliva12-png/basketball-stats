@@ -34,7 +34,14 @@ def test_tips_della_dashboard_esistono():
 
 
 def test_dashboard_modules_import():
-    """I moduli della dashboard si importano senza errori (nessun codice eseguito)."""
+    """I moduli della dashboard si importano senza errori (nessun codice eseguito).
+    Nel workflow di aggiornamento dati le librerie della dashboard non sono installate:
+    lì il test viene saltato."""
     import importlib
-    for mod in ("dashboard.ui", "dashboard.stato", "dashboard.schede", "dashboard.nuove"):
+
+    import pytest
+    pytest.importorskip("plotly")
+    pytest.importorskip("streamlit")
+    for mod in ("dashboard.ui", "dashboard.stato", "dashboard.schede", "dashboard.nuove",
+                "dashboard.analisi", "dashboard.pagine"):
         importlib.import_module(mod)

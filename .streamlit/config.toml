@@ -15,3 +15,7 @@ headless = true
 
 [browser]
 gatherUsageStats = false
+
+[client]
+# niente pulsante "Deploy" né menu tecnico per gli utenti dei club
+toolbarMode = "minimal"
