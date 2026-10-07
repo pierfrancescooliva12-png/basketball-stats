@@ -81,6 +81,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .biblioteca { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .biblioteca select { height: 44px; min-width: 0; flex: 1 1 200px; padding: 0 10px;
   border: 1px solid var(--bordo); border-radius: 10px; background: var(--pannello); }
+.scelta-schemi { height: 44px; flex: 0 1 260px; min-width: 0; padding: 0 10px; font-weight: 600;
+  border: 2px solid var(--accento); border-radius: 10px; background: var(--pannello); }
+.scelta-schemi:focus-visible { outline: 3px solid var(--accento); outline-offset: 2px; }
 .avviso { font-size: .85rem; color: var(--tenue); }
 .conferma { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
@@ -89,6 +92,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 <div class="app">
   <header class="testa">
     <h1 id="titolo">Lavagna <span>ASSIST</span></h1>
+    <select id="schemi" class="scelta-schemi" aria-label="Schemi pronti"></select>
     <div class="campo-nome"><input id="nome" aria-label="Nome del gioco" placeholder="Nome del gioco, es. Horns 45"></div>
     <div class="segmenti" role="group" aria-label="Di chi è il gioco">
       <button id="tipo-nostro" aria-pressed="true">Nostro</button>
@@ -136,7 +140,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
     <textarea class="nota" id="nota" aria-label="Note della fase" placeholder="Note della fase: letture, tempi, chiamata…"></textarea>
 
     <div class="biblioteca">
-      <select id="schemi" aria-label="Schemi pronti"></select>
       <select id="elenco" aria-label="Giochi salvati"></select>
       <button class="btn primario" id="salva">Salva gioco</button>
       <button class="btn" id="nuovo">Nuovo</button>
@@ -562,7 +565,7 @@ let schemi = Array.isArray(window.LAVAGNA_SCHEMI) ? window.LAVAGNA_SCHEMI : [];
 function aggiornaSchemi() {
   const s = $("schemi"); s.textContent = "";
   s.hidden = !schemi.length;
-  const o0 = document.createElement("option"); o0.value = ""; o0.textContent = "Schemi pronti…";
+  const o0 = document.createElement("option"); o0.value = ""; o0.textContent = `📋 Schemi pronti (${schemi.length})…`;
   s.appendChild(o0);
   const gruppi = {};
   for (const x of schemi) (gruppi[x.categoria || "Altri"] ||= []).push(x);
