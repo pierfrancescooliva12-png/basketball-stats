@@ -11,7 +11,7 @@ import streamlit as st
 from basket import approfondimenti as X
 from basket import config
 
-from . import analisi, nuove, previsioni_ui, schede
+from . import analisi, chiavi_ui, nuove, previsioni_ui, schede
 from .stato import App
 from .ui import (badge_pos, brand_hero, esc, frase, it, kpis, note_html, num, pills, section,
                  short, titolo_pagina)
@@ -178,7 +178,7 @@ def home():
         pulsante(c[0], "Scouting dell'avversaria", "scouting", primary=True, f_sq=avv)
         pulsante(c[1], "Anteprima della partita", "anteprima", f_sq=mia)
         with c[2]:
-            st.download_button("⬇ PDF avversaria", nuove._pdf(a.ctx, a.mtime, a.stagione, avv),
+            st.download_button("⬇ PDF avversaria", nuove._pdf(a.ctx, a.mtime, a.stagione, avv, mia),
                                file_name=f"scouting_{analisi.slug(pr.loc[avv, 'squadra'])}.pdf",
                                mime="application/pdf", width="stretch")
     if ultima:
@@ -230,6 +230,7 @@ def p_scouting():
         scegli_squadra(a, "Scegli la squadra da analizzare.")
         return
     schede.render_scouting(a)
+    chiavi_ui.render(a, a.sq)
     nuove.scouting_extra(a)
 
 

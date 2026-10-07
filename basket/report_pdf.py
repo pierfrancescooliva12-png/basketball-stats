@@ -183,7 +183,9 @@ def _header(r, prossima, S, width, stagione_label=config.STAGIONE_LABEL):
     return t
 
 
-def build_pdf(ctx: Contesto, squadra_id: int) -> bytes:
+def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None) -> bytes:
+    """Report di scouting su squadra_id. Con mia (la squadra dello staff) aggiunge le chiavi
+    per vincere la partita contro di lei."""
     _fonts()
     S = _styles()
     r = scouting.build_report(ctx.conn, squadra_id, ctx.stagione)
@@ -226,6 +228,8 @@ def build_pdf(ctx: Contesto, squadra_id: int) -> bytes:
     fd.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"),
                             ("LEFTPADDING", (0, 0), (-1, -1), 2)]))
     el += [fd]
+    if mia is not None and mia != squadra_id:
+        el += _chiavi(ctx, squadra_id, mia, S, W)
 
     ff = r.profilo[r.profilo["Metrica"].isin([
         "eFG% in attacco", "Palle perse % in attacco", "Rimbalzi offensivi %",
@@ -371,6 +375,61 @@ def build_pdf(ctx: Contesto, squadra_id: int) -> bytes:
 
     doc.build(el, onFirstPage=footer, onLaterPages=footer)
     return buf.getvalue()
+
+
+def _chiavi(ctx: Contesto, avv: int, mia: int, S, W) -> list:
+    """Chiavi per vincere: leve della partita, ritmo, giocatori chiave dell'avversaria."""
+    from . import chiavi as C
+    from . import validazione as V
+    prof = ctx.profile
+    camp = prof.set_index("squadra_id").loc[avv, "campionato_id"]
+    lega = prof[prof["campionato_id"] == camp]
+    if mia not in set(lega["squadra_id"]):
+        return []
+    ng = ctx.next_game(mia)
+    casa_mia = ng["casa_id"] == mia if ng and {ng["casa_id"], ng["ospite_id"]} == {mia, avv} \
+        else True
+    forze, hca = ctx.forze(camp), ctx.hca(camp)
+    lv = C.leve(lega, forze, mia, avv, casa_mia, hca)
+    rt = C.ritmo(forze, mia, avv, casa_mia, hca)
+    m0, _ = C._margine_noi(forze, mia, avv, casa_mia, hca)
+    bt = V.carica()
+    bt = bt[bt["stagione"] == ctx.stagione] if not bt.empty else bt
+    gc = C.giocatori_chiave(ctx.bg, bt, avv, ctx.nomi_giocatori) if not bt.empty else \
+        pd.DataFrame()
+    if not gc.empty:
+        gc = C.prob_giocatori(gc[gc["effetto"] >= 0.5], m0, True)
+    nome_avv = ctx.nomi_squadre.get(avv, str(avv))
+    nome_mia = ctx.nomi_squadre.get(mia, str(mia))
+    el = [Paragraph(f"CHIAVI PER VINCERE · {nome_mia} contro {nome_avv}", S["h2"]),
+          Paragraph(f"Probabilità di vittoria di {nome_mia} secondo il modello: "
+                    f"<b>{lv['prob_ora'].iloc[0]:.0f}%</b> "
+                    f"({'in casa' if casa_mia else 'in trasferta'}). Le chiavi sono "
+                    "associazioni statistiche, non garanzie.", S["body"])]
+    for i, t in enumerate(C.sintesi(lv, gc, nome_avv), start=1):
+        el.append(Paragraph(f"{i}. {t}".replace(" → ", " · "), S["body"]))
+    rows = [["Fattore", "Lato", "Atteso", "Media", "Obiettivo", "Probabilità", "Guadagno"]]
+    for x in lv.itertuples():
+        f = (lambda v: _fmt(v, 2)) if x.chiave == "ftr" else (lambda v: _fmt(v, 1))
+        rows.append([x.fattore, x.lato, f(x.atteso), f(x.media), f(x.obiettivo),
+                     f"{_fmt(x.prob_obiettivo, 0)}%", f"{_fmt(x.guadagno, 1, signed=True)}"])
+    el.append(_table(rows, [58 * mm, 22 * mm] + [(W - 80 * mm) / 5] * 5, align_left=(1,)))
+    lento, veloce = rt.iloc[0], rt.iloc[-1]
+    el.append(Paragraph(f"Ritmo: con {_fmt(lento['possessi'], 0)} possessi "
+                        f"{_fmt(lento['prob'], 0)}%, con {_fmt(veloce['possessi'], 0)} possessi "
+                        f"{_fmt(veloce['prob'], 0)}%.", S["small"]))
+    if not gc.empty:
+        rows = [["Giocatore", "Soglia", "Partite sotto/sopra", "Scarto sotto", "Scarto sopra",
+                 "Probabilità se resta sotto"]]
+        for x in gc.head(5).itertuples():
+            rows.append([x.giocatore, f"meno di {_fmt(x.soglia, 0)} {x.statistica}",
+                         f"{x.partite_sotto}/{x.partite_sopra}",
+                         _fmt(x.scarto_sotto, 1, signed=True), _fmt(x.scarto_sopra, 1, signed=True),
+                         f"{_fmt(x.prob_scenario, 0)}%"])
+        el += [Paragraph(f"GIOCATORI CHIAVE DI {nome_avv.upper()} · scarto rispetto al margine "
+                         "previsto", S["h2"]),
+               _table(rows, [50 * mm, 34 * mm] + [(W - 84 * mm) / 4] * 4, align_left=(1,))]
+    return el
 
 
 def _approfondimenti(ctx: Contesto, sid: int, prossima, S, W) -> list:

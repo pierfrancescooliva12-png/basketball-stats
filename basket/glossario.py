@@ -288,10 +288,11 @@ G = {
         "Perché questa previsione",
         "Quanto pesa ogni fattore sulla probabilità di vittoria.",
         "Il margine atteso è la somma di più parti: vantaggio del campo, differenza di "
-        "attacco, differenza di difesa e quanto conta ancora la stagione precedente. Il peso "
+        "attacco, differenza di difesa e quanto conta ancora il punto di partenza (valore della "
+        "rosa nella stagione precedente). Il peso "
         "di un fattore è quanto cambierebbe la probabilità togliendo solo quel fattore.",
         "Barre blu a favore della squadra di casa, arancio a favore dell'ospite. A inizio "
-        "stagione la stagione precedente pesa di più, poi lascia spazio ai numeri di quest'anno."),
+        "stagione il punto di partenza pesa di più, poi lascia spazio ai numeri di quest'anno."),
     "scenari": Voce(
         "Scenari: e se…",
         "Come cambia la previsione con condizioni diverse: assenze, campo neutro, forma della "
@@ -313,8 +314,10 @@ G = {
         "Forza stimata",
         "Quanto una squadra è migliore o peggiore di una squadra media, in punti ogni 100 "
         "possessi.",
-        "Media bayesiana tra un terzo del Net rating della stagione precedente e il Net rating "
-        "di quest'anno: più partite si giocano, più conta quest'anno. La forbice indica "
+        "Media bayesiana tra un punto di partenza e il Net rating di quest'anno: più partite "
+        "si giocano, più conta quest'anno. Il punto di partenza è il valore dei giocatori in "
+        "rosa nella stagione precedente, pesato per i loro minuti (per le squadre senza dati "
+        "sui giocatori, un terzo del Net rating della stagione precedente). La forbice indica "
         "l'incertezza (intervallo al 90%).",
         "+8 è una squadra di vertice, 0 una squadra media, −8 una squadra in difficoltà."),
     "validazione": Voce(
@@ -344,6 +347,42 @@ G = {
         "Forza bayesiana delle squadre, ritmo, vantaggio del campo e variabilità della partita; "
         "simulazione Monte Carlo per la classifica.",
         "Modello statistico trasparente, tarato e validato sui dati delle stagioni precedenti."),
+    "leve": Voce(
+        "Leve della partita",
+        "I Four Factors della partita: dove l'incrocio tra il vostro attacco e la loro difesa "
+        "(e viceversa) vi è favorevole o sfavorevole, e quanto vale lavorarci.",
+        "Valore atteso = media del campionato + scostamento dell'attacco + scostamento della "
+        "difesa che lo affronta. Obiettivo: se il fattore è a sfavore, riportarlo alla media "
+        "del campionato; se è a favore, migliorarlo di mezza deviazione tra squadre. Il "
+        "guadagno usa il peso di ogni fattore sul Net rating, misurato su oltre 4.000 partite "
+        "di A2 e B (un punto di eFG% vale 1,5 punti ogni 100 possessi, uno di palle perse 1,4, "
+        "uno di rimbalzi offensivi 0,5).",
+        "Le leve in cima sono quelle su cui la preparazione rende di più. Lo staff valuta quali "
+        "sono davvero allenabili in settimana."),
+    "quando_perdono": Voce(
+        "Quando perdono",
+        "In cosa cambia la squadra tra le partite vinte e quelle perse.",
+        "Media di ogni voce nelle vittorie e nelle sconfitte; ordinate per quanto la differenza "
+        "pesa sul Net rating.",
+        "È un'associazione: nelle sconfitte possono pesare anche avversari più forti. Con meno "
+        "di 5 vittorie o sconfitte le differenze sono poco affidabili."),
+    "giocatori_chiave": Voce(
+        "Giocatori chiave",
+        "Come rende la squadra quando un giocatore resta sotto (o va sopra) la sua soglia "
+        "abituale.",
+        "Per ogni partita si calcola lo scarto tra il margine reale e quello previsto prima "
+        "della partita, così conta anche la forza dell'avversario. Si confronta lo scarto medio "
+        "nelle partite sotto e sopra la soglia (la mediana del giocatore). L'effetto è ristretto "
+        "verso zero quando le partite sono poche; servono almeno 4 partite per lato.",
+        "Associazioni osservate, non cause: un giocatore può segnare poco anche perché la "
+        "squadra gioca male. \"Chi compensa\" è il compagno che segna di più quando lui resta "
+        "sotto soglia; \"Senza di lui\" è lo scarto medio nelle partite in cui non ha giocato."),
+    "ritmo_varianza": Voce(
+        "Ritmo e sorpresa",
+        "Come cambia la probabilità con una partita più lenta o più veloce.",
+        "Il divario tra le squadre cresce con il numero di possessi, la casualità solo con la "
+        "sua radice quadrata.",
+        "Meno possessi aiutano la squadra sfavorita, più possessi la favorita."),
     "rotazioni": Voce(
         "Rotazioni",
         "Come l'allenatore distribuisce i minuti: chi parte titolare, quando entrano i cambi, "
@@ -519,7 +558,9 @@ COLONNE = {
     "Rimbalzi % (REB%)": "reb_ind", "Attacco (ORtg)": "ortg", "Difesa (DRtg)": "drtg",
     "Net rating": "net_rtg", "Tiro (eFG%)": "efg", "Palle perse %": "tov",
     "Rimb. offensivi %": "orb", "Ritmo": "pace", "Valutazione": "valutazione",
-    "Punti/40 attesi in A2": "traduzione", "Game Score/40 atteso in A2": "traduzione",
+    "Punti/40 attesi in A2": "traduzione", "Obiettivo": "leve", "Guadagno": "leve",
+    "Scarto sotto": "giocatori_chiave", "Scarto sopra": "giocatori_chiave",
+    "Nelle vittorie": "quando_perdono", "Game Score/40 atteso in A2": "traduzione",
 }
 
 

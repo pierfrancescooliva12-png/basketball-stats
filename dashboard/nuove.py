@@ -30,8 +30,8 @@ def _team(df: pd.DataFrame, sid) -> pd.DataFrame:
 
 
 @st.cache_data(show_spinner="Preparo il PDF…")
-def _pdf(_ctx, mtime: float, stagione: str, sid: int) -> bytes:
-    return build_pdf(_ctx, sid)
+def _pdf(_ctx, mtime: float, stagione: str, sid: int, mia: int | None = None) -> bytes:
+    return build_pdf(_ctx, sid, mia)
 
 
 def _coverage(a: App):
@@ -350,6 +350,8 @@ def render_anteprima(a: App):
 
     PU.avviso()
     PU.perche(a, forze, casa, ospite, ctx.hca(a.camp), nomi)
+    from . import chiavi_ui
+    chiavi_ui.anteprima(a, casa, ospite, nomi)
     PU.scenari(a, forze, casa, ospite, ctx.hca(a.camp), nomi)
 
     pa = a.profile.set_index("squadra_id")

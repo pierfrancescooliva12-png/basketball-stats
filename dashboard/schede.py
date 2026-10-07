@@ -347,7 +347,7 @@ def render_scouting(a: App):
         from .nuove import _pdf
         from basket.report_pdf import slug
         st.download_button("⬇ Report PDF per la riunione tecnica",
-                           _pdf(a.ctx, a.mtime, a.stagione, sq),
+                           _pdf(a.ctx, a.mtime, a.stagione, sq, a.utente.get("squadra_id")),
                            file_name=f"scouting_{slug(r.squadra)}.pdf", mime="application/pdf",
                            type="primary")
         pr = profile.set_index("squadra_id")

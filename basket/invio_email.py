@@ -55,7 +55,7 @@ def prepare(ctx, sub: dict) -> tuple[str, str, list[tuple[bytes, str]]] | None:
     if avv_id not in set(ctx.bs["squadra_id"]):
         log.info("%s: l'avversaria %s non ha ancora partite giocate", mia, avv)
         return None
-    allegati = [(build_pdf(ctx, avv_id), f"scouting_{slug(avv)}.pdf")]
+    allegati = [(build_pdf(ctx, avv_id, mia_id), f"scouting_{slug(avv)}.pdf")]
     try:
         allegati.append((build_post_partita(ctx, mia_id), f"post_partita_{slug(mia)}.pdf"))
     except ValueError:

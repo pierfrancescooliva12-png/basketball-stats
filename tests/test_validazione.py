@@ -85,3 +85,13 @@ def test_backtest_e_registro(tmp_path):
     assert bt["partite_note"].iloc[0] == 0      # nessuna partita precedente
     V.registra(conn, "x2627")
     assert "prob_casa" in V.registro(conn).columns
+
+
+def test_indice_rosa():
+    valori = pd.DataFrame({"rel_a2": [6.0, -2.0], "rel_b": [10.0, 0.0],
+                           "affidabilita": [0.5, 1.0]}, index=["a", "b"])
+    bg = pd.DataFrame({"squadra_id": [1, 1, 1, 2], "campionato_id": ["ita2"] * 3 + ["ita3_a"],
+                       "giocatore_id": ["a", "b", "nuovo", "a"], "minuti": [20, 10, 10, 30]})
+    ind = F.indice_rosa(bg, valori)
+    assert ind[1] == pytest.approx(0.5 * 6 * 0.5 + (-2) * 0.25)   # il nuovo vale come la mediana
+    assert ind[2] == pytest.approx(0.5 * 10)                        # in B si usa la scala B
