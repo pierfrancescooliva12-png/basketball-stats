@@ -108,3 +108,13 @@ def test_pdf_con_chiavi(tmp_path, monkeypatch):
     update.update_league(conn, Client(), "ita2", "x2627", {2})
     pdf = build_pdf(Contesto(conn, "x2627"), 10050, 100118)
     assert pdf[:4] == b"%PDF" and len(pdf) > 10_000
+
+
+def test_chiavi_tutte_insieme_e_frasi():
+    lv = C.leve(_profilo(), _forze(), mia=1, avv=9, casa_mia=True, hca=3.0)
+    c = C.combinata(lv, pd.DataFrame())
+    assert c["chiavi"] == 3 and c["prob_tutte"] >= lv.head(3)["prob_obiettivo"].max()
+    assert c["punti"] == pytest.approx(lv.head(3)["d_margine"].sum())
+    assert "tutte e 3 le chiavi" in C.frase_combinata(c)
+    r = lv[(lv["chiave"] == "tov") & (lv["lato"] == "In difesa")].iloc[0]
+    assert "costringere Avv ad almeno" in C.frase_leva(r, "Avv")

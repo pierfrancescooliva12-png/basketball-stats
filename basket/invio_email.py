@@ -3,7 +3,10 @@
 Configurazione tramite variabili d'ambiente (in GitHub: Settings > Secrets and variables >
 Actions):
     SMTP_HOST, SMTP_PORT (default 587), SMTP_USER, SMTP_PASSWORD, MITTENTE
-    ABBONATI: JSON, es. [{"email": "staff@club.it", "squadra": "Forlì"}]
+    ABBONATI: JSON, es. [{"email": "staff@club.it", "squadra": "Forlì", "club": "forli"}]
+    ARCHIVIO_URL (facoltativo): indirizzo dell'archivio del club (lo stesso di [database] url
+    nei secrets della dashboard); con "club" nell'abbonato, il PDF include i giochi
+    dell'avversaria disegnati sulla lavagna.
 Se SMTP_HOST o ABBONATI mancano, non viene inviato nulla.
 
     python -m basket.invio_email            # invia
@@ -24,6 +27,19 @@ from .report_extra import build_post_partita
 from .report_pdf import build_pdf, slug
 
 log = logging.getLogger("basket.email")
+
+
+def giochi_avversaria(sub: dict, avv_id: int) -> list[dict]:
+    """Giochi dell'avversaria disegnati dallo staff, se l'archivio del club è raggiungibile."""
+    url = os.environ.get("ARCHIVIO_URL", "").strip()
+    if not url or not sub.get("club"):
+        return []
+    try:
+        from .note import Archivio
+        return Archivio(url).plays(sub["club"], avv_id)
+    except Exception as e:                       # l'email parte comunque, senza i giochi
+        log.warning("Giochi non disponibili per %s: %s", sub.get("club"), e)
+        return []
 
 
 def abbonati() -> list[dict]:
@@ -55,7 +71,8 @@ def prepare(ctx, sub: dict) -> tuple[str, str, list[tuple[bytes, str]]] | None:
     if avv_id not in set(ctx.bs["squadra_id"]):
         log.info("%s: l'avversaria %s non ha ancora partite giocate", mia, avv)
         return None
-    allegati = [(build_pdf(ctx, avv_id, mia_id), f"scouting_{slug(avv)}.pdf")]
+    allegati = [(build_pdf(ctx, avv_id, mia_id, giochi_avversaria(sub, avv_id)),
+                 f"scouting_{slug(avv)}.pdf")]
     try:
         allegati.append((build_post_partita(ctx, mia_id), f"post_partita_{slug(mia)}.pdf"))
     except ValueError:

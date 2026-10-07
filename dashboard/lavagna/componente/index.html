@@ -1,0 +1,636 @@
+<!doctype html><html lang="it" class="in-app"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script>window.LAVAGNA_MODALITA = "streamlit";</script></head><body><title>Lavagna ASSIST</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: lavagnetta bianca (metà campo FIBA) al centro, strumenti grandi a sinistra in
+   orizzontale e sopra in verticale; fasi del gioco in una striscia sotto il campo. */
+:root {
+  --bg: #eef1f5; --pannello: #ffffff; --testo: #142033; --tenue: #5b6779; --bordo: #d5dbe4;
+  --accento: #e8701a; --accento-testo: #ffffff; --attivo: #142033; --attivo-testo: #ffffff;
+  --lavagna: #fbfbf7; --righe: #2b3a52; --inchiostro: #1d2b44; --attacco: #1f5fbf;
+  --difesa: #c4501a; --pericolo: #b42318;
+  --display: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+  --corpo: "Barlow", "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0b1220; --pannello: #131c2e; --testo: #e9edf4; --tenue: #9aa6b8; --bordo: #26324a;
+  --attivo: #e9edf4; --attivo-testo: #0b1220; --pericolo: #ff9a8a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0b1220; --pannello: #131c2e; --testo: #e9edf4; --tenue: #9aa6b8; --bordo: #26324a;
+  --attivo: #e9edf4; --attivo-testo: #0b1220; --pericolo: #ff9a8a; color-scheme: dark }
+
+html, body { height: 100%; }
+html.in-app, html.in-app body { height: auto; }   /* nell'app l'altezza la decide il contenuto */
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--testo); font-family: var(--corpo); font-size: 15px;
+  padding-inline: 16px; padding-block: 12px; box-sizing: border-box; -webkit-user-select: none;
+  user-select: none; }
+* { box-sizing: border-box; }
+button, input, select, textarea { font: inherit; color: inherit; }
+.app { display: grid; gap: 12px; max-width: 1100px; margin: 0 auto;
+  grid-template-columns: 1fr; }
+@media (min-width: 900px) { .app { grid-template-columns: 200px minmax(0, 1fr); } }
+
+.testa { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.testa h1 { font-family: var(--display); font-weight: 700; font-size: 1.6rem; letter-spacing: .02em;
+  margin: 0; text-transform: uppercase; }
+.testa h1 span { color: var(--accento); }
+.campo-nome { flex: 1 1 220px; min-width: 0; }
+.campo-nome input { width: 100%; height: 44px; padding: 0 12px; border: 1px solid var(--bordo);
+  border-radius: 10px; background: var(--pannello); font-weight: 600; }
+.segmenti { display: inline-flex; border: 1px solid var(--bordo); border-radius: 10px;
+  overflow: hidden; background: var(--pannello); }
+.segmenti button { height: 44px; padding: 0 14px; border: 0; background: transparent;
+  cursor: pointer; font-weight: 600; }
+.segmenti button[aria-pressed="true"] { background: var(--attivo); color: var(--attivo-testo); }
+
+.strumenti { display: flex; flex-wrap: wrap; gap: 8px; align-content: start; }
+@media (min-width: 900px) { .strumenti { flex-direction: column; flex-wrap: nowrap; } }
+.gruppo { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+@media (min-width: 900px) { .gruppo { flex-direction: column; align-items: stretch; } }
+.etichetta { font-family: var(--display); font-size: .78rem; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--tenue); width: 100%; margin-top: 4px; }
+@media (max-width: 899px) { .etichetta { display: none; } }
+.btn { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 12px;
+  border: 1px solid var(--bordo); border-radius: 10px; background: var(--pannello);
+  cursor: pointer; font-weight: 600; text-align: left; touch-action: manipulation; }
+.btn svg { flex: none; width: 34px; height: 22px; }
+.btn[aria-pressed="true"] { background: var(--attivo); color: var(--attivo-testo);
+  border-color: var(--attivo); }
+.btn.primario { background: var(--accento); color: var(--accento-testo); border-color: var(--accento); }
+.btn.pericolo { color: var(--pericolo); }
+.btn:focus-visible, .segmenti button:focus-visible, .fase:focus-visible { outline: 3px solid var(--accento);
+  outline-offset: 2px; }
+.btn:disabled { opacity: .45; cursor: default; }
+
+.centro { display: grid; gap: 10px; min-width: 0; }
+.tavola { background: var(--pannello); border: 1px solid var(--bordo); border-radius: 14px;
+  padding: 10px; }
+#campo { display: block; width: 100%; max-width: 100%; height: auto; touch-action: none;
+  border-radius: 8px; background: var(--lavagna); }
+.suggerimento { font-size: .9rem; color: var(--tenue); min-height: 1.3em; margin: 6px 2px 0; }
+
+.fasi { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.fase { min-width: 48px; height: 44px; padding: 0 14px; border-radius: 22px; border: 1px solid var(--bordo);
+  background: var(--pannello); font-family: var(--display); font-weight: 700; font-size: 1.05rem;
+  cursor: pointer; }
+.fase[aria-current="true"] { background: var(--accento); color: var(--accento-testo); border-color: var(--accento); }
+.nota { width: 100%; min-height: 64px; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid var(--bordo); background: var(--pannello); resize: vertical;
+  -webkit-user-select: text; user-select: text; }
+.biblioteca { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.biblioteca select { height: 44px; min-width: 0; flex: 1 1 200px; padding: 0 10px;
+  border: 1px solid var(--bordo); border-radius: 10px; background: var(--pannello); }
+.avviso { font-size: .85rem; color: var(--tenue); }
+.conferma { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <header class="testa">
+    <h1 id="titolo">Lavagna <span>ASSIST</span></h1>
+    <div class="campo-nome"><input id="nome" aria-label="Nome del gioco" placeholder="Nome del gioco, es. Horns 45"></div>
+    <div class="segmenti" role="group" aria-label="Di chi è il gioco">
+      <button id="tipo-nostro" aria-pressed="true">Nostro</button>
+      <button id="tipo-avv" aria-pressed="false">Avversaria</button>
+    </div>
+  </header>
+
+  <nav class="strumenti" aria-label="Strumenti">
+    <div class="gruppo" id="gruppo-strumenti">
+      <div class="etichetta">Disegna</div>
+      <button class="btn" data-strumento="sposta" aria-pressed="true">
+        <svg viewBox="0 0 34 22" aria-hidden="true"><circle cx="17" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M17 1v4M17 17v4M7 11H3M31 11h-4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Sposta</button>
+      <button class="btn" data-strumento="movimento" aria-pressed="false">
+        <svg viewBox="0 0 34 22" aria-hidden="true"><path d="M3 15 C10 4 20 4 26 10" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M24 4l6 8-9 1z" fill="currentColor"/></svg>Taglio</button>
+      <button class="btn" data-strumento="passaggio" aria-pressed="false">
+        <svg viewBox="0 0 34 22" aria-hidden="true"><path d="M3 11H25" fill="none" stroke="currentColor" stroke-width="2.4" stroke-dasharray="4 3"/><path d="M24 5l8 6-8 6z" fill="currentColor"/></svg>Passaggio</button>
+      <button class="btn" data-strumento="palleggio" aria-pressed="false">
+        <svg viewBox="0 0 34 22" aria-hidden="true"><path d="M3 11l3-4 3 8 3-8 3 8 3-8 3 8 2-4h3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M25 5l7 6-7 6z" fill="currentColor"/></svg>Palleggio</button>
+      <button class="btn" data-strumento="blocco" aria-pressed="false">
+        <svg viewBox="0 0 34 22" aria-hidden="true"><path d="M3 11H27M27 3v16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Blocco</button>
+      <button class="btn" data-strumento="gomma" aria-pressed="false">
+        <svg viewBox="0 0 34 22" aria-hidden="true"><path d="M8 18h18M10 15l9-11 7 6-8 8H12z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>Cancella</button>
+    </div>
+    <div class="gruppo">
+      <div class="etichetta">Giocatori</div>
+      <button class="btn" id="difesa" aria-pressed="false">
+        <svg viewBox="0 0 34 22" aria-hidden="true"><path d="M11 5l12 12M23 5L11 17" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Difesa</button>
+      <button class="btn" id="annulla">
+        <svg viewBox="0 0 34 22" aria-hidden="true"><path d="M10 7h11a6 6 0 010 12H12" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M12 2L5 7l7 5z" fill="currentColor"/></svg>Annulla</button>
+    </div>
+  </nav>
+
+  <main class="centro">
+    <div class="tavola">
+      <svg id="campo" viewBox="-4 -4 158 148" role="img" aria-label="Metà campo con i giocatori e le linee del gioco"></svg>
+      <p class="suggerimento" id="suggerimento"></p>
+    </div>
+
+    <div class="fasi" id="fasi" aria-label="Fasi del gioco"></div>
+    <div class="fasi">
+      <button class="btn primario" id="nuova-fase">+ Fase successiva</button>
+      <button class="btn" id="riproduci">▶ Riproduci</button>
+      <button class="btn pericolo" id="elimina-fase">Elimina fase</button>
+    </div>
+    <textarea class="nota" id="nota" aria-label="Note della fase" placeholder="Note della fase: letture, tempi, chiamata…"></textarea>
+
+    <div class="biblioteca">
+      <select id="elenco" aria-label="Giochi salvati"></select>
+      <button class="btn primario" id="salva">Salva gioco</button>
+      <button class="btn" id="nuovo">Nuovo</button>
+      <button class="btn pericolo" id="elimina">Elimina</button>
+    </div>
+    <div class="conferma" id="conferma" hidden>
+      <span id="conferma-testo"></span>
+      <button class="btn pericolo" id="conferma-si">Sì, elimina</button>
+      <button class="btn" id="conferma-no">Annulla</button>
+    </div>
+    <p class="avviso" id="avviso"></p>
+  </main>
+</div>
+
+<script>
+(() => {
+"use strict";
+const MODALITA = window.LAVAGNA_MODALITA || "pagina";      // "pagina" | "streamlit"
+const NS = "http://www.w3.org/2000/svg";
+const svg = document.getElementById("campo");
+const $ = (id) => document.getElementById(id);
+const RAGGIO = 4.2;                 // raggio dei giocatori (decimetri, campo 150 × 140)
+const AGGANCIO = 8;                 // distanza per agganciare una linea a un giocatore
+
+// ------------------------------------------------------------------ stato
+const clona = (o) => JSON.parse(JSON.stringify(o));
+const POSIZIONI = [[75, 100], [126, 80], [24, 80], [138, 24], [12, 24]];
+function giocatoriIniziali() {
+  return POSIZIONI.map(([x, y], i) => ({ id: "o" + (i + 1), tipo: "o", n: i + 1, x, y }));
+}
+function giocoVuoto() {
+  return { id: "g" + Date.now(), nome: "", tipo: "nostro", palla: "o1", difesa: false,
+           fasi: [{ giocatori: giocatoriIniziali(), linee: [], palla: "o1", nota: "" }] };
+}
+function esempio() {
+  const g = giocoVuoto();
+  g.id = "esempio"; g.nome = "Esempio · Pick and roll centrale";
+  const f1 = g.fasi[0];
+  f1.giocatori.find(p => p.id === "o5").x = 60; f1.giocatori.find(p => p.id === "o5").y = 40;
+  f1.linee = [
+    { id: "l1", tipo: "blocco", da: "o5", punti: [[60, 40], [66, 62], [72, 88]] },
+    { id: "l2", tipo: "palleggio", da: "o1", punti: [[75, 100], [92, 94], [104, 82]] },
+    { id: "l3", tipo: "movimento", da: "o4", punti: [[138, 24], [140, 40], [134, 52]] }];
+  f1.nota = "5 sale a bloccare per 1, che attacca a destra. 4 si alza in ala per aprire il campo.";
+  const f2 = prossimaFase(f1);
+  f2.linee = [
+    { id: "l4", tipo: "movimento", da: "o5", punti: [[72, 88], [78, 60], [82, 34]] },
+    { id: "l5", tipo: "passaggio", da: "o1", a: "o5", punti: [[104, 82], [84, 36]] }];
+  f2.nota = "5 rolla verso il canestro: 1 legge l'aiuto e scarica a 5, o a 2/3 se arriva la rotazione.";
+  g.fasi.push(f2);
+  g.fasi.push(prossimaFase(f2));
+  g.fasi[2].nota = "5 conclude vicino al ferro.";
+  return g;
+}
+
+let gioco = esempio();
+let faseIdx = 0;
+let strumento = "sposta";
+let storia = [];
+let giochi = [];          // giochi salvati
+let animazione = null;
+let contesto = null;      // "nostro" | "avversaria" quando la pagina lo impone
+
+const fase = () => gioco.fasi[faseIdx];
+function ricorda() { storia.push(JSON.stringify({ gioco, faseIdx })); if (storia.length > 60) storia.shift(); }
+function annulla() {
+  const s = storia.pop(); if (!s) return;
+  const v = JSON.parse(s); gioco = v.gioco; faseIdx = Math.min(v.faseIdx, gioco.fasi.length - 1);
+  tutto();
+}
+
+// ------------------------------------------------------------------ fasi
+function puntoFinale(l) { return l.punti[l.punti.length - 1]; }
+function prossimaFase(f) {
+  const n = { giocatori: clona(f.giocatori), linee: [], palla: f.palla, nota: "" };
+  for (const l of f.linee) {
+    const p = n.giocatori.find(g => g.id === l.da);
+    if (!p) continue;
+    if (l.tipo === "movimento" || l.tipo === "palleggio" || l.tipo === "blocco") {
+      const [x, y] = puntoFinale(l); p.x = x; p.y = y;
+    }
+  }
+  for (const l of f.linee) if (l.tipo === "passaggio" && l.a) n.palla = l.a;
+  return n;
+}
+
+// ------------------------------------------------------------------ disegno
+function el(tag, attrs = {}, padre = svg) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  padre.appendChild(e); return e;
+}
+function campo(g) {
+  const s = { fill: "none", stroke: "var(--righe)", "stroke-width": 0.6 };
+  el("rect", { x: 0, y: 0, width: 150, height: 140, ...s }, g);
+  el("rect", { x: 50.5, y: 0, width: 49, height: 58, ...s }, g);               // area
+  el("path", { d: "M57 58 A18 18 0 0 0 93 58", ...s }, g);                     // lunetta
+  el("path", { d: "M57 58 A18 18 0 0 1 93 58", ...s, "stroke-dasharray": "2 2" }, g);
+  el("path", { d: "M9 0 V29.9 A67.5 67.5 0 0 0 141 29.9 V0", ...s }, g);         // tre punti
+  el("path", { d: "M62.5 15.75 A12.5 12.5 0 0 0 87.5 15.75", ...s }, g);       // no-sfondamento
+  el("line", { x1: 66, y1: 12, x2: 84, y2: 12, ...s, "stroke-width": 1 }, g);   // tabellone
+  el("circle", { cx: 75, cy: 15.75, r: 2.25, ...s, "stroke-width": 0.7 }, g);   // ferro
+  el("path", { d: "M57 140 A18 18 0 0 1 93 140", ...s }, g);                    // cerchio centrale
+  for (const y of [17.5, 26, 34.5, 43]) {                                         // tacche area
+    el("line", { x1: 49.5, y1: y, x2: 50.5, y2: y, ...s }, g);
+    el("line", { x1: 99.5, y1: y, x2: 100.5, y2: y, ...s }, g);
+  }
+}
+function curva(punti) {
+  if (punti.length < 3) return "M" + punti.map(p => p.join(" ")).join(" L");
+  let d = `M${punti[0][0]} ${punti[0][1]}`;
+  for (let i = 0; i < punti.length - 1; i++) {
+    const p0 = punti[i - 1] || punti[i], p1 = punti[i], p2 = punti[i + 1], p3 = punti[i + 2] || p2;
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    d += ` C${c1[0]} ${c1[1]} ${c2[0]} ${c2[1]} ${p2[0]} ${p2[1]}`;
+  }
+  return d;
+}
+function campiona(punti, passo) {
+  // punti lungo la curva a distanza costante (per palleggio e animazione)
+  const tmp = document.createElementNS(NS, "path");
+  tmp.setAttribute("d", curva(punti));
+  svg.appendChild(tmp);
+  const L = tmp.getTotalLength(), out = [];
+  for (let s = 0; s <= L; s += passo) { const q = tmp.getPointAtLength(s); out.push([q.x, q.y]); }
+  const q = tmp.getPointAtLength(L); out.push([q.x, q.y]);
+  svg.removeChild(tmp);
+  return { punti: out, lunghezza: L };
+}
+function accorcia(punti, quanto) {
+  // la linea finisce prima del bordo del giocatore, così la punta resta visibile
+  const p = punti.slice(); if (p.length < 2) return p;
+  const [a, b] = [p[p.length - 2], p[p.length - 1]];
+  const dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy) || 1;
+  const k = Math.min(quanto, d * 0.8) / d;
+  p[p.length - 1] = [b[0] - dx * k, b[1] - dy * k];
+  return p;
+}
+function disegnaLinea(l, g) {
+  const colore = "var(--inchiostro)";
+  const gruppo = el("g", { "data-linea": l.id, class: "linea" }, g);
+  // area di tocco larga, invisibile, per cancellare con il dito
+  el("path", { d: curva(l.punti), fill: "none", stroke: "transparent", "stroke-width": 7,
+               "pointer-events": "stroke" }, gruppo);
+  let pts = l.punti;
+  const toccaGiocatore = l.tipo === "passaggio" && l.a;
+  if (toccaGiocatore) pts = accorcia(pts, RAGGIO + 1);
+  const fine = pts[pts.length - 1], prima = pts[Math.max(0, pts.length - 2)];
+  if (l.tipo === "palleggio") {
+    const c = campiona(pts, 1.6).punti;
+    const zig = c.map((p, i) => {
+      if (i === 0 || i >= c.length - 3) return p;
+      const q = c[i + 1] || p, dx = q[0] - p[0], dy = q[1] - p[1], d = Math.hypot(dx, dy) || 1;
+      const s = (i % 2 ? 1.6 : -1.6);
+      return [p[0] - dy / d * s, p[1] + dx / d * s];
+    });
+    el("polyline", { points: zig.map(p => p.join(",")).join(" "), fill: "none", stroke: colore,
+                     "stroke-width": 0.9, "stroke-linejoin": "round", "pointer-events": "none" }, gruppo);
+  } else {
+    el("path", { d: curva(pts), fill: "none", stroke: colore, "stroke-width": 0.9,
+                 "stroke-dasharray": l.tipo === "passaggio" ? "2.4 1.8" : "none",
+                 "stroke-linecap": "round", "pointer-events": "none" }, gruppo);
+  }
+  const ang = Math.atan2(fine[1] - prima[1], fine[0] - prima[0]);
+  if (l.tipo === "blocco") {
+    const dx = Math.cos(ang + Math.PI / 2) * 3.4, dy = Math.sin(ang + Math.PI / 2) * 3.4;
+    el("line", { x1: fine[0] - dx, y1: fine[1] - dy, x2: fine[0] + dx, y2: fine[1] + dy,
+                 stroke: colore, "stroke-width": 1.4, "stroke-linecap": "round",
+                 "pointer-events": "none" }, gruppo);
+  } else {
+    const a = 3.2, b = 1.7;
+    const p1 = [fine[0] - a * Math.cos(ang) + b * Math.sin(ang), fine[1] - a * Math.sin(ang) - b * Math.cos(ang)];
+    const p2 = [fine[0] - a * Math.cos(ang) - b * Math.sin(ang), fine[1] - a * Math.sin(ang) + b * Math.cos(ang)];
+    el("path", { d: `M${fine[0]} ${fine[1]} L${p1[0]} ${p1[1]} L${p2[0]} ${p2[1]} Z`, fill: colore,
+                 "pointer-events": "none" }, gruppo);
+  }
+}
+function disegnaGiocatore(p, g, palla) {
+  const gruppo = el("g", { "data-giocatore": p.id, transform: `translate(${p.x} ${p.y})`,
+                           class: "giocatore", style: "cursor:grab" }, g);
+  el("circle", { r: RAGGIO + 2.2, fill: "transparent" }, gruppo);   // area di tocco
+  if (p.tipo === "o") {
+    el("circle", { r: RAGGIO, fill: "var(--lavagna)", stroke: "var(--attacco)", "stroke-width": 0.9 }, gruppo);
+    const t = el("text", { "text-anchor": "middle", "dominant-baseline": "central", y: 0.3,
+      "font-family": "Barlow Condensed, Arial Narrow, sans-serif", "font-weight": 700,
+      "font-size": 5.6, fill: "var(--attacco)" }, gruppo);
+    t.textContent = p.n;
+    if (palla) {
+      el("circle", { cx: 3.6, cy: -3.6, r: 1.9, fill: "var(--accento)", stroke: "var(--inchiostro)",
+                     "stroke-width": 0.35 }, gruppo);
+    }
+  } else {
+    el("path", { d: "M-3 -3 L3 3 M3 -3 L-3 3", stroke: "var(--difesa)", "stroke-width": 1.3,
+                 "stroke-linecap": "round" }, gruppo);
+    const t = el("text", { x: 3.6, y: 4.6, "font-family": "Barlow Condensed, Arial Narrow, sans-serif",
+      "font-weight": 700, "font-size": 3.4, fill: "var(--difesa)" }, gruppo);
+    t.textContent = p.n;
+  }
+}
+function disegna(stato = fase(), linee = true) {
+  svg.textContent = "";
+  const c = el("g"); campo(c);
+  const gl = el("g");
+  if (linee) for (const l of stato.linee) disegnaLinea(l, gl);
+  const gg = el("g");
+  for (const p of stato.giocatori) if (p.tipo === "x" ? gioco.difesa : true)
+    disegnaGiocatore(p, gg, p.id === stato.palla);
+  if (bozza) bozza.disegna();
+}
+
+// ------------------------------------------------------------------ interazione
+const pt = (ev) => {
+  const p = svg.createSVGPoint(); p.x = ev.clientX; p.y = ev.clientY;
+  const q = p.matrixTransform(svg.getScreenCTM().inverse());
+  return [Math.max(0, Math.min(150, q.x)), Math.max(0, Math.min(140, q.y))];
+};
+function vicino(x, y, escludi, ancheArrivi = false) {
+  // giocatore vicino al punto; con ancheArrivi conta anche dove finisce il suo taglio,
+  // così un passaggio verso chi sta tagliando gli consegna la palla nella fase dopo
+  let best = null, d0 = AGGANCIO;
+  for (const p of fase().giocatori) {
+    if (p.id === escludi || (p.tipo === "x" && !gioco.difesa)) continue;
+    const d = Math.hypot(p.x - x, p.y - y);
+    if (d < d0) { d0 = d; best = { id: p.id, x: p.x, y: p.y }; }
+  }
+  if (ancheArrivi) for (const l of fase().linee) {
+    if (!l.da || l.da === escludi || l.tipo === "passaggio") continue;
+    const [ex, ey] = puntoFinale(l), d = Math.hypot(ex - x, ey - y);
+    if (d < d0) { d0 = d; best = { id: l.da, x: ex, y: ey }; }
+  }
+  return best;
+}
+function semplifica(punti, eps) {           // Ramer–Douglas–Peucker
+  if (punti.length < 3) return punti;
+  const [a, b] = [punti[0], punti[punti.length - 1]];
+  let idx = 0, dmax = 0;
+  for (let i = 1; i < punti.length - 1; i++) {
+    const p = punti[i], num = Math.abs((b[1] - a[1]) * p[0] - (b[0] - a[0]) * p[1] + b[0] * a[1] - b[1] * a[0]);
+    const d = num / (Math.hypot(b[1] - a[1], b[0] - a[0]) || 1);
+    if (d > dmax) { dmax = d; idx = i; }
+  }
+  if (dmax > eps) return semplifica(punti.slice(0, idx + 1), eps).slice(0, -1).concat(semplifica(punti.slice(idx), eps));
+  return [a, b];
+}
+
+let trascina = null, bozza = null;
+svg.addEventListener("pointerdown", (ev) => {
+  if (animazione) return;
+  const [x, y] = pt(ev);
+  const gEl = ev.target.closest("[data-giocatore]"), lEl = ev.target.closest("[data-linea]");
+  if (strumento === "gomma") {
+    if (lEl) { ricorda(); fase().linee = fase().linee.filter(l => l.id !== lEl.dataset.linea); disegna(); }
+    return;
+  }
+  if (strumento === "sposta") {
+    if (!gEl) return;
+    ricorda();
+    trascina = { id: gEl.dataset.giocatore, mosso: false };
+    svg.setPointerCapture(ev.pointerId);
+    return;
+  }
+  // strumenti linea: parte da un giocatore se il dito è vicino
+  const da = vicino(x, y);
+  const inizio = da ? [da.x, da.y] : [x, y];
+  bozza = { tipo: strumento, da: da ? da.id : null, punti: [inizio],
+            disegna() { const g = el("g", { opacity: 0.55 }); disegnaLinea({ ...this, id: "bozza" }, g); } };
+  svg.setPointerCapture(ev.pointerId);
+});
+svg.addEventListener("pointermove", (ev) => {
+  if (trascina) {
+    const [x, y] = pt(ev); const p = fase().giocatori.find(g => g.id === trascina.id);
+    p.x = x; p.y = y; trascina.mosso = true; disegna(); return;
+  }
+  if (bozza) {
+    const [x, y] = pt(ev), u = bozza.punti[bozza.punti.length - 1];
+    if (Math.hypot(x - u[0], y - u[1]) > 0.8) { bozza.punti.push([x, y]); disegna(); }
+  }
+});
+function fineTocco(ev) {
+  if (trascina) {
+    if (!trascina.mosso) storia.pop();
+    trascina = null; salvaBozzaLocale(); return;
+  }
+  if (!bozza) return;
+  const b = bozza; bozza = null;
+  let punti = semplifica(b.punti, 1.2);
+  const lungh = punti.reduce((s, p, i) => i ? s + Math.hypot(p[0] - punti[i - 1][0], p[1] - punti[i - 1][1]) : 0, 0);
+  if (lungh < 5) { disegna(); suggerisci("Linea troppo corta: trascina il dito dal giocatore fino al punto di arrivo."); return; }
+  const fine = punti[punti.length - 1];
+  const linea = { id: "l" + Date.now(), tipo: b.tipo, da: b.da, punti };
+  if (b.tipo === "passaggio") {
+    const a = vicino(fine[0], fine[1], b.da, true);
+    if (a) { linea.a = a.id; punti[punti.length - 1] = [a.x, a.y]; }
+    linea.punti = [punti[0], punti[punti.length - 1]];            // il passaggio è dritto
+  }
+  ricorda(); fase().linee.push(linea); disegna(); salvaBozzaLocale();
+}
+svg.addEventListener("pointerup", fineTocco);
+svg.addEventListener("pointercancel", fineTocco);
+
+// ------------------------------------------------------------------ strumenti
+const SUGGERIMENTI = {
+  sposta: "Trascina i giocatori per metterli in posizione.",
+  movimento: "Trascina dal giocatore lungo il percorso del taglio.",
+  passaggio: "Trascina da chi ha la palla a chi la riceve.",
+  palleggio: "Trascina dal portatore lungo il percorso del palleggio.",
+  blocco: "Trascina dal bloccante fino al punto del blocco.",
+  gomma: "Tocca una linea per cancellarla.",
+};
+function suggerisci(t) { $("suggerimento").textContent = t || SUGGERIMENTI[strumento]; }
+document.querySelectorAll("[data-strumento]").forEach(b => b.addEventListener("click", () => {
+  strumento = b.dataset.strumento;
+  document.querySelectorAll("[data-strumento]").forEach(x => x.setAttribute("aria-pressed", x === b));
+  suggerisci();
+}));
+$("annulla").addEventListener("click", annulla);
+$("difesa").addEventListener("click", () => {
+  ricorda();
+  gioco.difesa = !gioco.difesa;
+  if (gioco.difesa) for (const f of gioco.fasi) {
+    if (f.giocatori.some(p => p.tipo === "x")) continue;
+    for (const p of f.giocatori.filter(q => q.tipo === "o").slice()) {
+      const dx = 75 - p.x, dy = 15.75 - p.y, d = Math.hypot(dx, dy) || 1;
+      f.giocatori.push({ id: "x" + p.n, tipo: "x", n: p.n, x: p.x + dx / d * 9, y: p.y + dy / d * 9 });
+    }
+  }
+  tutto();
+});
+
+function aggiornaFasi() {
+  const c = $("fasi"); c.textContent = "";
+  gioco.fasi.forEach((_, i) => {
+    const b = document.createElement("button");
+    b.className = "fase"; b.textContent = i + 1; b.setAttribute("aria-label", "Fase " + (i + 1));
+    b.setAttribute("aria-current", i === faseIdx);
+    b.addEventListener("click", () => { faseIdx = i; tutto(); });
+    c.appendChild(b);
+  });
+  $("elimina-fase").disabled = gioco.fasi.length < 2;
+  $("nota").value = fase().nota || "";
+}
+$("nuova-fase").addEventListener("click", () => {
+  ricorda();
+  gioco.fasi.splice(faseIdx + 1, 0, prossimaFase(fase()));
+  faseIdx += 1; tutto();
+  suggerisci("Nuova fase: i giocatori sono già dove finivano le loro linee. Disegna la prossima azione.");
+});
+$("elimina-fase").addEventListener("click", () => {
+  if (gioco.fasi.length < 2) return;
+  ricorda(); gioco.fasi.splice(faseIdx, 1); faseIdx = Math.max(0, faseIdx - 1); tutto();
+});
+$("nota").addEventListener("input", (e) => { fase().nota = e.target.value; salvaBozzaLocale(); });
+$("nome").addEventListener("input", (e) => { gioco.nome = e.target.value; salvaBozzaLocale(); });
+function tipo(t) {
+  gioco.tipo = t;
+  $("tipo-nostro").setAttribute("aria-pressed", t === "nostro");
+  $("tipo-avv").setAttribute("aria-pressed", t === "avversaria");
+  salvaBozzaLocale();
+}
+$("tipo-nostro").addEventListener("click", () => tipo("nostro"));
+$("tipo-avv").addEventListener("click", () => tipo("avversaria"));
+
+// ------------------------------------------------------------------ riproduzione
+function riproduci() {
+  if (animazione) { cancelAnimationFrame(animazione); animazione = null; $("riproduci").textContent = "▶ Riproduci"; tutto(); return; }
+  if (gioco.fasi.length < 2) { suggerisci("Aggiungi almeno una fase per vedere il gioco in movimento."); return; }
+  $("riproduci").textContent = "■ Ferma";
+  let i = 0, t0 = null; const DUR = 1300, PAUSA = 450;
+  const percorsi = gioco.fasi.map(f => {
+    const m = {};
+    for (const l of f.linee) if (l.da && l.tipo !== "passaggio") m[l.da] = campiona(l.punti, 0.8).punti;
+    return m;
+  });
+  function passo(ts) {
+    if (t0 === null) t0 = ts;
+    const f = gioco.fasi[i], dopo = gioco.fasi[i + 1];
+    const k = Math.min(1, (ts - t0) / DUR), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+    const stato = clona(f);
+    for (const p of stato.giocatori) {
+      const c = percorsi[i][p.id];
+      if (c) { const q = c[Math.min(c.length - 1, Math.round(e * (c.length - 1)))]; p.x = q[0]; p.y = q[1]; }
+    }
+    faseIdx = i; aggiornaFasi();
+    disegna(stato, k < 1);
+    const pas = f.linee.find(l => l.tipo === "passaggio" && l.a);
+    if (pas && k > 0) {
+      const a = pas.punti[0], b = stato.giocatori.find(p => p.id === pas.a) || { x: pas.punti[1][0], y: pas.punti[1][1] };
+      el("circle", { cx: a[0] + (b.x - a[0]) * e, cy: a[1] + (b.y - a[1]) * e, r: 1.9,
+                     fill: "var(--accento)", stroke: "var(--inchiostro)", "stroke-width": .35 });
+    }
+    if (ts - t0 >= DUR + PAUSA) {
+      i += 1; t0 = ts;
+      if (i >= gioco.fasi.length - 1) {
+        animazione = null; faseIdx = gioco.fasi.length - 1; $("riproduci").textContent = "▶ Riproduci"; tutto(); return;
+      }
+    }
+    animazione = requestAnimationFrame(passo);
+  }
+  animazione = requestAnimationFrame(passo);
+}
+$("riproduci").addEventListener("click", riproduci);
+
+// ------------------------------------------------------------------ biblioteca
+const CHIAVE = "assist-lavagna-v1";
+function leggiLocale() { try { return JSON.parse(localStorage.getItem(CHIAVE) || "null"); } catch (e) { return null; } }
+function scriviLocale() { try { localStorage.setItem(CHIAVE, JSON.stringify({ giochi, bozza: gioco })); } catch (e) {} }
+function salvaBozzaLocale() { if (MODALITA === "pagina") scriviLocale(); }
+function aggiornaElenco() {
+  const s = $("elenco"); s.textContent = "";
+  const o0 = document.createElement("option"); o0.value = ""; o0.textContent = giochi.length ? "Giochi salvati…" : "Nessun gioco salvato";
+  s.appendChild(o0);
+  for (const g of giochi) {
+    const o = document.createElement("option"); o.value = g.id;
+    o.textContent = (g.nome || "Senza nome") + (g.tipo === "avversaria" ? " · avversaria" : "");
+    s.appendChild(o);
+  }
+  s.value = giochi.some(g => g.id === gioco.id) ? gioco.id : "";
+}
+function avvisa(t) { $("avviso").textContent = t; }
+$("elenco").addEventListener("change", (e) => {
+  const g = giochi.find(x => x.id === e.target.value); if (!g) return;
+  gioco = clona(g); faseIdx = 0; storia = []; tutto();
+});
+$("salva").addEventListener("click", () => {
+  if (!gioco.nome.trim()) { $("nome").focus(); avvisa("Dai un nome al gioco prima di salvarlo."); return; }
+  if (gioco.id === "esempio") gioco.id = "g" + Date.now();
+  const i = giochi.findIndex(g => g.id === gioco.id);
+  if (i >= 0) giochi[i] = clona(gioco); else giochi.push(clona(gioco));
+  aggiornaElenco();
+  if (MODALITA === "streamlit") invia({ azione: "salva", gioco: clona(gioco), t: Date.now() });
+  else scriviLocale();
+  avvisa(`Salvato: ${gioco.nome}.`);
+});
+$("nuovo").addEventListener("click", () => {
+  ricorda(); gioco = giocoVuoto(); faseIdx = 0; tutto(); $("nome").focus();
+  avvisa("Nuovo gioco: trascina i giocatori e disegna la prima azione.");
+});
+$("elimina").addEventListener("click", () => {
+  if (!giochi.some(g => g.id === gioco.id)) { avvisa("Questo gioco non è ancora salvato."); return; }
+  $("conferma-testo").textContent = `Eliminare "${gioco.nome}"?`; $("conferma").hidden = false;
+});
+$("conferma-no").addEventListener("click", () => { $("conferma").hidden = true; });
+$("conferma-si").addEventListener("click", () => {
+  const id = gioco.id; giochi = giochi.filter(g => g.id !== id); $("conferma").hidden = true;
+  if (MODALITA === "streamlit") invia({ azione: "elimina", id, t: Date.now() }); else scriviLocale();
+  gioco = giocoVuoto(); faseIdx = 0; tutto(); avvisa("Gioco eliminato.");
+});
+
+// ------------------------------------------------------------------ Streamlit
+function invia(valore) {
+  window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setComponentValue",
+                              value: valore, dataType: "json" }, "*");
+}
+function altezza() {
+  if (MODALITA !== "streamlit") return;
+  window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setFrameHeight",
+                              height: Math.ceil(document.querySelector(".app").getBoundingClientRect().bottom
+                                                + window.scrollY + 16) }, "*");
+}
+if (MODALITA === "streamlit") {
+  window.addEventListener("message", (ev) => {
+    const d = ev.data || {};
+    if (d.type !== "streamlit:render") return;
+    const a = d.args || {};
+    giochi = Array.isArray(a.giochi) ? a.giochi : [];
+    if (a.tema === "dark") document.documentElement.setAttribute("data-theme", "dark");
+    if (a.contesto) {                    // la pagina decide di chi sono i giochi
+      contesto = a.contesto;
+      document.querySelector(".segmenti").hidden = true;
+    }
+    if (a.titolo) $("titolo").textContent = a.titolo;
+    if (!window.__avviata) {
+      window.__avviata = true;
+      if (giochi.length) gioco = clona(giochi[0]);
+      else if (contesto === "avversaria") gioco = giocoVuoto();
+      else gioco = esempio();
+      tutto();
+    } else aggiornaElenco();
+    altezza();
+  });
+  window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:componentReady", apiVersion: 1 }, "*");
+  new ResizeObserver(altezza).observe(document.body);
+} else {
+  const s = leggiLocale();
+  if (s) { giochi = s.giochi || []; if (s.bozza && s.bozza.fasi) gioco = s.bozza; }
+}
+
+function tutto() {
+  $("nome").value = gioco.nome || "";
+  tipo(contesto || gioco.tipo || "nostro");
+  $("difesa").setAttribute("aria-pressed", !!gioco.difesa);
+  aggiornaFasi(); aggiornaElenco(); disegna(); suggerisci();
+}
+tutto();
+})();
+</script>
+</body></html>

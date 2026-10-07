@@ -344,10 +344,12 @@ def render_scouting(a: App):
             + (f' · prossima: {esc(it(r.prossima))}' if r.prossima else "") + '</div></div>',
             unsafe_allow_html=True)
         frase("In una frase", X.frase_squadra(profile, sq))
+        from . import lavagna_ui
         from .nuove import _pdf
         from basket.report_pdf import slug
         st.download_button("⬇ Report PDF per la riunione tecnica",
-                           _pdf(a.ctx, a.mtime, a.stagione, sq, a.utente.get("squadra_id")),
+                           _pdf(a.ctx, a.mtime, a.stagione, sq, a.utente.get("squadra_id"),
+                                lavagna_ui.giochi_json(a, sq)),
                            file_name=f"scouting_{slug(r.squadra)}.pdf", mime="application/pdf",
                            type="primary")
         pr = profile.set_index("squadra_id")
@@ -372,6 +374,7 @@ def render_scouting(a: App):
 
         from . import chiavi_ui
         chiavi_ui.render(a, sq)
+        lavagna_ui.render_avversaria(a, sq)
 
         c1, c2 = st.columns(2)
         with c1:

@@ -23,6 +23,7 @@ from reportlab.platypus import (Image, PageBreak, Paragraph, SimpleDocTemplate, 
                                 Table, TableStyle)
 
 from . import approfondimenti as X
+from . import lavagna as L
 from . import config, scouting
 from .contesto import Contesto, open_readonly
 
@@ -183,9 +184,11 @@ def _header(r, prossima, S, width, stagione_label=config.STAGIONE_LABEL):
     return t
 
 
-def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None) -> bytes:
+def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
+              giochi: list[dict] | None = None) -> bytes:
     """Report di scouting su squadra_id. Con mia (la squadra dello staff) aggiunge le chiavi
-    per vincere la partita contro di lei."""
+    per vincere la partita contro di lei; con giochi (disegnati sulla lavagna) aggiunge i suoi
+    giochi, fase per fase."""
     _fonts()
     S = _styles()
     r = scouting.build_report(ctx.conn, squadra_id, ctx.stagione)
@@ -364,12 +367,44 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None) -> bytes:
                 chi = f"<b>{x.giocatore}</b>: " if isinstance(x.giocatore, str) else ""
                 el.append(Paragraph(f"• {chi}{x.testo}", S["body"]))
 
+    if giochi:
+        el += [PageBreak()] + L.flowables(giochi, S, W, f"GIOCHI DI {r.squadra.upper()} · "
+                                                         "disegnati dallo staff, fase per fase")
+
     def footer(canvas, doc_):
         canvas.saveState()
         canvas.setFont("Barlow", 7)
         canvas.setFillColor(GRIGIO)
         canvas.drawString(12 * mm, 8 * mm, f"{config.BRAND} · {r.squadra} · dati legapallacanestro.com"
                                            f" · {date.today().strftime('%d/%m/%Y')}")
+        canvas.drawRightString(A4[0] - 12 * mm, 8 * mm, f"pagina {doc_.page}")
+        canvas.restoreState()
+
+    doc.build(el, onFirstPage=footer, onLaterPages=footer)
+    return buf.getvalue()
+
+
+def build_giochi(giochi: list[dict], squadra: str) -> bytes:
+    """PDF con i giochi disegnati sulla lavagna (il playbook della squadra), fase per fase."""
+    _fonts()
+    S = _styles()
+    buf = io.BytesIO()
+    W = A4[0] - 24 * mm
+    doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=12 * mm, rightMargin=12 * mm,
+                            topMargin=12 * mm, bottomMargin=14 * mm,
+                            title=f"Giochi {squadra}", author=config.BRAND)
+    el = [Paragraph(f"GIOCHI · {squadra.upper()}", S["h2"]),
+          Paragraph(f"{len(giochi)} giochi disegnati dallo staff. Taglio: freccia piena · "
+                    "passaggio: tratteggio · palleggio: zig-zag · blocco: barra finale.",
+                    S["small"]), Spacer(1, 4)]
+    el += L.flowables(giochi, S, W, "")[1:]
+
+    def footer(canvas, doc_):
+        canvas.saveState()
+        canvas.setFont("Barlow", 7)
+        canvas.setFillColor(GRIGIO)
+        canvas.drawString(12 * mm, 8 * mm, f"{config.BRAND} · {squadra} · giochi · "
+                                           f"{date.today().strftime('%d/%m/%Y')}")
         canvas.drawRightString(A4[0] - 12 * mm, 8 * mm, f"pagina {doc_.page}")
         canvas.restoreState()
 
@@ -408,6 +443,7 @@ def _chiavi(ctx: Contesto, avv: int, mia: int, S, W) -> list:
                     "associazioni statistiche, non garanzie.", S["body"])]
     for i, t in enumerate(C.sintesi(lv, gc, nome_avv), start=1):
         el.append(Paragraph(f"{i}. {t}".replace(" → ", " · "), S["body"]))
+    el.append(Paragraph(f"<b>{C.frase_combinata(C.combinata(lv, gc))}.</b>", S["body"]))
     rows = [["Fattore", "Lato", "Atteso", "Media", "Obiettivo", "Probabilità", "Guadagno"]]
     for x in lv.itertuples():
         f = (lambda v: _fmt(v, 2)) if x.chiave == "ftr" else (lambda v: _fmt(v, 1))

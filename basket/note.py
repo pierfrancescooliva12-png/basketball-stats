@@ -9,6 +9,7 @@ Dove vengono salvati:
   a ogni riavvio dell'app: va bene solo per provare.
 """
 
+import json
 from datetime import datetime, timezone
 
 import pandas as pd
@@ -26,6 +27,10 @@ SCHEMA = [
     """CREATE TABLE IF NOT EXISTS obiettivi (
         club TEXT NOT NULL, metrica TEXT NOT NULL, valore REAL NOT NULL,
         PRIMARY KEY (club, metrica))""",
+    """CREATE TABLE IF NOT EXISTS giochi (
+        club TEXT NOT NULL, gioco_id TEXT NOT NULL, riferimento TEXT NOT NULL,
+        nome TEXT, dati TEXT NOT NULL, autore TEXT, aggiornato_il TEXT NOT NULL,
+        PRIMARY KEY (club, gioco_id))""",
 ]
 
 
@@ -104,3 +109,26 @@ class Archivio:
             rows = c.execute(text("SELECT metrica, valore FROM obiettivi WHERE club = :c"),
                              {"c": club}).fetchall()
         return {m: v for m, v in rows}
+
+    # ------------------------------------------------------------ giochi (lavagna)
+    def save_play(self, club: str, riferimento, gioco: dict, autore: str):
+        """Salva (o sostituisce) un gioco disegnato sulla lavagna. riferimento: la squadra a
+        cui appartiene il gioco (la propria o un'avversaria)."""
+        with self.engine.begin() as c:
+            c.execute(text("DELETE FROM giochi WHERE club = :c AND gioco_id = :g"),
+                      {"c": club, "g": str(gioco["id"])})
+            c.execute(text("INSERT INTO giochi VALUES (:c, :g, :r, :n, :d, :a, :t)"),
+                      {"c": club, "g": str(gioco["id"]), "r": str(riferimento),
+                       "n": gioco.get("nome", ""), "d": json.dumps(gioco), "a": autore,
+                       "t": _now()})
+
+    def plays(self, club: str, riferimento) -> list[dict]:
+        with self.engine.connect() as c:
+            rows = c.execute(text("SELECT dati FROM giochi WHERE club = :c AND riferimento = :r "
+                                  "ORDER BY nome"), {"c": club, "r": str(riferimento)}).fetchall()
+        return [json.loads(r[0]) for r in rows]
+
+    def delete_play(self, club: str, gioco_id: str):
+        with self.engine.begin() as c:
+            c.execute(text("DELETE FROM giochi WHERE club = :c AND gioco_id = :g"),
+                      {"c": club, "g": str(gioco_id)})

@@ -63,20 +63,27 @@ def render(a: App, avv: int):
     p0 = lv["prob_ora"].iloc[0]
     top = lv.iloc[0]
     lento, veloce = rt.iloc[0], rt.iloc[-1]
-    kpis([("Probabilità ora", f"{num(p0, 0)}%",
-           f"{short(nomi[mia])} {'in casa' if casa_mia else 'in trasferta'}"),
-          ("Leva principale", top["breve"], f"fino a {num(top['prob_obiettivo'], 0)}% "
-           "raggiungendo l'obiettivo"),
-          ("Partita lenta", f"{num(lento['prob'], 0)}%", f"{num(lento['possessi'], 0)} possessi"),
-          ("Partita veloce", f"{num(veloce['prob'], 0)}%",
-           f"{num(veloce['possessi'], 0)} possessi")])
     bt = _scarti_stagione(ctx.conn, a.mtime, a.stagione)
     gc_avv = C.giocatori_chiave(ctx.bg, bt, avv, ctx.nomi_giocatori)
     if not gc_avv.empty:
         gc_avv = C.prob_giocatori(gc_avv[gc_avv["effetto"] >= 0.5], m0, True)
+    comb = C.combinata(lv, gc_avv)
+    lento_meglio = lento["prob"] >= veloce["prob"]
+    rit = lento if lento_meglio else veloce
+    kpis([("Probabilità ora", f"{num(p0, 0)}%",
+           f"{short(nomi[mia])} {'in casa' if casa_mia else 'in trasferta'}"),
+          ("Con tutte le chiavi", f"{num(comb['prob_tutte'], 0)}%",
+           f"scenario migliore · {num(comb['prob_tutte'] - p0, 0, signed=True)} punti"),
+          ("Leva principale", top["breve"], f"da sola fino a {num(top['prob_obiettivo'], 0)}%"),
+          ("Ritmo che conviene", "lento" if lento_meglio else "veloce",
+           f"{num(rit['prob'], 0)}% con {num(rit['possessi'], 0)} possessi")])
     voci = "".join(f"<li>{esc(it(v))}</li>" for v in C.sintesi(lv, gc_avv, short(nomi[avv])))
     st.markdown(f'<div class="frase"><b>Le chiavi della partita</b><ol style="margin:6px 0 0 '
-                f'18px;padding:0">{voci}</ol></div>', unsafe_allow_html=True)
+                f'18px;padding:0">{voci}</ol><div style="margin-top:8px"><b>Tutte insieme</b> '
+                f'{esc(it(C.frase_combinata(comb)))}.</div></div>', unsafe_allow_html=True)
+    note_html("Scenario migliore: gli effetti dei Four Factors si sommano; quello del giocatore "
+              "chiave conta a metà perché in parte si sovrappone ai fattori. È un obiettivo da "
+              "preparare, non una previsione.")
     g_min = int(prof.set_index("squadra_id").loc[[mia, avv], "partite"].min())
     if g_min < 8:
         note_html(f"⚠ Pochi dati: {g_min} partite giocate. I valori delle due squadre sono "
@@ -202,6 +209,9 @@ def anteprima(a: App, casa: int, ospite: int, nomi: dict):
     lv = C.leve(prof, forze, mia, avv, mia == casa, hca)
     section("Chiavi per vincere", "le leve principali; il dettaglio è nella pagina Scouting "
             "dell'avversaria", key="leve")
-    voci = "".join(f"<li>{esc(it(v))}</li>" for v in C.sintesi(lv, pd.DataFrame(), short(nomi[avv])))
-    st.markdown(f'<div class="frase"><ol style="margin:0 0 0 18px;padding:0">{voci}</ol></div>',
+    vuoto = pd.DataFrame()
+    voci = "".join(f"<li>{esc(it(v))}</li>" for v in C.sintesi(lv, vuoto, short(nomi[avv])))
+    tutte = C.frase_combinata(C.combinata(lv, vuoto))
+    st.markdown(f'<div class="frase"><ol style="margin:0 0 0 18px;padding:0">{voci}</ol>'
+                f'<div style="margin-top:8px"><b>Tutte insieme</b> {esc(it(tutte))}.</div></div>',
                 unsafe_allow_html=True)

@@ -11,7 +11,7 @@ import streamlit as st
 from basket import approfondimenti as X
 from basket import config
 
-from . import analisi, chiavi_ui, nuove, previsioni_ui, schede
+from . import analisi, chiavi_ui, lavagna_ui, nuove, previsioni_ui, schede
 from .stato import App
 from .ui import (badge_pos, brand_hero, esc, frase, it, kpis, note_html, num, pills, section,
                  short, titolo_pagina)
@@ -178,7 +178,8 @@ def home():
         pulsante(c[0], "Scouting dell'avversaria", "scouting", primary=True, f_sq=avv)
         pulsante(c[1], "Anteprima della partita", "anteprima", f_sq=mia)
         with c[2]:
-            st.download_button("⬇ PDF avversaria", nuove._pdf(a.ctx, a.mtime, a.stagione, avv, mia),
+            st.download_button("⬇ PDF avversaria", nuove._pdf(a.ctx, a.mtime, a.stagione, avv, mia,
+                                                                lavagna_ui.giochi_json(a, avv)),
                                file_name=f"scouting_{analisi.slug(pr.loc[avv, 'squadra'])}.pdf",
                                mime="application/pdf", width="stretch")
     if ultima:
@@ -279,6 +280,11 @@ def p_mia():
     analisi.ultima_partita(a)
 
 
+def p_lavagna():
+    titolo_pagina("Lavagna", "i vostri giochi, fase per fase")
+    lavagna_ui.render_nostri(APP)
+
+
 def p_avvisi():
     titolo_pagina("Avvisi", "cosa è cambiato dopo l'ultima giornata")
     nuove.render_avvisi(APP)
@@ -318,6 +324,7 @@ def mappa() -> dict:
                       P(p_giocatore, "Scheda giocatore", "giocatore", "giocatore"),
                       P(p_mercato, "Mercato", "mercato", "mercato")],
         "La mia squadra": [P(p_mia, "La mia squadra", "mia-squadra", "mia"),
+                           P(p_lavagna, "Lavagna dei giochi", "lavagna", "lavagna"),
                            P(p_avvisi, "Avvisi", "avvisi", "avvisi")],
         "Campionato": [P(p_panoramica, "Panoramica", "panoramica", "panoramica"),
                        P(p_classifica, "Classifica", "classifica", "classifica"),

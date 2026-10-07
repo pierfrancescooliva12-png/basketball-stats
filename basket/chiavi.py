@@ -123,6 +123,7 @@ def leve(profile: pd.DataFrame, forze: pd.DataFrame, mia: int, avv: int, casa_mi
                 "media": lg, "atteso": atteso, "obiettivo": obiettivo,
                 "situazione": "a vostro sfavore" if sfavore > 0 else "a vostro favore",
                 "prob_ora": 100 * p0, "prob_obiettivo": 100 * p1,
+                "margine_ora": m0, "d_margine": d_net * poss / 100,
                 "guadagno": 100 * (p1 - p0)})
     return pd.DataFrame(righe).sort_values("guadagno", ascending=False).reset_index(drop=True)
 
@@ -281,23 +282,29 @@ def _f(chiave: str, v: float) -> str:
     return (f"{v:.2f}" if chiave == "ftr" else f"{v:.1f}").replace(".", ",")
 
 
+# come si dice, per ogni fattore e lato, che cosa fare (valore atteso → obiettivo)
+AZIONI = {
+    ("efg", "In attacco"): "Tiro: alzare la vostra eFG% da {a} a {o}",
+    ("tov", "In attacco"): "Palle perse: scendere da {a}% a {o}%",
+    ("orb", "In attacco"): "Rimbalzi offensivi: salire da {a}% a {o}%",
+    ("ftr", "In attacco"): "Tiri liberi: guadagnarne di più, da {a} a {o} liberi segnati per tiro",
+    ("efg", "In difesa"): "Tiro concesso: tenere {avv} al {o}% di eFG invece del {a}% atteso",
+    ("tov", "In difesa"): "Palle perse forzate: costringere {avv} ad almeno il {o}% di palle "
+                          "perse, contro un atteso {a}%",
+    ("orb", "In difesa"): "Rimbalzi concessi: tenere {avv} al {o}% di rimbalzi offensivi invece "
+                          "del {a}%",
+    ("ftr", "In difesa"): "Liberi concessi: concederne meno, da {a} a {o} per tiro",
+}
+
+
 def frase_leva(r, avv: str) -> str:
-    """Una riga leggibile per una leva."""
-    if r["lato"] == "In attacco":
-        if r["situazione"] == "a vostro sfavore":
-            cosa = f"{r['breve']}: portarlo da {_f(r['chiave'], r['atteso'])} (atteso contro " \
-                   f"{avv}) a {_f(r['chiave'], r['obiettivo'])}, la media del campionato"
-        else:
-            cosa = f"{r['breve']}: sfruttare il vantaggio, da {_f(r['chiave'], r['atteso'])} a " \
-                   f"{_f(r['chiave'], r['obiettivo'])}"
-    else:
-        if r["situazione"] == "a vostro sfavore":
-            cosa = f"{r['breve']}: tenere {avv} a {_f(r['chiave'], r['obiettivo'])} (media del " \
-                   f"campionato) invece di {_f(r['chiave'], r['atteso'])}"
-        else:
-            cosa = f"{r['breve']}: allungare il vantaggio, da {_f(r['chiave'], r['atteso'])} a " \
-                   f"{_f(r['chiave'], r['obiettivo'])}"
-    return f"{cosa} → probabilità dal {r['prob_ora']:.0f}% al {r['prob_obiettivo']:.0f}%"
+    """Una riga leggibile per una leva: cosa fare, l'obiettivo e la probabilità."""
+    testo = AZIONI[(r["chiave"], r["lato"])].format(
+        a=_f(r["chiave"], r["atteso"]), o=_f(r["chiave"], r["obiettivo"]), avv=avv)
+    rif = "media del campionato" if r["situazione"] == "a vostro sfavore" else \
+        "già a vostro favore: allungare il vantaggio"
+    return f"{testo} ({rif}) → probabilità dal {r['prob_ora']:.0f}% al " \
+           f"{r['prob_obiettivo']:.0f}%"
 
 
 def frase_giocatore(r, avversario: bool) -> str:
@@ -311,10 +318,43 @@ def frase_giocatore(r, avversario: bool) -> str:
     return testo + f" ({int(r['partite_sotto'])} partite sotto, {int(r['partite_sopra'])} sopra)"
 
 
+def n_leve(gc_avv: pd.DataFrame, n: int = 3) -> int:
+    """Quante leve entrano nelle chiavi (una chiave è riservata al giocatore avversario)."""
+    return n - (1 if not gc_avv.empty else 0)
+
+
+def combinata(lv: pd.DataFrame, gc_avv: pd.DataFrame, n: int = 3) -> dict:
+    """Probabilità se si rispettano TUTTE le chiavi insieme (scenario migliore).
+
+    I Four Factors entrano nel Net rating in modo additivo (regressione lineare), quindi i
+    loro effetti si sommano. L'effetto del giocatore chiave in parte si sovrappone ai fattori
+    (se il play fa meno assist, la squadra tira peggio): lo si aggiunge a metà."""
+    if lv.empty:
+        return {}
+    k = n_leve(gc_avv, n)
+    m0 = float(lv["margine_ora"].iloc[0])
+    d_leve = float(lv.head(k)["d_margine"].sum())
+    d_gioc = 0.0
+    if not gc_avv.empty and "prob_scenario" in gc_avv:
+        g = gc_avv.iloc[0]
+        d_gioc = 0.5 * float(g["effetto"] * g["quota_sopra"])
+    return {"prob_ora": 100 * _prob(m0), "prob_leve": 100 * _prob(m0 + d_leve),
+            "prob_tutte": 100 * _prob(m0 + d_leve + d_gioc), "chiavi": k + (1 if d_gioc else 0),
+            "punti": d_leve + d_gioc}
+
+
+def frase_combinata(c: dict) -> str:
+    if not c:
+        return ""
+    return (f"Rispettando tutte e {c['chiavi']} le chiavi insieme (scenario migliore): "
+            f"probabilità dal {c['prob_ora']:.0f}% al {c['prob_tutte']:.0f}%, circa "
+            f"{c['punti']:+.1f} punti di margine").replace(".", ",")
+
+
 def sintesi(lv: pd.DataFrame, gc_avv: pd.DataFrame, avv: str, n: int = 3) -> list[str]:
     """Le chiavi principali della partita in parole: le leve con il guadagno maggiore e il
     giocatore avversario con l'effetto più marcato."""
-    out = [frase_leva(r, avv) for _, r in lv.head(n - (1 if not gc_avv.empty else 0)).iterrows()]
+    out = [frase_leva(r, avv) for _, r in lv.head(n_leve(gc_avv, n)).iterrows()]
     if not gc_avv.empty:
         out.append(frase_giocatore(gc_avv.iloc[0], True))
     return out
