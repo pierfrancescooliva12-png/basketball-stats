@@ -80,6 +80,9 @@ def render(a: App, riferimento: int, contesto: str, titolo: str, nome_squadra: s
 
 
 def render_nostri(a: App):
+    st.download_button(f"⬇ Archivio degli schemi pronti in PDF ({len(SCHEMI)})", _pdf_archivio(),
+                       file_name="archivio_schemi_assist.pdf", mime="application/pdf",
+                       key="pdf_archivio_schemi")
     sid = a.mia_squadra
     if sid is None:
         st.info("Scegli la tua squadra nella Home per disegnare i vostri giochi.")
@@ -89,9 +92,6 @@ def render_nostri(a: App):
               "lungo il percorso, poi \"+ Fase successiva\". Salvati, finiscono nel PDF dei giochi "
               "con tutte le fasi.")
     render(a, sid, "nostro", f"Giochi di {nome}", nome)
-    st.download_button(f"⬇ Archivio degli schemi pronti in PDF ({len(SCHEMI)})", _pdf_archivio(),
-                       file_name="archivio_schemi_assist.pdf", mime="application/pdf",
-                       key="pdf_archivio_schemi")
 
 
 def render_avversaria(a: App, sid: int):

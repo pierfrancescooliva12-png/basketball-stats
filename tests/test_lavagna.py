@@ -53,8 +53,9 @@ def test_componente_aggiornato():
 
 
 def test_schemi_pronti_coerenti():
-    from dashboard.lavagna.catalogo import SCHEMI
-    assert len(SCHEMI) >= 20 and len({s["id"] for s in SCHEMI}) == len(SCHEMI)
+    from dashboard.lavagna.catalogo import CATEGORIE, SCHEMI
+    assert {s["categoria"] for s in SCHEMI} == set(CATEGORIE)
+    assert len(SCHEMI) >= 60 and len({s["id"] for s in SCHEMI}) == len(SCHEMI)
     for s in SCHEMI:
         assert s["categoria"] and s["descrizione"] and len(s["fasi"]) >= 2
         for i, f in enumerate(s["fasi"]):

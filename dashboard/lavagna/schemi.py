@@ -178,7 +178,7 @@ SCHEMI = [
                ("1 serve 2 in ala; 4 sale a bloccare per il pick and roll laterale.",
                 [("passaggio", 1, 2), ("blocco", 4, [(38, 70)])]),
            ]),
-    schema("Rimessa dal fondo · box", "Rimesse",
+    schema("Rimessa dal fondo · box", "Rimesse dal fondo",
            "Rimessa dalla linea di fondo con quattro giocatori a box: blocco per il "
            "tiratore e taglio al ferro del lungo.", {1: (88, 1), 2: "blo_s", 3: "blo_d",
                                                      4: "gom_s", 5: "gom_d"}, 1, [
@@ -187,7 +187,7 @@ SCHEMI = [
                  ("blocco", 3, [(86, 44)]), ("taglio", 5, [(76, 46), (68, 22)])]),
                ("1 sceglie: 5 al ferro o 2 nell'angolo per il tiro.", [("passaggio", 1, 5)]),
            ]),
-    schema("Rimessa laterale · stack", "Rimesse",
+    schema("Rimessa laterale · stack", "Rimesse laterali",
            "Rimessa dal lato con tre giocatori in fila: il primo blocca, gli altri escono "
            "in direzioni opposte.", {1: (150, 78), 2: (112, 70), 3: (104, 64), 4: (96, 58),
                                      5: "top"}, 1, [
@@ -311,7 +311,7 @@ SCHEMI = [
                 [("taglio", 2, [(116, 60), (84, 24)]), ("passaggio", 5, 2),
                  ("taglio", 4, [(120, 96)])]),
            ]),
-    schema("Contro la zona 2-3 · short corner e high-low", "Giochi avanzati",
+    schema("Contro la zona 2-3 · short corner e high-low", "Contro la zona",
            "Sovraccarico di un lato contro la zona: palla nello short corner, il centro "
            "della zona deve uscire e il lungo si tuffa alle sue spalle.",
            {1: "top", 2: "ala_d", 3: "ala_s", 4: "blo_s", 5: "blo_d"}, 1, [
