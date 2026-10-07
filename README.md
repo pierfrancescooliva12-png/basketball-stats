@@ -23,7 +23,8 @@ La dashboard è organizzata in **aree**, con la navigazione in alto (comoda al t
 | Area | Pagine | Cosa offre |
 |---|---|---|
 | **Home** | – | La settimana dello staff: prossima avversaria (probabilità di vittoria, punteggio atteso, giorni di riposo, km di trasferta), ultima partita in sintesi, posizione e forma della propria squadra, avvisi, PDF pronti da scaricare |
-| **Avversaria** | Scouting · Anteprima · Squadre | Report completo con frase di sintesi e **PDF per la riunione tecnica**: forza/debolezza, finali punto a punto, **rotazioni** (chi parte, quando entrano i cambi, chi chiude), quintetti più usati, **quintetti alti e bassi**, +/- e On-Off, chi serve chi, **origine dei punti fatti e concessi**, **momenti della partita**, break, bonus falli, timeout, profilo di tiro, problemi di falli, **riposo e trasferte**, note dello staff. Anteprima con probabilità, confronto voce per voce, Four Factors incrociati, giorni di riposo e km, precedenti, proiezione della classifica |
+| **Avversaria** | Scouting · Squadre | Report completo con frase di sintesi e **PDF per la riunione tecnica**: forza/debolezza, finali punto a punto, **rotazioni** (chi parte, quando entrano i cambi, chi chiude), quintetti più usati, **quintetti alti e bassi**, +/- e On-Off, chi serve chi, **origine dei punti fatti e concessi**, **momenti della partita**, break, bonus falli, timeout, profilo di tiro, problemi di falli, **riposo e trasferte**, note dello staff. |
+| **Previsioni** | Anteprima e scenari · Proiezione della classifica · Affidabilità delle previsioni | Probabilità di vittoria **con forbice**, **perché questa previsione** (quanto pesano fattore campo, attacco, difesa, stagione precedente), **scenari "e se"** (assenze, campo neutro, correzioni dello staff), confronto voce per voce, Four Factors incrociati, riposo e km, precedenti; proiezione della classifica con incertezza; **validazione su 3 stagioni** e **registro delle previsioni** fatte prima delle partite |
 | **Giocatori** | Elenco · Scheda · Mercato | Medie, avanzate, ruolo, andamento, casa/trasferta; scheda con frase di sintesi, anagrafica, **presenze**, percentili, +/- e On-Off, finali punto a punto, carriera, giocatori simili, note e **report individuale in PDF**. Mercato: fabbisogni della squadra con candidati, ricerca con filtri, **dalla B all'A2** (statistiche attese salendo di categoria), talenti di B Nazionale, chi è cresciuto, giocatori simili, liste di osservati |
 | **La mia squadra** | La mia squadra · Avvisi | KPI e posizione, obiettivi Four Factors, andamento, rendimento contro forti e deboli, **report post-partita** (anche in PDF); avvisi su assenze, cambi di quintetto, minuti, forma, massimi, serie |
 | **Campionato** | Panoramica · Classifica · Partite | Numeri del campionato, leader, mappa attacco/difesa; classifica con forma, vittorie attese e forza del calendario; box score, avanzate e andamento di ogni partita |
@@ -45,6 +46,25 @@ La dashboard è organizzata in **aree**, con la navigazione in alto (comoda al t
 - **Scouting** sulla squadra scelta (e ogni lunedì via email sulla prossima avversaria);
 - **post-partita** sulla propria ultima partita (allegato anche all'email del lunedì);
 - **individuale** per il giocatore, con lo spazio per gli obiettivi concordati con lo staff.
+
+**Previsioni: probabilità, non certezze**
+
+Il modello stima la forza di ogni squadra (Net rating ristretto verso la stagione precedente) e
+ne ricava margine atteso e probabilità di vittoria. È validato su tutte le partite delle
+stagioni 2024/25 e 2025/26 e delle prime giornate del 2026/27, in A2 e B Nazionale, usando ogni volta solo le partite giocate
+prima (`python -m basket.validazione --salva`):
+
+| Metrica (2.179 partite) | ASSIST | Vince sempre la squadra di casa | Vince chi ha il record migliore |
+|---|---|---|---|
+| Partite in cui vince la favorita | 65,9% | 60,2% | 62,3% |
+| Brier score (più basso è meglio) | 0,214 | 0,240 | – |
+| Errore medio sul margine | 9,7 punti | – | – |
+
+Le probabilità sono calibrate: quando il modello dà la favorita tra il 70% e l'80%, la
+favorita vince il 73,5% delle volte. Ogni lunedì le previsioni delle partite ancora da
+giocare vengono registrate nella tabella `previsioni`, così il rendimento sulla stagione in
+corso è verificabile. Le previsioni sono uno strumento di analisi per lo staff tecnico, non
+destinato alle scommesse.
 
 Accanto alle statistiche complesse c'è un **?** che apre la spiegazione (cosa misura, come si
 calcola, come leggerla). Il glossario completo è in `basket/glossario.py`.
@@ -198,7 +218,8 @@ fonte dati** salva le pagine in `discovery/output` per adeguare il parser.
 | `basket/db.py` | Database SQLite e file delle cronache |
 | `basket/analysis.py` | Medie, per 40', avanzate, profilo di squadra, leader, percentili |
 | `basket/pbp.py` | Cronaca: quintetti, +/-, On-Off, finali, assist, origine punti, break, falli, timeout |
-| `basket/previsioni.py` | Forza delle squadre, probabilità di vittoria, simulazione della stagione |
+| `basket/previsioni.py` | Forza delle squadre, probabilità di vittoria, fattori della previsione, scenari "e se", simulazione della stagione |
+| `basket/validazione.py` | Validazione retrospettiva, calibrazione, registro delle previsioni (`data/validazione.csv`) |
 | `basket/mercato.py` | Storico per stagione, ruolo stimato, giocatori simili, talenti, progressi |
 | `basket/avvisi.py` | Avvisi automatici e obiettivi della propria squadra |
 | `basket/approfondimenti.py`, `luoghi.py` | Rotazioni, taglia dei quintetti, momenti, presenze, riposo e trasferte, dalla B all'A2, frasi di sintesi |
@@ -206,9 +227,9 @@ fonte dati** salva le pagine in `discovery/output` per adeguare il parser.
 | `basket/scouting.py`, `report_pdf.py`, `invio_email.py` | Report di scouting, PDF, invio email |
 | `basket/accesso.py`, `note.py` | Login per club, note, osservati, obiettivi |
 | `basket/glossario.py` | Spiegazioni delle statistiche (pulsanti "?") |
-| `dashboard/`, `streamlit_app.py` | Dashboard (`pagine.py`: Home e aree; `analisi.py`: nuove sezioni) |
+| `dashboard/`, `streamlit_app.py` | Dashboard (`pagine.py`: Home e aree; `analisi.py`: nuove sezioni; `previsioni_ui.py`: area Previsioni) |
 | `assets/logo/` | Logo ASSIST (SVG e PNG; `build_logo.py` lo rigenera) |
-| `tests/` | 36 test automatici (parser, formule, quintetti, nuove analisi, PDF, accessi) |
+| `tests/` | 41 test automatici (parser, formule, quintetti, nuove analisi, previsioni e validazione, PDF, accessi) |
 
 ```bash
 pip install -r requirements-update.txt
@@ -217,6 +238,7 @@ python -m basket.export_excel                                # Excel
 python -m basket.report_pdf "Forlì"                          # PDF di scouting
 python -m basket.report_extra partita "Forlì"                # PDF post-partita
 python -m basket.report_extra giocatore "Forlì" "Gaspardo"   # PDF individuale
+python -m basket.validazione --salva --registra              # validazione e registro
 python -m pytest -q tests                                    # test
 pip install -r requirements.txt && streamlit run streamlit_app.py
 ```

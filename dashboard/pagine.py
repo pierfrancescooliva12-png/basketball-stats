@@ -11,7 +11,7 @@ import streamlit as st
 from basket import approfondimenti as X
 from basket import config
 
-from . import analisi, nuove, schede
+from . import analisi, nuove, previsioni_ui, schede
 from .stato import App
 from .ui import (badge_pos, brand_hero, esc, frase, it, kpis, note_html, num, pills, section,
                  short, titolo_pagina)
@@ -127,17 +127,30 @@ def home():
         pv = ng.get("previsione")
         prob = (pv["prob_casa"] if in_casa else 1 - pv["prob_casa"]) if pv else None
         fis = analisi.fisico_prossima(a, ng)
-        righe = [("Vittoria", num(100 * prob, 0, suffix="%") if prob is not None else "–"),
+        righe = [("Probabilità di vittoria",
+                  num(100 * prob, 0, suffix="%") if prob is not None else "–"),
                  ("Punteggio atteso", f"{pv['punti_casa']:.0f}-{pv['punti_ospite']:.0f}"
                   if pv else "–")]
         if fis.get(mia, {}).get("giorni_riposo") is not None:
             righe.append(("Riposo", f"{fis[mia]['giorni_riposo']} giorni"))
         if not in_casa and fis.get(mia, {}).get("km"):
             righe.append(("Trasferta", f"{num(fis[mia]['km'], 0)} km"))
+        chiave = ""
+        if pv:
+            from basket import previsioni as F
+            try:
+                sp = F.spiega(a.ctx.forze(ng["campionato_id"]), ng["casa_id"], ng["ospite_id"],
+                              a.ctx.hca(ng["campionato_id"]))
+                top = sp.iloc[0]
+                v = top["probabilita"] if in_casa else -top["probabilita"]
+                chiave = (f"<br>Fattore che pesa di più: <b>{esc(top['fattore'].lower())}</b> "
+                          f"({num(v, 0, signed=True)}% per voi)")
+            except KeyError:
+                pass
         cards.append(_card("Prossima partita", f"vs {esc(nome_avv)}",
                            f"{ng['giornata']}ª giornata · {data_it(ng['data'])} "
-                           f"{esc(ng['ora'] or '')} · {'in casa' if in_casa else 'in trasferta'}",
-                           righe))
+                           f"{esc(ng['ora'] or '')} · {'in casa' if in_casa else 'in trasferta'}"
+                           + chiave, righe))
     else:
         cards.append(_card("Prossima partita", "Calendario concluso", "", []))
     # ultima partita
@@ -221,8 +234,18 @@ def p_scouting():
 
 
 def p_anteprima():
-    titolo_pagina("Anteprima", "probabilità, confronto e chiavi della partita")
+    titolo_pagina("Anteprima", "probabilità, perché, scenari e chiavi della partita")
     nuove.render_anteprima(APP)
+
+
+def p_proiezione():
+    titolo_pagina("Proiezione della classifica", "dove può arrivare ogni squadra")
+    previsioni_ui.render_proiezione(APP)
+
+
+def p_affidabilita():
+    titolo_pagina("Affidabilità delle previsioni")
+    previsioni_ui.render_affidabilita(APP)
 
 
 def p_squadre():
@@ -285,8 +308,12 @@ def mappa() -> dict:
     return {
         "": [P(home, "Home", "home", "home", default=True, icona=":material/home:")],
         "Avversaria": [P(p_scouting, "Scouting", "scouting", "scouting"),
-                       P(p_anteprima, "Anteprima", "anteprima", "anteprima"),
                        P(p_squadre, "Squadre", "squadre", "squadre")],
+        "Previsioni": [P(p_anteprima, "Anteprima e scenari", "anteprima", "anteprima"),
+                       P(p_proiezione, "Proiezione della classifica", "proiezione",
+                         "proiezione"),
+                       P(p_affidabilita, "Affidabilità delle previsioni", "affidabilita",
+                         "affidabilita")],
         "Giocatori": [P(p_giocatori, "Elenco giocatori", "giocatori", "giocatori"),
                       P(p_giocatore, "Scheda giocatore", "giocatore", "giocatore"),
                       P(p_mercato, "Mercato", "mercato", "mercato")],

@@ -284,6 +284,66 @@ G = {
         "Ogni assist della cronaca è abbinato al canestro registrato nello stesso istante.",
         "Una coppia dominante (es. play → centro) indica un'azione ricorrente da preparare in "
         "difesa: togliere quella linea di passaggio."),
+    "spiegazione": Voce(
+        "Perché questa previsione",
+        "Quanto pesa ogni fattore sulla probabilità di vittoria.",
+        "Il margine atteso è la somma di più parti: vantaggio del campo, differenza di "
+        "attacco, differenza di difesa e quanto conta ancora la stagione precedente. Il peso "
+        "di un fattore è quanto cambierebbe la probabilità togliendo solo quel fattore.",
+        "Barre blu a favore della squadra di casa, arancio a favore dell'ospite. A inizio "
+        "stagione la stagione precedente pesa di più, poi lascia spazio ai numeri di quest'anno."),
+    "scenari": Voce(
+        "Scenari: e se…",
+        "Come cambia la previsione con condizioni diverse: assenze, campo neutro, forma della "
+        "squadra secondo lo staff.",
+        "Un'assenza toglie alla squadra l'impatto stimato del giocatore moltiplicato per la "
+        "quota di minuti che gioca di solito. La correzione dello staff sposta la forza della "
+        "squadra in punti per 100 possessi.",
+        "Serve a ragionare, non a prevedere con certezza: l'impatto di un singolo giocatore è "
+        "una stima con margine di errore, soprattutto con pochi minuti in archivio."),
+    "impatto": Voce(
+        "Impatto del giocatore",
+        "Di quanto cambia l'efficienza della squadra quando il giocatore è in campo rispetto a "
+        "chi lo sostituisce.",
+        "On-Off dalla cronaca (Net rating con il giocatore in campo meno quello con il "
+        "giocatore fuori), ristretto verso 0 in proporzione ai minuti giocati e limitato a ±8. "
+        "Senza cronaca si usa il Game Score per 40 minuti rispetto alla mediana del campionato.",
+        "Un valore di +5 vuol dire circa 5 punti in più ogni 100 possessi con lui in campo."),
+    "forza": Voce(
+        "Forza stimata",
+        "Quanto una squadra è migliore o peggiore di una squadra media, in punti ogni 100 "
+        "possessi.",
+        "Media bayesiana tra un terzo del Net rating della stagione precedente e il Net rating "
+        "di quest'anno: più partite si giocano, più conta quest'anno. La forbice indica "
+        "l'incertezza (intervallo al 90%).",
+        "+8 è una squadra di vertice, 0 una squadra media, −8 una squadra in difficoltà."),
+    "validazione": Voce(
+        "Validazione retrospettiva",
+        "Quanto sarebbero state giuste le previsioni del modello sulle partite già giocate.",
+        "Per ogni partita in archivio si rifà la previsione usando solo i dati disponibili "
+        "prima di quella partita, poi la si confronta con il risultato. Il Brier score misura "
+        "la qualità delle probabilità (0 = perfetto, 0,25 = come tirare una moneta).",
+        "Il confronto con riferimenti semplici (vince sempre la squadra di casa, vince chi ha "
+        "il record migliore) mostra quanto il modello aggiunge."),
+    "calibrazione": Voce(
+        "Calibrazione",
+        "Se le probabilità sono oneste: quando il modello dice 70%, la favorita deve vincere "
+        "circa 7 volte su 10.",
+        "Le partite sono divise per fasce di probabilità della favorita; per ogni fascia si "
+        "confronta la probabilità media prevista con la percentuale di vittorie reali.",
+        "Punti vicini alla diagonale tratteggiata indicano un modello ben calibrato."),
+    "registro": Voce(
+        "Registro delle previsioni",
+        "Le previsioni fatte davvero prima delle partite, conservate e verificate dopo.",
+        "Ogni lunedì, dopo l'aggiornamento dei dati, si salvano le previsioni delle partite non "
+        "ancora giocate. Dopo la partita la previsione non cambia più.",
+        "È la prova più trasparente: nessuna previsione può essere corretta a posteriori."),
+    "modello": Voce(
+        "Il modello",
+        "Come vengono calcolate le previsioni.",
+        "Forza bayesiana delle squadre, ritmo, vantaggio del campo e variabilità della partita; "
+        "simulazione Monte Carlo per la classifica.",
+        "Modello statistico trasparente, tarato e validato sui dati delle stagioni precedenti."),
     "rotazioni": Voce(
         "Rotazioni",
         "Come l'allenatore distribuisce i minuti: chi parte titolare, quando entrano i cambi, "
@@ -452,7 +512,8 @@ COLONNE = {
     "Prob. vittoria": "prob_vittoria", "Punti da perse": "origini",
     "Seconde occasioni": "origini", "Contropiede": "origini", "Break fatti": "break",
     "Break subiti": "break", "Quintetto": "quintetti", "Adattamento": "adattamento",
-    "% da titolare": "rotazioni", "Entra al minuto": "rotazioni",
+    "Impatto (per 100 possessi)": "impatto", "Prevista %": "calibrazione",
+    "Reale %": "calibrazione", "Brier": "validazione", "% da titolare": "rotazioni", "Entra al minuto": "rotazioni",
     "% in campo negli ultimi 5'": "rotazioni", "Presenze %": "presenze",
     "Tiro (TS%)": "ts", "Possessi usati (USG%)": "usg", "Assist % (AST%)": "ast_pct",
     "Rimbalzi % (REB%)": "reb_ind", "Attacco (ORtg)": "ortg", "Difesa (DRtg)": "drtg",

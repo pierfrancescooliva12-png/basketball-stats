@@ -13,7 +13,7 @@ from basket.report_pdf import build_pdf, slug
 
 from . import analisi
 from .stato import App, partite_df, storico
-from .ui import (ARANCIO, BLU, GRIGIO, SUPERFICIE, TESTO, esc, hero, kpis, note_html, pills,
+from .ui import (ARANCIO, BLU, GRIGIO, SUPERFICIE, TESTO, esc, hero, it, kpis, note_html, pills,
                  plot, section, short, show)
 
 
@@ -329,15 +329,16 @@ def render_anteprima(a: App):
         forze, casa, ospite, ctx.hca(a.camp))
     meta = ""
     if ng and {ng["casa_id"], ng["ospite_id"]} == {casa, ospite}:
-        meta = f"{ng['giornata']}ª giornata · {esc(ng['data'])} {esc(ng['ora'] or '')}"
+        meta = f"{ng['giornata']}ª giornata · {esc(it(ng['data']))} {esc(ng['ora'] or '')}"
     hero("Anteprima", f"{nomi[casa]} – {nomi[ospite]}", meta, small=True)
     if config.LINK_LNP_PASS and ng and {ng["casa_id"], ng["ospite_id"]} == {casa, ospite} \
             and ng.get("stream_url"):
         st.link_button("▶ Diretta su LNP Pass", ng["stream_url"])
     fis = analisi.fisico_prossima(a, ng) if ng and {ng["casa_id"], ng["ospite_id"]} == \
         {casa, ospite} else {}
+    from . import previsioni_ui as PU
     kpis([("Probabilità di vittoria", f"{100 * pv['prob_casa']:.0f}% – {100 * (1 - pv['prob_casa']):.0f}%",
-           "casa – ospite"),
+           f"casa – ospite · {PU.forbice(pv['prob_casa'])}"),
           ("Punteggio atteso", f"{pv['punti_casa']:.0f}-{pv['punti_ospite']:.0f}",
            f"margine {pv['margine']:+.1f}"),
           ("Possessi attesi", f"{pv['possessi']:.0f}", "ritmo medio delle due squadre"),
@@ -346,6 +347,10 @@ def render_anteprima(a: App):
               "giorni dalla partita precedente"),
              ("Trasferta ospite", f"{_f(fis[ospite]['km'], 0)} km", "stima su strada")]
             if fis and fis.get(casa, {}).get("giorni_riposo") is not None else []))
+
+    PU.avviso()
+    PU.perche(a, forze, casa, ospite, ctx.hca(a.camp), nomi)
+    PU.scenari(a, forze, casa, ospite, ctx.hca(a.camp), nomi)
 
     pa = a.profile.set_index("squadra_id")
     A_, B_ = pa.loc[casa], pa.loc[ospite]
@@ -411,15 +416,6 @@ def render_anteprima(a: App):
         show(h2h.drop(columns="vincente").rename(columns={
             "stagione": "Stagione", "giornata": "G.", "data": "Data", "casa": "Casa",
             "punti_casa": "PC", "punti_ospite": "PO", "ospite": "Ospite"}))
-
-    with st.expander("Proiezione della classifica (simulazione del resto della stagione)"):
-        sim = _simulation(ctx, a.mtime, a.stagione, a.camp)
-        zone = list(config.ZONE_CLASSIFICA.get(a.camp, {}))
-        show(sim[["squadra", "vinte_ora", "vinte_finali", "posizione_media"] + zone].rename(
-            columns={"squadra": "Squadra", "vinte_ora": "V ora", "vinte_finali": "V attese",
-                     "posizione_media": "Pos. media"}),
-            progress={z: (0, 100) for z in zone},
-            voci=[G["simulazione"]])
 
 
 @st.cache_data(show_spinner="Simulo il resto della stagione…")
