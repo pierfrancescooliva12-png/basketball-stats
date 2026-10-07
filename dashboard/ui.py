@@ -145,6 +145,16 @@ def inject_css():
     header [data-testid="stTopNavLink"], header [data-testid="stTopNavSection"] {
       font: 600 1.05rem 'Barlow Condensed', sans-serif !important; letter-spacing: .04em;
       text-transform: uppercase; min-height: 44px;}
+    /* iPad in verticale e schermi stretti: tutte le aree restano visibili nel menu */
+    @media (max-width: 1024px) {
+      header [data-testid="stTopNavLink"], header [data-testid="stTopNavSection"] {
+        font-size: .9rem !important; letter-spacing: 0; padding-left: .35rem !important;
+        padding-right: .35rem !important;}
+    }
+    @media (max-width: 700px) {
+      header [data-testid="stTopNavLink"], header [data-testid="stTopNavSection"] {
+        font-size: .8rem !important;}
+    }
     [data-testid="stPageLink"] a {min-height: 44px; border: 1px solid var(--line);
       border-radius: 10px; padding: 6px 12px; background: var(--surface-2);}
     div[role="radiogroup"] label {padding: .25rem .55rem;}
