@@ -1,5 +1,5 @@
 """Catalogo degli schemi pronti: quelli di base più l'archivio per situazione."""
 
-from . import schemi
+from . import archivio_zona, schemi
 
-SCHEMI = list(schemi.SCHEMI)
+SCHEMI = schemi.SCHEMI + archivio_zona.SCHEMI
