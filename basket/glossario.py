@@ -383,6 +383,25 @@ G = {
         "Il divario tra le squadre cresce con il numero di possessi, la casualità solo con la "
         "sua radice quadrata.",
         "Meno possessi aiutano la squadra sfavorita, più possessi la favorita."),
+    "aree_migliorare": Voce(
+        "Aree da migliorare",
+        "Dove la squadra è sotto il campionato e quanto vale migliorare.",
+        "Per ogni Four Factor si confronta la squadra con la media e con il miglior quarto del "
+        "campionato. L'obiettivo è la media se si è sotto, altrimenti il livello delle migliori. "
+        "Il guadagno usa il peso del fattore sul Net rating (misurato su oltre 4.000 partite) e "
+        "lo traduce in vittorie su 30 partite contro un avversario medio.",
+        "Le prime righe sono quelle su cui l'allenamento rende di più. È una stima: indica le "
+        "priorità, non una promessa di risultato."),
+    "dettagli_individuali": Voce(
+        "Dettagli individuali",
+        "Abitudini dei singoli giocatori che costano punti alla squadra.",
+        "Si segnalano: liberi sotto la media di 8 punti percentuali con almeno 2 tentativi a "
+        "partita; tiro da 3 sotto la media di 5 punti con almeno 3 tentativi; palle perse nel "
+        "quarto peggiore del campionato; molti possessi usati (USG% 22+) con tiro reale sotto la "
+        "mediana di 4 punti; 5,5 falli o più ogni 40 minuti. I punti a partita sono la "
+        "differenza rispetto a un giocatore medio sugli stessi tentativi.",
+        "Sono punti di partenza per il lavoro individuale; il contesto (ruolo, tiri forzati a fine "
+        "azione) lo conosce lo staff."),
     "rotazioni": Voce(
         "Rotazioni",
         "Come l'allenatore distribuisce i minuti: chi parte titolare, quando entrano i cambi, "
@@ -560,7 +579,7 @@ COLONNE = {
     "Rimb. offensivi %": "orb", "Ritmo": "pace", "Valutazione": "valutazione",
     "Punti/40 attesi in A2": "traduzione", "Obiettivo": "leve", "Guadagno": "leve",
     "Scarto sotto": "giocatori_chiave", "Scarto sopra": "giocatori_chiave",
-    "Nelle vittorie": "quando_perdono", "Game Score/40 atteso in A2": "traduzione",
+    "Nelle vittorie": "quando_perdono", "Vittorie in più": "aree_migliorare", "Game Score/40 atteso in A2": "traduzione",
 }
 
 

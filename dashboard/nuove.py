@@ -606,6 +606,9 @@ def render_mia_squadra(a: App):
           ("Punto a punto", me["record_pp"], "margine ≤ 5"),
           ("Fortuna", _f(me["fortuna"], signed=True), "vittorie reali − attese")])
 
+    from . import miglioramento_ui
+    miglioramento_ui.render(a, sid)
+
     section("Obiettivi Four Factors", "impostati dallo staff, salvati per il club",
             key="four_factors")
     goals = {**AV.OBIETTIVI_DEFAULT, **a.archivio.goals(a.club)}

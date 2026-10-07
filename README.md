@@ -26,7 +26,7 @@ La dashboard è organizzata in **aree**, con la navigazione in alto (comoda al t
 | **Avversaria** | Scouting · Squadre | **Chiavi per vincere**: le tre chiavi della partita in parole, le leve dei Four Factors (valore atteso, obiettivo e quanto vale in probabilità raggiungerlo), ritmo conveniente, cosa cambia nelle loro e nelle vostre sconfitte, **giocatori chiave** ("tenere X sotto 12 punti: probabilità dal 30% al 35%", misurato come scarto rispetto al margine previsto, con chi compensa e il rendimento senza di lui). Report completo con frase di sintesi e **PDF per la riunione tecnica** (con le chiavi se la squadra dello staff è impostata): forza/debolezza, finali punto a punto, **rotazioni** (chi parte, quando entrano i cambi, chi chiude), quintetti più usati, **quintetti alti e bassi**, +/- e On-Off, chi serve chi, **origine dei punti fatti e concessi**, **momenti della partita**, break, bonus falli, timeout, profilo di tiro, problemi di falli, **riposo e trasferte**, note dello staff. |
 | **Previsioni** | Anteprima e scenari · Proiezione della classifica · Affidabilità delle previsioni | Probabilità di vittoria **con forbice**, **perché questa previsione** (quanto pesano fattore campo, attacco, difesa, stagione precedente), **scenari "e se"** (assenze, campo neutro, correzioni dello staff), confronto voce per voce, Four Factors incrociati, riposo e km, precedenti; proiezione della classifica con incertezza; **validazione su 3 stagioni** e **registro delle previsioni** fatte prima delle partite |
 | **Giocatori** | Elenco · Scheda · Mercato | Medie, avanzate, ruolo, andamento, casa/trasferta; scheda con frase di sintesi, anagrafica, **presenze**, percentili, +/- e On-Off, finali punto a punto, carriera, giocatori simili, note e **report individuale in PDF**. Mercato: fabbisogni della squadra con candidati, ricerca con filtri, **dalla B all'A2** (statistiche attese salendo di categoria), talenti di B Nazionale, chi è cresciuto, giocatori simili, liste di osservati |
-| **La mia squadra** | La mia squadra · Avvisi | KPI e posizione, obiettivi Four Factors, andamento, rendimento contro forti e deboli, **report post-partita** (anche in PDF); avvisi su assenze, cambi di quintetto, minuti, forma, massimi, serie |
+| **La mia squadra** | La mia squadra · Avvisi | **Aree da migliorare**: su cosa concentrarsi in parole, priorità di lavoro sui Four Factors con le vittorie in più raggiungendo l'obiettivo, punti regalati (palle perse, seconde occasioni, contropiede, liberi sbagliati, falli), momenti in cui perdete terreno, dettagli individuali che costano punti (liberi, tiro da 3, palle perse, scelta di tiro, falli), quintetti da rivedere e che funzionano, cosa cambia quando perdete. KPI e posizione, obiettivi Four Factors, andamento, rendimento contro forti e deboli, **report post-partita** (anche in PDF); avvisi su assenze, cambi di quintetto, minuti, forma, massimi, serie |
 | **Campionato** | Panoramica · Classifica · Partite | Numeri del campionato, leader, mappa attacco/difesa; classifica con forma, vittorie attese e forza del calendario; box score, avanzate e andamento di ogni partita |
 
 **Leggere i numeri senza fatica**
@@ -225,6 +225,7 @@ fonte dati** salva le pagine in `discovery/output` per adeguare il parser.
 | `basket/analysis.py` | Medie, per 40', avanzate, profilo di squadra, leader, percentili |
 | `basket/pbp.py` | Cronaca: quintetti, +/-, On-Off, finali, assist, origine punti, break, falli, timeout |
 | `basket/previsioni.py` | Forza delle squadre, probabilità di vittoria, fattori della previsione, scenari "e se", simulazione della stagione |
+| `basket/miglioramento.py` | Aree da migliorare della propria squadra |
 | `basket/chiavi.py` | Chiavi per vincere: leve dei Four Factors, ritmo, quando perdono, giocatori chiave |
 | `basket/validazione.py` | Validazione retrospettiva, calibrazione, registro delle previsioni (`data/validazione.csv`) |
 | `basket/mercato.py` | Storico per stagione, ruolo stimato, giocatori simili, talenti, progressi |
@@ -236,7 +237,7 @@ fonte dati** salva le pagine in `discovery/output` per adeguare il parser.
 | `basket/glossario.py` | Spiegazioni delle statistiche (pulsanti "?") |
 | `dashboard/`, `streamlit_app.py` | Dashboard (`pagine.py`: Home e aree; `analisi.py`: nuove sezioni; `previsioni_ui.py`: area Previsioni) |
 | `assets/logo/` | Logo ASSIST (SVG e PNG; `build_logo.py` lo rigenera) |
-| `tests/` | 47 test automatici (parser, formule, quintetti, nuove analisi, previsioni e validazione, chiavi per vincere, PDF, accessi) |
+| `tests/` | 51 test automatici (parser, formule, quintetti, nuove analisi, previsioni e validazione, chiavi per vincere, PDF, accessi) |
 
 ```bash
 pip install -r requirements-update.txt
