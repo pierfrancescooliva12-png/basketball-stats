@@ -198,4 +198,131 @@ SCHEMI = [
                 [("passaggio", 1, 2), ("taglio", 1, [(136, 60), (128, 40)]),
                  ("taglio", 5, [(56, 96)])]),
            ]),
+
+    # ---- fine quarto: rimesse e ultimo possesso ----
+    schema("Fine quarto · rimessa dal fondo con lob", "Fine quarto",
+           "Pochi secondi, rimessa dal fondo: blocco alle spalle per il lob al ferro, poi "
+           "blocco per il bloccante che si apre nell'angolo.",
+           {1: (88, 1), 2: "blo_s", 3: "gom_d", 4: "gom_s", 5: "blo_d"}, 1, [
+               ("2 blocca alle spalle di 4 (back screen): 4 taglia al ferro per il lob. 3 sale "
+                "in punta come sicurezza.",
+                [("blocco", 2, [(54, 48)]), ("taglio", 4, [(62, 40), (70, 24)]),
+                 ("taglio", 3, [(88, 80), (75, 100)])]),
+               ("Subito dopo 5 blocca per 2 (blocco per il bloccante), che esce nell'angolo. "
+                "1 sceglie: lob a 4, 2 nell'angolo o 3 in punta per ripartire.",
+                [("blocco", 5, [(66, 46)]), ("taglio", 2, [(36, 34), (12, 18)]),
+                 ("passaggio", 1, 4)]),
+           ]),
+    schema("Fine quarto · rimessa laterale, blocchi in serie", "Fine quarto",
+           "Rimessa laterale per il tiro da 3: un'esca taglia al ferro mentre il tiratore "
+           "risale dall'angolo su due blocchi in serie (stagger).",
+           {1: (150, 72), 2: "ang_s", 3: "slot_d", 4: (64, 66), 5: (44, 44)}, 1, [
+               ("3 taglia verso il canestro come esca. 5 e 4 bloccano in serie per 2, che "
+                "risale dall'angolo verso la punta.",
+                [("taglio", 3, [(100, 60), (92, 28)]), ("blocco", 5, [(32, 44)]),
+                 ("blocco", 4, [(58, 76)]),
+                 ("taglio", 2, [(28, 22), (46, 40), (68, 66), (80, 98)])]),
+               ("1 rimette a 2 in punta per il tiro. Se 2 è negato, 4 si apre verso la palla "
+                "dopo il blocco (slip).",
+                [("passaggio", 1, 2), ("taglio", 4, [(84, 72), (108, 82)])]),
+           ]),
+    schema("Fine quarto · rimessa dal fondo, 1 secondo", "Fine quarto",
+           "Per l'ultimo secondo: quattro in fila sulla linea del tiro libero, esca "
+           "nell'angolo e tiro in uscita dal doppio blocco.",
+           {1: (88, 1), 2: (40, 58), 3: (110, 58), 4: (62, 58), 5: (88, 58)}, 1, [
+               ("Al segnale 3 scatta nell'angolo destro (esca); 4 e 5 si stringono in un "
+                "doppio blocco.",
+                [("taglio", 3, [(130, 34), (140, 16)]), ("blocco", 4, [(68, 64)]),
+                 ("blocco", 5, [(82, 64)])]),
+               ("2 gira dietro il doppio blocco e riceve in ala per il tiro immediato; 5 si "
+                "gira e sigilla verso il ferro come seconda opzione.",
+                [("taglio", 2, [(52, 76), (75, 82), (100, 80), (122, 72)]),
+                 ("taglio", 5, [(86, 40), (80, 26)]), ("passaggio", 1, 2)]),
+           ]),
+    schema("Fine quarto · ultimo possesso, blocco a 5 secondi", "Fine quarto",
+           "Ultimo tiro del quarto: si consuma il cronometro, un finto blocco porta via "
+           "l'aiuto e il pick and roll parte a 5 secondi dalla fine.",
+           {1: (75, 112), 2: "ang_s", 3: "ang_d", 4: (40, 94), 5: (110, 94)}, 1, [
+               ("1 consuma il cronometro lontano dal canestro. A 8 secondi 4 finge il blocco "
+                "(ghost) e si apre in ala sinistra.",
+                [("taglio", 4, [(64, 104), (24, 82)])]),
+               ("A 5 secondi 5 blocca per 1, che attacca verso destra.",
+                [("blocco", 5, [(88, 110)]),
+                 ("palleggio", 1, [(82, 100), (100, 94), (112, 78)])]),
+               ("5 rolla forte al ferro. 1 legge: tiro in arresto, 5 sul roll o scarico in "
+                "angolo. Il tiro deve partire entro 2 secondi.",
+                [("taglio", 5, [(94, 70), (82, 30)]), ("passaggio", 1, 5)]),
+           ]),
+
+    # ---- giochi avanzati ----
+    schema("Ram · pick and roll dopo il blocco per il lungo", "Giochi avanzati",
+           "Un blocco verso il basso libera il lungo che arriva in corsa sul pick and roll: "
+           "la difesa non ha tempo per organizzarsi, con tre letture.",
+           {1: (64, 104), 2: "ang_d", 3: "ang_s", 4: (100, 64), 5: (102, 30)}, 1, [
+               ("4 blocca verso il basso per 5 (ram): 5 sale a portare il blocco sulla palla.",
+                [("blocco", 4, [(98, 44)]), ("taglio", 5, [(114, 44), (102, 74), (82, 98)])]),
+               ("5 blocca per 1, che attacca a destra; 4, dopo il ram, si apre in ala sinistra "
+                "(pop).",
+                [("blocco", 5, [(74, 108)]),
+                 ("palleggio", 1, [(70, 96), (92, 92), (110, 80)]),
+                 ("taglio", 4, [(80, 62), (40, 90)])]),
+               ("5 rolla al ferro: 1 sceglie tra il roll di 5, il pop di 4 e lo scarico a 2 "
+                "nell'angolo.",
+                [("taglio", 5, [(86, 70), (80, 30)]), ("passaggio", 1, 5)]),
+           ]),
+    schema("Double drag in transizione", "Giochi avanzati",
+           "In transizione i due lunghi arrivano in corsa e portano due blocchi in fila: "
+           "il primo si apre fuori, il secondo rolla al ferro.",
+           {1: (36, 118), 2: "ang_d", 3: "ang_s", 4: (70, 134), 5: (96, 136)}, 1, [
+               ("1 porta palla a sinistra; 4 e 5 arrivano in corsa e bloccano in fila "
+                "(double drag).",
+                [("blocco", 4, [(56, 110)]), ("blocco", 5, [(72, 110)])]),
+               ("1 attacca a destra su entrambi i blocchi: 4 si apre fuori (pop), 5 rolla al "
+                "ferro. 1 legge l'aiuto.",
+                [("palleggio", 1, [(50, 98), (76, 96), (106, 84)]),
+                 ("taglio", 4, [(42, 122)]), ("taglio", 5, [(84, 80), (80, 30)]),
+                 ("passaggio", 1, 5)]),
+           ]),
+    schema("Pistol (21) · consegnato e pick and roll", "Giochi avanzati",
+           "Attacco rapido: passaggio all'ala, consegnato in corsa e pick and roll centrale "
+           "prima che la difesa si sistemi.",
+           {1: (46, 122), 2: (12, 50), 3: "ang_d", 4: (96, 128), 5: "blo_d"}, 1, [
+               ("1 spinge a sinistra e passa a 2, che risale lungo la linea laterale.",
+                [("taglio", 2, [(18, 84)]), ("passaggio", 1, 2)]),
+               ("1 segue il passaggio e riceve da 2 in consegnato; 2 taglia nell'angolo. "
+                "4 arriva per il blocco.",
+                [("taglio", 1, [(30, 100)]), ("passaggio", 2, 1),
+                 ("taglio", 2, [(14, 50), (10, 18)]), ("blocco", 4, [(44, 102)])]),
+               ("1 attacca il centro sul blocco di 4, che rolla. 5 resta sul lato debole per "
+                "lo scarico.",
+                [("palleggio", 1, [(36, 112), (58, 106), (76, 90)]),
+                 ("taglio", 4, [(54, 80), (68, 40)]),
+                 ("passaggio", 1, 4)]),
+           ]),
+    schema("Princeton · taglio backdoor", "Giochi avanzati",
+           "Quattro fuori e il lungo in lunetta alta: chi è marcato in anticipo taglia alle "
+           "spalle del difensore. Se il backdoor è chiuso, 5 consegna e si riparte.",
+           {1: "slot_s", 2: "ala_d", 3: "ala_s", 4: "slot_d", 5: "ferro"}, 1, [
+               ("5 sale in lunetta alta e riceve da 1. 2, marcato in anticipo, porta il "
+                "difensore verso l'alto.",
+                [("taglio", 5, [(75, 64)]), ("passaggio", 1, 5), ("taglio", 2, [(132, 90)])]),
+               ("2 taglia backdoor alle spalle del difensore e 5 lo serve con un passaggio "
+                "a terra; 4 scende a riempire l'ala.",
+                [("taglio", 2, [(116, 60), (84, 24)]), ("passaggio", 5, 2),
+                 ("taglio", 4, [(124, 80)])]),
+           ]),
+    schema("Contro la zona 2-3 · short corner e high-low", "Giochi avanzati",
+           "Sovraccarico di un lato contro la zona: palla nello short corner, il centro "
+           "della zona deve uscire e il lungo si tuffa alle sue spalle.",
+           {1: "top", 2: "ala_d", 3: "ala_s", 4: "blo_s", 5: "blo_d"}, 1, [
+               ("1 passa a 2 in ala: l'ala della zona esce. 5 scivola nello short corner, 4 si "
+                "alza in lunetta, 3 scende nell'angolo opposto.",
+                [("passaggio", 1, 2), ("taglio", 5, [(118, 14)]),
+                 ("taglio", 4, [(70, 40), (75, 58)]), ("taglio", 3, [(12, 40), (10, 18)])]),
+               ("2 serve 5 nello short corner: il centro della zona esce su di lui e 4 si "
+                "tuffa al ferro alle sue spalle (high-low).",
+                [("passaggio", 2, 5), ("taglio", 4, [(80, 26)])]),
+               ("5 serve 4 sotto canestro; se la zona collassa, scarica lungo a 3 nell'angolo "
+                "opposto.", [("passaggio", 5, 4)]),
+           ]),
 ]
