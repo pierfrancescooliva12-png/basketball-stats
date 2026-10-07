@@ -202,6 +202,8 @@ def home():
     c = st.columns(4)
     pulsante(c[0], "Vai a La mia squadra →", "mia")
     pulsante(c[1], "Lavagna dei giochi →", "lavagna")
+    if avv is not None:
+        pulsante(c[2], "Lavagna dell'avversaria →", "lavagna_avv", f_sq=avv)
 
 
 def _card(h: str, t: str, m: str, righe: list[tuple[str, str]]) -> str:
@@ -249,6 +251,19 @@ def p_proiezione():
 def p_affidabilita():
     titolo_pagina("Affidabilità delle previsioni")
     previsioni_ui.render_affidabilita(APP)
+
+
+def p_lavagna_avv():
+    a = APP
+    titolo_pagina("Lavagna dell'avversaria",
+                  "i suoi giochi, fase per fase: finiscono anche nel PDF di scouting")
+    sid = a.sq if a.sq is not None else prossima_avversaria(a)
+    if sid is None:
+        scegli_squadra(a, "Scegli l'avversaria di cui disegnare i giochi.")
+        return
+    nome = a.profile.set_index("squadra_id").loc[sid, "squadra"]
+    note_html(f"Giochi di {nome}. Per un'altra squadra cambia il filtro Squadra in alto.")
+    lavagna_ui.render(a, sid, "avversaria", f"Giochi di {nome}", nome)
 
 
 def p_squadre():
@@ -316,6 +331,8 @@ def mappa() -> dict:
     return {
         "": [P(home, "Home", "home", "home", default=True, icona=":material/home:")],
         "Avversaria": [P(p_scouting, "Scouting", "scouting", "scouting"),
+                       P(p_lavagna_avv, "Lavagna dell'avversaria", "lavagna-avversaria",
+                         "lavagna_avv"),
                        P(p_squadre, "Squadre", "squadre", "squadre")],
         "Previsioni": [P(p_anteprima, "Anteprima e scenari", "anteprima", "anteprima"),
                        P(p_proiezione, "Proiezione della classifica", "proiezione",
