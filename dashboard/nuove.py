@@ -30,8 +30,10 @@ def _team(df: pd.DataFrame, sid) -> pd.DataFrame:
 
 
 @st.cache_data(show_spinner="Preparo il PDF…")
-def _pdf(_ctx, mtime: float, stagione: str, sid: int, mia: int | None = None) -> bytes:
-    return build_pdf(_ctx, sid, mia)
+def _pdf(_ctx, mtime: float, stagione: str, sid: int, mia: int | None = None,
+         giochi_json: str = "[]") -> bytes:
+    import json
+    return build_pdf(_ctx, sid, mia, json.loads(giochi_json))
 
 
 def _coverage(a: App):
