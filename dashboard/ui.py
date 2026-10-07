@@ -363,7 +363,7 @@ def show(df: pd.DataFrame, height: int | None = None, progress: dict | None = No
     cfg = {}
     for c in df.columns:
         if pd.api.types.is_float_dtype(df[c]):
-            two = any(k in str(c) for k in ("rate", "FTA/FGA", "Variabilità"))
+            two = any(k in str(c) for k in ("rate", "FTA/FGA", "Variabilità", "Brier"))
             d = 2 if two else 1
             if df[c].isna().any() and c not in (progress or {}):
                 # colonne con valori mancanti: testo formattato, "–" al posto del vuoto

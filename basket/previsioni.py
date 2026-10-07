@@ -2,7 +2,7 @@
 
 Modello semplice e trasparente:
     margine atteso = (Net rating casa − Net rating ospite) × possessi / 100 + vantaggio campo
-    probabilità di vittoria = Φ(margine atteso / σ), con σ ≈ 11 punti
+    probabilità di vittoria = Φ(margine atteso / σ), con σ = 12,5 punti
 La forza di ogni squadra è stimata in modo bayesiano: in partenza le squadre sono disperse
 attorno a 0 con deviazione SD_FORZA (punti per 100 possessi); ogni partita aggiunge
 un'osservazione rumorosa (SD_PARTITA). Ne seguono
@@ -19,7 +19,9 @@ import pandas as pd
 from . import analysis as A
 from . import config
 
-SIGMA = 11.0              # deviazione standard del margine di una partita (punti)
+# Parametri tarati sulla validazione retrospettiva delle stagioni 2024/25 e 2025/26
+# (python -m basket.validazione): migliore Brier score e calibrazione.
+SIGMA = 12.5              # deviazione standard del margine di una partita (punti)
 SD_FORZA = 7.0            # dispersione della forza tra le squadre (Net rating)
 SD_PARTITA = 15.0         # rumore del Net rating di una singola partita
 K_RESTRINGIMENTO = SD_PARTITA ** 2 / SD_FORZA ** 2
@@ -41,7 +43,7 @@ def home_advantage(conn, campionato_id: str) -> float:
     return float(w * r[0] + (1 - w) * VANTAGGIO_CAMPO_DEFAULT)
 
 
-PESO_STAGIONE_PRECEDENTE = 0.5   # le rose cambiano: si conserva metà del Net rating
+PESO_STAGIONE_PRECEDENTE = 0.35  # le rose cambiano: si conserva un terzo del Net rating
 
 
 def prior_from_previous(conn, stagione: str) -> dict:
@@ -65,8 +67,15 @@ def strengths(bs: pd.DataFrame, prior: dict | None = None) -> pd.DataFrame:
     t["forza"] = (m0 * K_RESTRINGIMENTO + t["net_rtg"].fillna(0) * g) / (g + K_RESTRINGIMENTO)
     t["incertezza"] = np.sqrt(1 / (1 / SD_FORZA ** 2 + g / SD_PARTITA ** 2))
     t["pace_stima"] = t["pace"].fillna(t["pace"].mean())
+    # scomposizione della forza: stagione precedente + attacco + difesa di quest'anno
+    w = g / (g + K_RESTRINGIMENTO)
+    lega = t["ortg"].mean()
+    t["parte_precedente"] = m0 * K_RESTRINGIMENTO / (g + K_RESTRINGIMENTO)
+    t["parte_attacco"] = ((t["ortg"] - lega) * w).fillna(0)
+    t["parte_difesa"] = ((lega - t["drtg"]) * w).fillna(0)
     return t[["campionato_id", "squadra_id", "squadra", "partite", "vinte", "perse_partite",
-              "net_rtg", "forza", "incertezza", "ortg", "drtg", "pace_stima"]]
+              "net_rtg", "forza", "incertezza", "ortg", "drtg", "pace_stima",
+              "parte_precedente", "parte_attacco", "parte_difesa"]]
 
 
 def predict(forze: pd.DataFrame, casa_id: int, ospite_id: int, hca: float,
@@ -79,6 +88,93 @@ def predict(forze: pd.DataFrame, casa_id: int, ospite_id: int, hca: float,
     base = ortg_medio * poss / 100
     return {"prob_casa": p, "margine": margine, "possessi": poss,
             "punti_casa": base + margine / 2, "punti_ospite": base - margine / 2}
+
+
+def spiega(forze: pd.DataFrame, casa_id: int, ospite_id: int, hca: float,
+           extra: dict | None = None) -> pd.DataFrame:
+    """Da cosa dipende la previsione: contributo di ogni fattore al margine atteso (punti a
+    favore della squadra di casa) e alla probabilità di vittoria.
+
+    Il contributo in probabilità di un fattore è quanto cambierebbe la probabilità della
+    squadra di casa togliendo solo quel fattore. extra: altri fattori già in punti
+    (es. {"Assenze": -2.1})."""
+    f = forze.set_index("squadra_id")
+    h, a = f.loc[casa_id], f.loc[ospite_id]
+    poss = (h["pace_stima"] + a["pace_stima"]) / 2
+    fattori = {
+        "Fattore campo": hca,
+        "Attacco": (h["parte_attacco"] - a["parte_attacco"]) * poss / 100,
+        "Difesa": (h["parte_difesa"] - a["parte_difesa"]) * poss / 100,
+        "Stagione precedente": (h["parte_precedente"] - a["parte_precedente"]) * poss / 100,
+    }
+    fattori.update(extra or {})
+    margine = sum(fattori.values())
+    p = _phi(margine / SIGMA)
+    righe = [{"fattore": k, "punti": v, "probabilita": 100 * (p - _phi((margine - v) / SIGMA))}
+             for k, v in fattori.items()]
+    return pd.DataFrame(righe).sort_values("probabilita", key=abs, ascending=False)
+
+
+# Simulatore "e se": impatto di un'assenza
+IMPATTO_MAX = 8.0           # punti per 100 possessi, limite per giocatore
+MINUTI_RIFERIMENTO = 800.0  # restringimento dell'On-Off verso 0 con pochi minuti
+
+
+def impatto_giocatori(players: pd.DataFrame) -> pd.DataFrame:
+    """Impatto stimato di ogni giocatore sulla forza della squadra (punti per 100 possessi
+    quando è in campo rispetto a chi lo sostituisce).
+
+    Fonte principale: On-Off dalla cronaca, ristretto verso 0 con pochi minuti. Senza
+    cronaca: stima dal Game Score per 40 minuti rispetto alla mediana del campionato."""
+    p = players.copy()
+    gs_med = p[p["minuti_pg"] >= 15].groupby("campionato_id")["game_score_p40"].median()
+    box = 0.5 * (p["game_score_p40"] - p["campionato_id"].map(gs_med))
+    if "on_off" in p and "minuti_campo" in p:
+        mc = p["minuti_campo"].fillna(0)
+        oo = p["on_off"] * mc / (mc + MINUTI_RIFERIMENTO)
+        p["impatto"] = oo.where(p["on_off"].notna(), box)
+        p["fonte_impatto"] = np.where(p["on_off"].notna(), "On-Off (cronaca)", "Box score")
+    else:
+        p["impatto"] = box
+        p["fonte_impatto"] = "Box score"
+    p["impatto"] = p["impatto"].fillna(0).clip(-IMPATTO_MAX, IMPATTO_MAX)
+    p["quota_minuti"] = (p["minuti_pg"] / 40).clip(0, 1)
+    return p
+
+
+def scenario(forze: pd.DataFrame, players: pd.DataFrame, casa_id: int, ospite_id: int,
+             hca: float, assenti_casa=(), assenti_ospite=(), campo_neutro: bool = False,
+             correzione_casa: float = 0.0, correzione_ospite: float = 0.0) -> dict:
+    """Previsione in uno scenario diverso: giocatori assenti, campo neutro, correzione della
+    forza decisa dallo staff (punti per 100 possessi). Restituisce previsione di base,
+    previsione nello scenario e scomposizione."""
+    base = predict(forze, casa_id, ospite_id, hca)
+    imp = impatto_giocatori(players).set_index("giocatore_id")
+
+    def delta(assenti, sid):
+        tot = 0.0
+        for g in assenti:
+            if g in imp.index:
+                r = imp.loc[g]
+                r = r[r["squadra_id"] == sid].iloc[0] if isinstance(r, pd.DataFrame) else r
+                tot -= float(r["impatto"]) * float(r["quota_minuti"])
+        return max(tot, -2 * IMPATTO_MAX)
+
+    dc, do = delta(assenti_casa, casa_id), delta(assenti_ospite, ospite_id)
+    f = forze.copy()
+    f.loc[f["squadra_id"] == casa_id, "forza"] += dc + correzione_casa
+    f.loc[f["squadra_id"] == ospite_id, "forza"] += do + correzione_ospite
+    h = 0.0 if campo_neutro else hca
+    nuovo = predict(f, casa_id, ospite_id, h)
+    poss = nuovo["possessi"]
+    extra = {}
+    if assenti_casa or assenti_ospite:
+        extra["Assenze"] = (dc - do) * poss / 100
+    if correzione_casa or correzione_ospite:
+        extra["Correzione dello staff"] = (correzione_casa - correzione_ospite) * poss / 100
+    sp = spiega(forze, casa_id, ospite_id, h, extra)
+    return {"base": base, "scenario": nuovo, "spiegazione": sp,
+            "delta_casa": dc, "delta_ospite": do}
 
 
 def simulate(conn, campionato_id: str, stagione: str = config.STAGIONE, n: int = 5000,

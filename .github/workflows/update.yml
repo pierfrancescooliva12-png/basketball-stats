@@ -72,6 +72,13 @@ jobs:
           python -m basket.update --campionati "" --anagrafica "$ANAGRAFICA" || RC=1
           exit $RC
 
+      # Affidabilità delle previsioni: validazione retrospettiva e registro delle previsioni
+      # sulle partite non ancora giocate (fatte prima delle partite, poi confrontate)
+      - name: Previsioni e validazione
+        continue-on-error: true
+        run: |
+          if [ -f data/lnp.sqlite ]; then python -m basket.validazione --salva --registra; fi
+
       - name: Genera Excel di riepilogo
         run: |
           if [ -f data/lnp.sqlite ]; then python -m basket.export_excel; fi
