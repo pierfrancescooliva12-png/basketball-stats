@@ -54,3 +54,10 @@ def test_dettagli_giocatori():
     tl = d[d["area"] == "Tiri liberi"].iloc[0]
     assert tl["punti_pg"] == pytest.approx((0.75 - 0.5) * 4)
     assert any("Rossi" in x for x in M.sintesi(M.priorita(_profilo(), 0), pd.DataFrame(), d))
+
+
+def test_tutte_insieme():
+    pri = M.priorita(_profilo(), 0)
+    t = M.tutte_insieme(pri, 0.0, 70.0)
+    assert t["voci"] == int(pri["sotto_media"].sum())
+    assert t["vittorie"] >= pri["vittorie"].max()

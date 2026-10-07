@@ -158,6 +158,14 @@ def dettagli_giocatori(players: pd.DataFrame, sid: int, minuti_min: float = 10.0
     return out.sort_values("punti_pg", ascending=False, na_position="last").reset_index(drop=True)
 
 
+def tutte_insieme(pri: pd.DataFrame, net: float, poss: float) -> dict:
+    """Vittorie in più raggiungendo insieme tutti gli obiettivi delle voci sotto la media
+    (gli effetti dei Four Factors sul Net rating si sommano)."""
+    s = pri[pri["sotto_media"]]
+    d_net = float(s["guadagno_net"].sum())
+    return {"voci": len(s), "guadagno_net": d_net, "vittorie": _vittorie(net, d_net, poss)}
+
+
 def sintesi(pri: pd.DataFrame, regalati: pd.DataFrame, dett: pd.DataFrame, n: int = 3
             ) -> list[str]:
     """Le aree principali in parole."""

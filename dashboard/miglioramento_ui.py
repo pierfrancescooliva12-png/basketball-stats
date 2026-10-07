@@ -30,9 +30,17 @@ def render(a: App, sid: int):
         note_html(f"⚠ Pochi dati: {g} partite giocate. Le differenze dal campionato sono ancora "
                   "instabili; diventano affidabili dopo 8-10 giornate.")
     voci = "".join(f"<li>{esc(it(v))}</li>" for v in M.sintesi(pri, rg, dett))
+    me = prof.set_index("squadra_id").loc[sid]
+    tutte = M.tutte_insieme(pri, float(me["net_rtg"]), float(me["pace"]))
+    extra = ""
+    if tutte["voci"]:
+        extra = (f'<div style="margin-top:8px"><b>Tutte insieme</b> portando alla media le '
+                 f'{tutte["voci"]} voci sotto la media: circa {num(tutte["vittorie"], 1, signed=True)} '
+                 f'vittorie su {M.PARTITE_STAGIONE} partite ({num(tutte["guadagno_net"], 1, signed=True)} '
+                 'punti ogni 100 possessi). Scenario migliore, da usare come obiettivo.</div>')
     if voci:
         st.markdown(f'<div class="frase"><b>Su cosa concentrarsi</b><ol style="margin:6px 0 0 '
-                    f'18px;padding:0">{voci}</ol></div>', unsafe_allow_html=True)
+                    f'18px;padding:0">{voci}</ol>{extra}</div>', unsafe_allow_html=True)
 
     section("Priorità di lavoro", "Four Factors rispetto al campionato e vittorie in più "
             f"raggiungendo l'obiettivo, su {M.PARTITE_STAGIONE} partite", key="aree_migliorare")

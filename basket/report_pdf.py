@@ -408,6 +408,7 @@ def _chiavi(ctx: Contesto, avv: int, mia: int, S, W) -> list:
                     "associazioni statistiche, non garanzie.", S["body"])]
     for i, t in enumerate(C.sintesi(lv, gc, nome_avv), start=1):
         el.append(Paragraph(f"{i}. {t}".replace(" → ", " · "), S["body"]))
+    el.append(Paragraph(f"<b>{C.frase_combinata(C.combinata(lv, gc))}.</b>", S["body"]))
     rows = [["Fattore", "Lato", "Atteso", "Media", "Obiettivo", "Probabilità", "Guadagno"]]
     for x in lv.itertuples():
         f = (lambda v: _fmt(v, 2)) if x.chiave == "ftr" else (lambda v: _fmt(v, 1))
