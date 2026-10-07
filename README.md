@@ -23,7 +23,7 @@ La dashboard è organizzata in **aree**, con la navigazione in alto (comoda al t
 | Area | Pagine | Cosa offre |
 |---|---|---|
 | **Home** | – | La settimana dello staff: prossima avversaria (probabilità di vittoria, punteggio atteso, giorni di riposo, km di trasferta), ultima partita in sintesi, posizione e forma della propria squadra, avvisi, PDF pronti da scaricare |
-| **Avversaria** | Scouting · Squadre | Report completo con frase di sintesi e **PDF per la riunione tecnica**: forza/debolezza, finali punto a punto, **rotazioni** (chi parte, quando entrano i cambi, chi chiude), quintetti più usati, **quintetti alti e bassi**, +/- e On-Off, chi serve chi, **origine dei punti fatti e concessi**, **momenti della partita**, break, bonus falli, timeout, profilo di tiro, problemi di falli, **riposo e trasferte**, note dello staff. |
+| **Avversaria** | Scouting · Squadre | **Chiavi per vincere**: le tre chiavi della partita in parole, le leve dei Four Factors (valore atteso, obiettivo e quanto vale in probabilità raggiungerlo), ritmo conveniente, cosa cambia nelle loro e nelle vostre sconfitte, **giocatori chiave** ("tenere X sotto 12 punti: probabilità dal 30% al 35%", misurato come scarto rispetto al margine previsto, con chi compensa e il rendimento senza di lui). Report completo con frase di sintesi e **PDF per la riunione tecnica** (con le chiavi se la squadra dello staff è impostata): forza/debolezza, finali punto a punto, **rotazioni** (chi parte, quando entrano i cambi, chi chiude), quintetti più usati, **quintetti alti e bassi**, +/- e On-Off, chi serve chi, **origine dei punti fatti e concessi**, **momenti della partita**, break, bonus falli, timeout, profilo di tiro, problemi di falli, **riposo e trasferte**, note dello staff. |
 | **Previsioni** | Anteprima e scenari · Proiezione della classifica · Affidabilità delle previsioni | Probabilità di vittoria **con forbice**, **perché questa previsione** (quanto pesano fattore campo, attacco, difesa, stagione precedente), **scenari "e se"** (assenze, campo neutro, correzioni dello staff), confronto voce per voce, Four Factors incrociati, riposo e km, precedenti; proiezione della classifica con incertezza; **validazione su 3 stagioni** e **registro delle previsioni** fatte prima delle partite |
 | **Giocatori** | Elenco · Scheda · Mercato | Medie, avanzate, ruolo, andamento, casa/trasferta; scheda con frase di sintesi, anagrafica, **presenze**, percentili, +/- e On-Off, finali punto a punto, carriera, giocatori simili, note e **report individuale in PDF**. Mercato: fabbisogni della squadra con candidati, ricerca con filtri, **dalla B all'A2** (statistiche attese salendo di categoria), talenti di B Nazionale, chi è cresciuto, giocatori simili, liste di osservati |
 | **La mia squadra** | La mia squadra · Avvisi | KPI e posizione, obiettivi Four Factors, andamento, rendimento contro forti e deboli, **report post-partita** (anche in PDF); avvisi su assenze, cambi di quintetto, minuti, forma, massimi, serie |
@@ -49,19 +49,25 @@ La dashboard è organizzata in **aree**, con la navigazione in alto (comoda al t
 
 **Previsioni: probabilità, non certezze**
 
-Il modello stima la forza di ogni squadra (Net rating ristretto verso la stagione precedente) e
+Il modello stima la forza di ogni squadra (Net rating ristretto verso il valore della rosa nella
+stagione precedente) e
 ne ricava margine atteso e probabilità di vittoria. È validato su tutte le partite delle
 stagioni 2024/25 e 2025/26 e delle prime giornate del 2026/27, in A2 e B Nazionale, usando ogni volta solo le partite giocate
 prima (`python -m basket.validazione --salva`):
 
 | Metrica (2.179 partite) | ASSIST | Vince sempre la squadra di casa | Vince chi ha il record migliore |
 |---|---|---|---|
-| Partite in cui vince la favorita | 65,9% | 60,2% | 62,3% |
-| Brier score (più basso è meglio) | 0,214 | 0,240 | – |
+| Partite in cui vince la favorita | 66,2% | 60,2% | 62,3% |
+| Brier score (più basso è meglio) | 0,213 | 0,240 | – |
 | Errore medio sul margine | 9,7 punti | – | – |
 
+Sono state provate anche altre migliorie (forza corretta per gli avversari affrontati, più peso
+alle partite recenti, assenze nell'ultima partita, giorni di riposo): nessuna migliorava la
+validazione, quindi non sono state adottate. Il punto di partenza dalla rosa invece sì: Brier
+score da 0,214 a 0,213, accuratezza dal 65,9% al 66,2%.
+
 Le probabilità sono calibrate: quando il modello dà la favorita tra il 70% e l'80%, la
-favorita vince il 73,5% delle volte. Ogni lunedì le previsioni delle partite ancora da
+favorita vince il 71,1% delle volte. Ogni lunedì le previsioni delle partite ancora da
 giocare vengono registrate nella tabella `previsioni`, così il rendimento sulla stagione in
 corso è verificabile. Le previsioni sono uno strumento di analisi per lo staff tecnico, non
 destinato alle scommesse.
@@ -219,6 +225,7 @@ fonte dati** salva le pagine in `discovery/output` per adeguare il parser.
 | `basket/analysis.py` | Medie, per 40', avanzate, profilo di squadra, leader, percentili |
 | `basket/pbp.py` | Cronaca: quintetti, +/-, On-Off, finali, assist, origine punti, break, falli, timeout |
 | `basket/previsioni.py` | Forza delle squadre, probabilità di vittoria, fattori della previsione, scenari "e se", simulazione della stagione |
+| `basket/chiavi.py` | Chiavi per vincere: leve dei Four Factors, ritmo, quando perdono, giocatori chiave |
 | `basket/validazione.py` | Validazione retrospettiva, calibrazione, registro delle previsioni (`data/validazione.csv`) |
 | `basket/mercato.py` | Storico per stagione, ruolo stimato, giocatori simili, talenti, progressi |
 | `basket/avvisi.py` | Avvisi automatici e obiettivi della propria squadra |
@@ -229,7 +236,7 @@ fonte dati** salva le pagine in `discovery/output` per adeguare il parser.
 | `basket/glossario.py` | Spiegazioni delle statistiche (pulsanti "?") |
 | `dashboard/`, `streamlit_app.py` | Dashboard (`pagine.py`: Home e aree; `analisi.py`: nuove sezioni; `previsioni_ui.py`: area Previsioni) |
 | `assets/logo/` | Logo ASSIST (SVG e PNG; `build_logo.py` lo rigenera) |
-| `tests/` | 41 test automatici (parser, formule, quintetti, nuove analisi, previsioni e validazione, PDF, accessi) |
+| `tests/` | 47 test automatici (parser, formule, quintetti, nuove analisi, previsioni e validazione, chiavi per vincere, PDF, accessi) |
 
 ```bash
 pip install -r requirements-update.txt

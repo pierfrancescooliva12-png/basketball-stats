@@ -44,10 +44,21 @@ def home_advantage(conn, campionato_id: str) -> float:
 
 
 PESO_STAGIONE_PRECEDENTE = 0.35  # le rose cambiano: si conserva un terzo del Net rating
+COEF_ROSA = 6.0          # punti per 100 possessi per unità dell'indice della rosa
+FATTORE_B_A2 = 0.64      # Game Score per 40' di un giocatore di B quando sale in A2
+MINUTI_AFFIDABILITA = 300.0
 
 
-def prior_from_previous(conn, stagione: str) -> dict:
-    """Punto di partenza della forza: metà del Net rating della stagione precedente."""
+def prior_from_previous(conn, stagione: str, bg: pd.DataFrame | None = None,
+                        valori: pd.DataFrame | None = None) -> dict:
+    """Punto di partenza della forza di ogni squadra.
+
+    Se si conoscono i giocatori che stanno giocando nella stagione (bg, box score
+    giocatori), si usa la rosa: valore di ciascuno nella stagione precedente (Game Score per
+    40' rispetto alla mediana, riportato alla categoria attuale) pesato per la sua quota di
+    minuti. Altrimenti un terzo del Net rating della squadra nella stagione precedente.
+    Validazione 2025/26: la rosa prevede la forza molto meglio del risultato della squadra
+    (correlazione 0,51 contro 0,13) e migliora il Brier score di 0,003."""
     stagioni = sorted(config.STAGIONI)
     prev = [x for x in stagioni if x < stagione]
     if not prev:
@@ -56,7 +67,47 @@ def prior_from_previous(conn, stagione: str) -> dict:
     if bs.empty:
         return {}
     t = A.team_summary(bs)
-    return dict(zip(t["squadra_id"], PESO_STAGIONE_PRECEDENTE * t["net_rtg"].fillna(0)))
+    prior = dict(zip(t["squadra_id"], PESO_STAGIONE_PRECEDENTE * t["net_rtg"].fillna(0)))
+    if bg is not None and not bg.empty:
+        if valori is None:
+            valori = valori_giocatori(conn, prev[-1])
+        for sid, v in indice_rosa(bg, valori).items():
+            prior[sid] = COEF_ROSA * v
+    return prior
+
+
+def valori_giocatori(conn, stagione: str) -> pd.DataFrame:
+    """Valore di ogni giocatore in una stagione: Game Score per 40' meno la mediana del
+    campionato, nella scala dell'A2 e in quella della B, con la sua affidabilità."""
+    bg, bs = A.load_box_giocatore(conn, stagione), A.load_box_squadra(conn, stagione)
+    if bg.empty:
+        return pd.DataFrame(columns=["rel_a2", "rel_b", "affidabilita"])
+    p = A.player_summary(bg, bs)
+    p = p[p["minuti"] >= 150].copy()
+    a2 = p["campionato_id"] == "ita2"
+    med = p[p["minuti_pg"] >= 15].groupby("campionato_id")["game_score_p40"].median()
+    med_a2 = med.get("ita2", np.nan)
+    med_b = med[[c for c in med.index if c != "ita2"]].mean()
+    gs = p["game_score_p40"]
+    p["rel_a2"] = np.where(a2, gs, gs * FATTORE_B_A2) - med_a2
+    p["rel_b"] = np.where(a2, gs / FATTORE_B_A2, gs) - med_b
+    p["affidabilita"] = p["minuti"] / (p["minuti"] + MINUTI_AFFIDABILITA)
+    p = p.sort_values("minuti", ascending=False)
+    return p.groupby("giocatore_id")[["rel_a2", "rel_b", "affidabilita"]].first()
+
+
+def indice_rosa(bg: pd.DataFrame, valori: pd.DataFrame) -> pd.Series:
+    """Somma, sui giocatori impiegati finora, di quota di minuti × valore della stagione
+    precedente. Chi non ha giocato la stagione precedente in A2 o B vale come la mediana."""
+    g = bg[bg["minuti"] > 0]
+    if g.empty:
+        return pd.Series(dtype=float)
+    j = g.groupby(["squadra_id", "campionato_id", "giocatore_id"])["minuti"].sum().reset_index()
+    j["quota"] = j["minuti"] / j.groupby(["squadra_id", "campionato_id"])["minuti"].transform("sum")
+    j = j.join(valori, on="giocatore_id")
+    rel = np.where(j["campionato_id"] == "ita2", j["rel_a2"], j["rel_b"])
+    j["v"] = np.nan_to_num(rel * j["affidabilita"], nan=0.0) * j["quota"]
+    return j.groupby("squadra_id")["v"].sum()
 
 
 def strengths(bs: pd.DataFrame, prior: dict | None = None) -> pd.DataFrame:
@@ -105,7 +156,7 @@ def spiega(forze: pd.DataFrame, casa_id: int, ospite_id: int, hca: float,
         "Fattore campo": hca,
         "Attacco": (h["parte_attacco"] - a["parte_attacco"]) * poss / 100,
         "Difesa": (h["parte_difesa"] - a["parte_difesa"]) * poss / 100,
-        "Stagione precedente": (h["parte_precedente"] - a["parte_precedente"]) * poss / 100,
+        "Rosa e stagione precedente": (h["parte_precedente"] - a["parte_precedente"]) * poss / 100,
     }
     fattori.update(extra or {})
     margine = sum(fattori.values())
@@ -185,7 +236,7 @@ def simulate(conn, campionato_id: str, stagione: str = config.STAGIONE, n: int =
     bs = bs[bs["campionato_id"] == campionato_id]
     if bs.empty:
         return pd.DataFrame()
-    forze = strengths(bs, prior_from_previous(conn, stagione))
+    forze = strengths(bs, prior_from_previous(conn, stagione, A.load_box_giocatore(conn, stagione)))
     hca = home_advantage(conn, campionato_id)
     rest = pd.read_sql_query(
         "SELECT squadra_casa_id, squadra_ospite_id FROM calendario WHERE campionato_id = ? "

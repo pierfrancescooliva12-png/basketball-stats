@@ -196,7 +196,7 @@ class Contesto:
 
     @cached_property
     def _prior(self) -> dict:
-        return F.prior_from_previous(self.conn, self.stagione)
+        return F.prior_from_previous(self.conn, self.stagione, self.bg)
 
     def hca(self, campionato_id: str) -> float:
         return F.home_advantage(self.conn, campionato_id)

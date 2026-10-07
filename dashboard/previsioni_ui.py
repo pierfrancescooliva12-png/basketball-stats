@@ -202,8 +202,8 @@ def render_affidabilita(a: App):
         show(g.rename(columns={"fase": "Fase", "partite": "Partite",
                                "accuratezza": "Favorita vince %", "brier": "Brier",
                                "errore_margine": "Errore margine"}), voci=[])
-        note_html("A inizio stagione le previsioni sono più incerte: il modello parte da un "
-                  "terzo della forza della stagione precedente e impara partita dopo partita.")
+        note_html("A inizio stagione le previsioni sono più incerte: il modello parte dal "
+                  "valore della rosa nella stagione precedente e impara partita dopo partita.")
     with c2:
         section("Per campionato e stagione")
         g = V.per_gruppo(bt.assign(gruppo=bt["campionato_id"].map(config.CAMPIONATI) + " · " +
@@ -240,8 +240,9 @@ def render_affidabilita(a: App):
     st.markdown(
         '<div class="note" style="font-size:.9rem;line-height:1.55">'
         "La forza di ogni squadra è la sua efficienza (punti fatti meno subiti ogni 100 "
-        "possessi), stimata in modo bayesiano: a inizio stagione pesa la stagione precedente, "
-        "poi contano sempre di più le partite giocate. Il margine atteso combina la differenza "
+        "possessi), stimata in modo bayesiano: a inizio stagione pesa il valore dei giocatori in "
+        "rosa nella stagione precedente (pesato per i loro minuti e riportato alla categoria "
+        "attuale), poi contano sempre di più le partite giocate. Il margine atteso combina la differenza "
         "di forza, il ritmo delle due squadre e il vantaggio del campo stimato dai dati. La "
         "probabilità tiene conto della variabilità tipica di una partita (circa 12 punti). I "
         "parametri sono stati tarati sulle stagioni 2024/25 e 2025/26. Le assenze negli "

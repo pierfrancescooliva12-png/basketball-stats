@@ -73,11 +73,19 @@ def backtest(conn, stagioni: list[str] | None = None) -> pd.DataFrame:
         bs_all = A.load_box_squadra(conn, stag)
         if bs_all.empty:
             continue
-        prior = F.prior_from_previous(conn, stag)
+        prior_squadra = F.prior_from_previous(conn, stag)
+        prev = [x for x in sorted(config.STAGIONI) if x < stag]
+        valori = F.valori_giocatori(conn, prev[-1]) if prev else None
+        bg_all = A.load_box_giocatore(conn, stag)
         for camp, bs in bs_all.groupby("campionato_id"):
             pc = partite[(partite["stagione"] == stag) & (partite["campionato_id"] == camp)]
             for data, gg in pc.sort_values("data").groupby("data"):
                 prima = bs[bs["data"] < data]
+                prior = dict(prior_squadra)
+                if valori is not None:
+                    bgp = bg_all[(bg_all["campionato_id"] == camp) & (bg_all["data"] < data)]
+                    for sid, v in F.indice_rosa(bgp, valori).items():
+                        prior[sid] = F.COEF_ROSA * v
                 if prima.empty:
                     forze = pd.DataFrame(columns=["squadra_id", "forza", "pace_stima"])
                 else:
