@@ -101,3 +101,43 @@ def test_parse_schedule_and_giornate():
     assert games[0]["data"] == "2026-10-03"
     assert update.parse_giornate("1-2") == {1, 2}
     assert update.parse_giornate("1,3,5-6") == {1, 3, 5, 6}
+
+
+class _Risposta:
+    def __init__(self, testo, status=200):
+        self.text, self.status_code = testo, status
+
+    def raise_for_status(self):
+        pass
+
+    def json(self):
+        return json.loads(self.text)
+
+
+class _Client:
+    """Risponde in sequenza con i testi dati (l'ultimo si ripete)."""
+    def __init__(self, testi):
+        self.testi = list(testi)
+
+    def get(self, url, params=None):
+        return _Risposta(self.testi.pop(0) if len(self.testi) > 1 else self.testi[0])
+
+
+def test_calendario_risposta_vuota_si_riprova(monkeypatch):
+    from basket import scraper
+    monkeypatch.setattr(scraper.time, "sleep", lambda s: None)
+    giusta = load("schedule_ita2_r2.json")
+    assert len(scraper.fetch_schedule(_Client(["", giusta]), "ita2", 2, "x2627")) == 10
+    with pytest.raises(ParseError):
+        scraper.fetch_schedule(_Client([""]), "ita2", 2, "x2627")
+
+
+def test_calendario_illeggibile_non_ferma_il_campionato(monkeypatch, tmp_path):
+    from basket import scraper
+    monkeypatch.setattr(scraper.time, "sleep", lambda s: None)
+    monkeypatch.setattr(update, "GIORNATE_MANCANTI_STOP", 2)
+    conn = db.connect(tmp_path / "t.sqlite")
+    # giornata 1 illeggibile, poi giornate inesistenti: si va avanti e si segnala l'errore
+    client = _Client([""] * 3 + ['{"error": "no"}'])
+    s = update.update_league(conn, client, "ita2", "x2627", {1, 2, 3}, with_pbp=False)
+    assert s["errori"] == ["ita2 giornata 1: calendario non disponibile"]
