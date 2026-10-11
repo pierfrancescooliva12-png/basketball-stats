@@ -89,6 +89,53 @@ def _margine_noi(forze, mia, avv, casa_mia: bool, hca: float) -> tuple[float, fl
     return m, p["possessi"]
 
 
+# i fattori espressi anche come numero a partita (più facile da dare come obiettivo)
+UNITA = {"tov": "palle perse", "orb": "rimbalzi offensivi", "ftr": "liberi segnati"}
+
+
+def _base(f: str, att, poss: float) -> float:
+    """Su quanti eventi si calcola il fattore nella partita, per la squadra in attacco:
+    azioni (palle perse), tiri sbagliati (rimbalzi offensivi), tiri dal campo (liberi).
+    Le medie stagionali sono riportate ai possessi attesi della partita."""
+    if pd.isna(att.get("fga", np.nan)) or pd.isna(att.get("fgm", np.nan)):
+        return float("nan")
+    g = max(1.0, float(att.get("partite", 1) or 1))
+    scala = poss / float(att["pace"]) if att.get("pace") else 1.0
+    if f == "tov":      # azioni = possessi + rimbalzi offensivi
+        return poss + float(att["rimb_off"]) / g * scala
+    if f == "orb":      # base che restituisce i rimbalzi offensivi reali della squadra
+        orb = float(att.get("orb_pct", 0) or 0)
+        return float(att["rimb_off"]) / g / (orb / 100) * scala if orb else float("nan")
+    if f == "ftr":
+        return float(att["fga"]) / g * scala
+    return float("nan")
+
+
+def _conta(f: str, valore: float, base: float) -> float:
+    if f not in UNITA or pd.isna(base):
+        return float("nan")
+    return valore * base if f == "ftr" else valore / 100 * base
+
+
+def numero(v: float, altro: float | None = None) -> str:
+    """Numero a partita: intero, oppure con un decimale se serve a distinguerlo da altro."""
+    if altro is not None and round(v) == round(altro):
+        return f"{v:.1f}".replace(".", ",")
+    return f"{v:.0f}"
+
+
+def leggibile(r, quale: str) -> str:
+    """Valore di una leva per tabelle e frasi: numero a partita con la percentuale tra
+    parentesi per palle perse, rimbalzi e liberi; la percentuale per il tiro."""
+    v = r[quale]
+    if r["chiave"] not in UNITA or pd.isna(r.get(f"{quale}_n")):
+        return _f(r["chiave"], v) + ("" if r["chiave"] == "ftr" else "%")
+    altro = r["obiettivo_n"] if quale != "obiettivo" else r["atteso_n"]
+    pct = f" ({_f(r['chiave'], v)}{'' if r['chiave'] == 'ftr' else '%'})" \
+        if r["chiave"] != "ftr" else ""
+    return numero(r[f"{quale}_n"], altro) + pct
+
+
 def leve(profile: pd.DataFrame, forze: pd.DataFrame, mia: int, avv: int, casa_mia: bool,
          hca: float) -> pd.DataFrame:
     """Una riga per fattore e lato del campo: valore atteso nella partita, obiettivo e
@@ -115,12 +162,15 @@ def leve(profile: pd.DataFrame, forze: pd.DataFrame, mia: int, avv: int, casa_mi
             obiettivo = atteso + verso * passo
             d_net = abs(w) * passo
             p1 = _prob(m0 + d_net * poss / 100)
+            base = _base(f, att, poss)
             righe.append({
                 "fattore": nome if lato == "In attacco" else NOMI_DIFESA[f],
                 "breve": NOMI_BREVI[(f, lato)], "chiave": f, "lato": lato,
                 "loro": _attacco(loro, f) if lato == "In difesa" else _difesa(loro, f),
                 "voi": _attacco(noi, f) if lato == "In attacco" else _difesa(noi, f),
                 "media": lg, "atteso": atteso, "obiettivo": obiettivo,
+                "atteso_n": _conta(f, atteso, base), "obiettivo_n": _conta(f, obiettivo, base),
+                "media_n": _conta(f, lg, base), "unita": UNITA.get(f, ""),
                 "situazione": "a vostro sfavore" if sfavore > 0 else "a vostro favore",
                 "prob_ora": 100 * p0, "prob_obiettivo": 100 * p1,
                 "margine_ora": m0, "d_margine": d_net * poss / 100,
@@ -284,23 +334,27 @@ def _f(chiave: str, v: float) -> str:
 
 # come si dice, per ogni fattore e lato, che cosa fare (valore atteso → obiettivo)
 AZIONI = {
-    ("efg", "In attacco"): "Tiro: alzare la vostra eFG% da {a} a {o}",
-    ("tov", "In attacco"): "Palle perse: scendere da {a}% a {o}%",
-    ("orb", "In attacco"): "Rimbalzi offensivi: salire da {a}% a {o}%",
-    ("ftr", "In attacco"): "Tiri liberi: guadagnarne di più, da {a} a {o} liberi segnati per tiro",
+    ("efg", "In attacco"): "Tiro: alzare la vostra eFG% da {a}% a {o}%",
+    ("tov", "In attacco"): "Palle perse: non più di {on} a partita (attese {an}; {o}% delle "
+                           "azioni)",
+    ("orb", "In attacco"): "Rimbalzi offensivi: almeno {on} a partita (attesi {an}; il {o}% dei "
+                           "vostri tiri sbagliati)",
+    ("ftr", "In attacco"): "Tiri liberi: almeno {on} liberi segnati a partita (attesi {an})",
     ("efg", "In difesa"): "Tiro concesso: tenere {avv} al {o}% di eFG invece del {a}% atteso",
-    ("tov", "In difesa"): "Palle perse forzate: costringere {avv} ad almeno il {o}% di palle "
-                          "perse, contro un atteso {a}%",
-    ("orb", "In difesa"): "Rimbalzi concessi: tenere {avv} al {o}% di rimbalzi offensivi invece "
-                          "del {a}%",
-    ("ftr", "In difesa"): "Liberi concessi: concederne meno, da {a} a {o} per tiro",
+    ("tov", "In difesa"): "Palle perse forzate: costringere {avv} ad almeno {on} palle perse "
+                          "(attese {an}; {o}% delle loro azioni)",
+    ("orb", "In difesa"): "Rimbalzi concessi: non più di {on} rimbalzi offensivi a {avv} "
+                          "(attesi {an}; {o}% dei loro tiri sbagliati)",
+    ("ftr", "In difesa"): "Liberi concessi: non più di {on} liberi segnati da {avv} (attesi {an})",
 }
 
 
 def frase_leva(r, avv: str) -> str:
     """Una riga leggibile per una leva: cosa fare, l'obiettivo e la probabilità."""
+    an, on = r.get("atteso_n", float("nan")), r.get("obiettivo_n", float("nan"))
     testo = AZIONI[(r["chiave"], r["lato"])].format(
-        a=_f(r["chiave"], r["atteso"]), o=_f(r["chiave"], r["obiettivo"]), avv=avv)
+        a=_f(r["chiave"], r["atteso"]), o=_f(r["chiave"], r["obiettivo"]), avv=avv,
+        an=numero(an, on) if pd.notna(an) else "–", on=numero(on, an) if pd.notna(on) else "–")
     rif = "media del campionato" if r["situazione"] == "a vostro sfavore" else \
         "già a vostro favore: allungare il vantaggio"
     return f"{testo} ({rif}) → probabilità dal {r['prob_ora']:.0f}% al " \

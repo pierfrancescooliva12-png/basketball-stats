@@ -74,6 +74,11 @@ class _Lega:
         sd, v = s.std(), self.v(col)
         return 0.0 if pd.isna(v) or not sd or pd.isna(sd) else float((v - s.mean()) / sd)
 
+    def pg(self, col):
+        """Valore totale della stagione diviso per le partite giocate."""
+        g = self.v("partite")
+        return self.v(col) / g if g and not pd.isna(g) else np.nan
+
     def media(self, col):
         return float(self.lega[col].mean())
 
@@ -111,6 +116,34 @@ class _Piano:
             self.add(g, zl, loro)
         elif zn >= 1.0 and zl > -SOGLIA_Z and curare:
             self.add(g, zn * 0.8, curare, tipo_curare or ("curare" if g == D else "forte"))
+
+
+def _n(X: "_Lega", tipo: str) -> float:
+    """Numero a partita. Palle perse sulle azioni (possessi delle partite con box score
+    completo + rimbalzi offensivi), così coincidono con la percentuale; rimbalzi dai box score."""
+    if tipo == "perse":         # azioni = possessi + rimbalzi offensivi
+        return X.v("tov_pct") / 100 * (X.v("pace") + X.pg("rimb_off"))
+    if tipo == "forzate":
+        return X.v("opp_tov_pct") / 100 * (X.v("pace") + X.pg("opp_rimb_off"))
+    return X.pg({"orb": "rimb_off", "orb_concessi": "opp_rimb_off", "drb": "rimb_dif"}[tipo])
+
+
+def _q(X: "_Lega", tipo: str) -> str:
+    """Numero a partita con la percentuale (più facile da usare come obiettivo in panchina)."""
+    n = _it(_n(X, tipo))
+    if tipo == "perse":
+        return f"{n} palle perse a partita, il {_it(X.v('tov_pct'))}% delle azioni"
+    if tipo == "forzate":
+        return f"{n} palle perse a partita agli avversari, il {_it(X.v('opp_tov_pct'))}% delle loro azioni"
+    if tipo == "orb":
+        return f"{n} rimbalzi offensivi a partita, il {_it(X.v('orb_pct'))}% dei tiri sbagliati"
+    if tipo == "orb_concessi":
+        return (f"{n} rimbalzi offensivi concessi a partita, il "
+                f"{_it(100 - X.v('drb_pct'))}% dei tiri sbagliati avversari")
+    if tipo == "drb":
+        return (f"{n} rimbalzi difensivi a partita, il {_it(X.v('drb_pct'))}% dei tiri "
+                "sbagliati avversari")
+    raise ValueError(tipo)
 
 
 def consigli(ctx, avv: int, mia: int | None = None, rt: pd.DataFrame | None = None
@@ -165,16 +198,16 @@ def consigli(ctx, avv: int, mia: int | None = None, rt: pd.DataFrame | None = No
               "protezione dell'area")
 
     P.duello(D, L.z("orb_pct"), -N.z("drb_pct"),
-             f"Forti a rimbalzo offensivo ({_it(L.v('orb_pct'))}%, {L.pos('orb_pct')}): "
-             "tagliafuori su ogni tiro, anche degli esterni",
-             f"Rimbalzo difensivo: loro prendono il {_it(L.v('orb_pct'))}% dei "
-             f"rimbalzi offensivi ({L.pos('orb_pct')}), voi ne concedete il "
-             f"{_it(100 - N.v('drb_pct'))}% ({N.pos('drb_pct')} in difesa): tagliafuori di "
-             "tutti e cinque, esterni compresi, nessuno parte in contropiede prima del rimbalzo",
-             f"Forti a rimbalzo offensivo ({_it(L.v('orb_pct'))}%), ma voi siete tra i migliori "
-             f"a rimbalzo difensivo ({_it(N.v('drb_pct'))}%, {N.pos('drb_pct')}): mantenere il "
+             f"Forti a rimbalzo offensivo ({_q(L, 'orb')}, {L.pos('orb_pct')}): tagliafuori "
+             "su ogni tiro, anche degli esterni",
+             f"Rimbalzo difensivo: loro prendono {_q(L, 'orb')} ({L.pos('orb_pct')}), voi "
+             f"concedete {_q(N, 'orb_concessi')} ({N.pos('drb_pct')} in difesa). Obiettivo: "
+             f"tenerli sotto i {_it(_n(N, 'orb_concessi'), 0)} a partita con il tagliafuori di "
+             "tutti e cinque, nessuno parte in contropiede prima del rimbalzo",
+             f"Forti a rimbalzo offensivo ({_q(L, 'orb')}), ma voi siete tra i migliori a "
+             f"rimbalzo difensivo ({_q(N, 'drb')}, {N.pos('drb_pct')}): mantenere il "
              "tagliafuori e il vantaggio è vostro",
-             f"Concedete troppi rimbalzi offensivi ({_it(100 - N.v('drb_pct'))}%, "
+             f"Concedete troppi rimbalzi offensivi ({_q(N, 'orb_concessi')}, "
              f"{N.pos('drb_pct')} a rimbalzo difensivo): tagliafuori come priorità della "
              "settimana")
 
@@ -211,19 +244,20 @@ def consigli(ctx, avv: int, mia: int | None = None, rt: pd.DataFrame | None = No
              f"Puniscono le palle perse ({_it(L.v('punti_da_perse_pg'))} punti a partita, "
              f"{L.pos('punti_da_perse_pg')}): attacco ordinato, niente passaggi in mezzo al "
              "traffico",
-             f"Palle perse: loro segnano {_it(L.v('punti_da_perse_pg'))} punti a "
-             f"partita dalle palle perse altrui e voi ne perdete il {_it(N.v('tov_pct'))}% "
-             f"({N.pos('tov_pct')}): passaggi semplici, palla al portatore più sicuro",
+             f"Palle perse: loro segnano {_it(L.v('punti_da_perse_pg'))} punti a partita dalle "
+             f"palle perse avversarie e voi ne perdete {_q(N, 'perse')}, {N.pos('tov_pct')}. "
+             f"Obiettivo: sotto le {_it(_n(N, 'perse') - 2, 0)}, con passaggi semplici e la "
+             "palla al portatore più sicuro",
              None,
-             f"Perdete molti palloni ({_it(N.v('tov_pct'))}%, {N.pos('tov_pct')}): contro di loro "
+             f"Perdete molti palloni ({_q(N, 'perse')}, {N.pos('tov_pct')}): contro di loro "
              "costano punti, priorità alla gestione della palla")
     P.duello(D, L.z("tov_pct"), N.z("opp_tov_pct"),
-             f"Perdono molti palloni ({_it(L.v('tov_pct'))}%, {L.pos('tov_pct')}): pressione "
-             "sul portatore e sulle linee di passaggio",
-             f"Pressione: loro perdono il {_it(L.v('tov_pct'))}% dei possessi "
-             f"({L.pos('tov_pct')}) e voi siete tra le difese che ne forzano di più "
-             f"({_it(N.v('opp_tov_pct'))}%, {N.pos('opp_tov_pct')}): trappole sul portatore e "
-             "pressione a tutto campo nei momenti giusti")
+             f"Perdono molti palloni ({_q(L, 'perse')}, {L.pos('tov_pct')}): pressione sul "
+             "portatore e sulle linee di passaggio",
+             f"Pressione: loro perdono {_q(L, 'perse')} ({L.pos('tov_pct')}) e voi ne forzate "
+             f"{_q(N, 'forzate')} ({N.pos('opp_tov_pct')}). Obiettivo: almeno "
+             f"{_it(max(_n(L, 'perse'), _n(N, 'forzate')) + 1, 0)} palle perse loro, con "
+             "trappole sul portatore e pressione a tutto campo nei momenti giusti")
 
     if L.z("quota_top2") >= SOGLIA_Z and not pl.empty:
         top = pl.sort_values("punti_pg", ascending=False).head(2)
@@ -280,18 +314,19 @@ def consigli(ctx, avv: int, mia: int | None = None, rt: pd.DataFrame | None = No
                    f"({L.pos('opp_t3_pct', False)} per difesa): tiri da 3 solo dopo "
                    "ribaltamento o extra-passaggio")
     P.duello(A, -L.z("drb_pct"), N.z("orb_pct"),
-             f"Soffrono a rimbalzo difensivo ({_it(L.v('drb_pct'))}%, {L.pos('drb_pct')}): "
+             f"Soffrono a rimbalzo difensivo (concedono "
+             f"{_it(_n(L, 'orb_concessi'))} rimbalzi offensivi a partita, {L.pos('drb_pct')}): "
              "mandare a rimbalzo offensivo anche un'ala",
-             f"Rimbalzo offensivo: voi prendete il {_it(N.v('orb_pct'))}% ({N.pos('orb_pct')}) e "
-             f"loro difendono male il loro canestro ({_it(L.v('drb_pct'))}% di rimbalzi "
-             f"difensivi, {L.pos('drb_pct')}): crash con quattro giocatori, ogni secondo tiro "
-             "vale",
-             curare=f"Il rimbalzo offensivo è una vostra arma ({_it(N.v('orb_pct'))}%, "
+             f"Rimbalzo offensivo: voi prendete {_q(N, 'orb')} ({N.pos('orb_pct')}) e loro ne "
+             f"concedono {_it(_n(L, 'orb_concessi'))} a partita ({L.pos('drb_pct')} a rimbalzo "
+             f"difensivo). Obiettivo: almeno {_it(max(_n(N, 'orb'), _n(L, 'orb_concessi')) + 1, 0)} "
+             "rimbalzi offensivi, crash con quattro giocatori",
+             curare=f"Il rimbalzo offensivo è una vostra arma ({_q(N, 'orb')}, "
                     f"{N.pos('orb_pct')}): continuare a mandare i lunghi e un'ala a rimbalzo",
-             forza=f"Rimbalzo offensivo: voi ne prendete il "
-                   f"{_it(N.v('orb_pct'))}% ({N.pos('orb_pct')}), loro sono tra i migliori a "
-                   f"rimbalzo difensivo ({_it(L.v('drb_pct'))}%, {L.pos('drb_pct')}): chi va a "
-                   "rimbalzo deve muoversi prima del tiro, gli altri rientrano")
+             forza=f"Rimbalzo offensivo: voi prendete {_q(N, 'orb')} ({N.pos('orb_pct')}), loro "
+                   f"sono tra i migliori a rimbalzo difensivo ({_q(L, 'drb')}, "
+                   f"{L.pos('drb_pct')}): chi va a rimbalzo deve muoversi prima del tiro, gli "
+                   "altri rientrano")
     P.duello(A, L.z("opp_ft_rate"), N.z("ft_rate"),
              f"Fanno molti falli (liberi concessi/tiri {_it(L.v('opp_ft_rate'), 2)}, "
              f"{L.pos('opp_ft_rate')}): attaccare il ferro e il corpo del difensore",
@@ -305,21 +340,22 @@ def consigli(ctx, avv: int, mia: int | None = None, rt: pd.DataFrame | None = No
                    f"({L.pos('opp_ft_rate', False)} per meno liberi concessi): servono "
                    "penetrazioni decise e contatto con il corpo")
     P.duello(A, L.z("opp_tov_pct"), N.z("tov_pct"),
-             f"Difesa aggressiva che forza palle perse ({_it(L.v('opp_tov_pct'))}%, "
-             f"{L.pos('opp_tov_pct')}): due portatori, passaggi corti, contro la pressione "
-             "attaccare in fretta il centro del campo",
-             f"Palle perse: la loro difesa ne forza molte "
-             f"({_it(L.v('opp_tov_pct'))}%, {L.pos('opp_tov_pct')}) e voi ne perdete tante "
-             f"({_it(N.v('tov_pct'))}%, {N.pos('tov_pct')}): due portatori, nessun palleggio in "
-             "mezzo all'area, preparare l'uscita dalla pressione",
-             f"La loro difesa forza molte palle perse ({_it(L.v('opp_tov_pct'))}%), ma voi le "
-             f"gestite bene ({_it(N.v('tov_pct'))}%, {N.pos('tov_pct', False)} per meno palle "
-             "perse): attaccare la pressione, dietro di loro c'è spazio",
-             tipo_curare="curare")
+             f"Difesa aggressiva: forzano {_q(L, 'forzate')} ({L.pos('opp_tov_pct')}): due "
+             "portatori, passaggi corti, contro la pressione attaccare in fretta il centro del "
+             "campo",
+             f"Palle perse: la loro difesa ne forza {_q(L, 'forzate')} ({L.pos('opp_tov_pct')}) "
+             f"e voi ne perdete {_q(N, 'perse')} ({N.pos('tov_pct')}). Obiettivo: non più di "
+             f"{_it(_n(N, 'perse') - 2, 0)}, con due portatori, nessun palleggio in mezzo all'area "
+             "e l'uscita dalla pressione preparata",
+             f"La loro difesa forza {_q(L, 'forzate')}, ma voi ne perdete poche "
+             f"({_q(N, 'perse')}, {N.pos('tov_pct', False)} per meno palle perse): attaccare la "
+             "pressione, dietro di loro c'è spazio",
+             f"Perdete molti palloni ({_q(N, 'perse')}, {N.pos('tov_pct')}): due portatori e "
+             "passaggi semplici", tipo_curare="curare")
     if L.z("opp_tov_pct") <= -SOGLIA_Z:
-        P.add(A, -L.z("opp_tov_pct"), f"Forzano poche palle perse ({_it(L.v('opp_tov_pct'))}%):"
-                                      " si può attaccare in uno contro uno e in pick and roll "
-                                      "senza grandi rischi")
+        P.add(A, -L.z("opp_tov_pct"), f"Forzano poche palle perse ({_q(L, 'forzate')}): si può "
+                                      "attaccare in uno contro uno e in pick and roll senza "
+                                      "grandi rischi")
     if Lo is not None and Lo.ok:
         P.duello(A, zc(Lo, "concessi_contropiede_pg"), N.z("punti_contropiede_pg"),
                  f"Rientrano male in difesa ({_it(Lo.v('concessi_contropiede_pg'))} punti "
