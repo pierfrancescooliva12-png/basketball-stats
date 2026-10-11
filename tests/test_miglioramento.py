@@ -75,3 +75,15 @@ def test_quintetti_estremi():
     assert list(migliori["quintetto"]) == ["a", "b", "d"]
     assert list(peggiori["quintetto"]) == ["c"]
     assert M.quintetti_estremi(lu, 1, minuti_min=50)[0]["quintetto"].tolist() == ["a"]
+
+
+def test_numeri_a_partita():
+    me = pd.Series({"partite": 10, "pace": 70.0, "rimb_off": 110, "orb_pct": 30.0,
+                    "tov_pct": 15.0, "fga": 600})
+    base = M._base(me, "tov_pct")                         # 70 possessi + 11 rimbalzi offensivi
+    assert base == pytest.approx(81) and M.a_partita("tov_pct", 15.0, base) == pytest.approx(12.15)
+    assert M.a_partita("orb_pct", 30.0, M._base(me, "orb_pct")) == pytest.approx(11)
+    assert M.a_partita("ft_rate", 0.2, M._base(me, "ft_rate")) == pytest.approx(12)
+    r = {"colonna": "tov_pct", "valore": 15.0, "valore_n": 12.15}
+    assert M.leggibile(r, "valore") == "12,2 (15,0%)"
+    assert M.leggibile({"colonna": "efg_pct", "valore": 52.34}, "valore") == "52,3%"

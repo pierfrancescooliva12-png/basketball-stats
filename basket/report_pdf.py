@@ -603,14 +603,17 @@ def _piano(ctx: Contesto, avv: int, mia: int | None, S, W) -> tuple[list, list]:
 
     # ---- dettaglio
     det = [Paragraph("LE CHIAVI IN DETTAGLIO · Four Factors della partita", S["h2"])]
-    rows = [["Fattore", "Lato", "Atteso", "Media", "Obiettivo", "Situazione", "Probabilità",
+    rows = [["Fattore", "Lato", "Atteso", "Media", "Obiettivo", "Situazione", "Prob.",
              "Guadagno"]]
-    for x in lv.itertuples():
-        f = (lambda v: _fmt(v, 2)) if x.chiave == "ftr" else (lambda v: _fmt(v, 1))
-        rows.append([x.fattore, x.lato, f(x.atteso), f(x.media), f(x.obiettivo), x.situazione,
-                     f"{_fmt(x.prob_obiettivo, 0)}%", f"{_fmt(x.guadagno, 1, signed=True)}"])
-    det.append(_table(rows, [46 * mm, 18 * mm] + [15 * mm] * 3 + [26 * mm] + [(W - 135 * mm) / 2]
+    for _, x in lv.iterrows():
+        rows.append([x["fattore"], x["lato"], C.leggibile(x, "atteso"), C.leggibile(x, "media"),
+                     C.leggibile(x, "obiettivo"), x["situazione"],
+                     f"{_fmt(x['prob_obiettivo'], 0)}%", f"{_fmt(x['guadagno'], 1, signed=True)}"])
+    det.append(_table(rows, [42 * mm, 16 * mm] + [21 * mm] * 3 + [25 * mm] + [(W - 146 * mm) / 2]
                       * 2, align_left=(1, 5)))
+    det.append(Paragraph("Palle perse, rimbalzi offensivi e liberi: numero a partita sui possessi "
+                         "e sui tiri attesi nella partita, con la percentuale tra parentesi. Il "
+                         "tiro resta in eFG%.", S["small"]))
     for _, x in lv.iterrows():
         det.append(Paragraph(f"• {_virgole(C.frase_leva(x, nome_avv.split()[-1]))}", S["small"]))
     det.append(Paragraph(f"Ritmo: con {_fmt(lento['possessi'], 0)} possessi "

@@ -39,6 +39,59 @@ def _vittorie(net: float, d_net: float, poss: float) -> float:
     return PARTITE_STAGIONE * (p1 - p0)
 
 
+# voci espresse anche come numero a partita: (unità, base su cui si calcola la percentuale)
+UNITA = {"tov_pct": "palle perse", "opp_tov_pct": "palle perse forzate",
+         "orb_pct": "rimbalzi offensivi", "drb_pct": "rimbalzi difensivi",
+         "ft_rate": "liberi segnati", "opp_ft_rate": "liberi concessi"}
+
+
+def _base(me, col: str) -> float:
+    """Eventi a partita su cui si calcola la voce (azioni per le palle perse, rimbalzi
+    disponibili per i rimbalzi, tiri dal campo per i liberi)."""
+    g = max(1.0, float(me.get("partite", 1) or 1))
+    serve = {"tov_pct": ["pace", "rimb_off"], "opp_tov_pct": ["pace", "opp_rimb_off"],
+             "orb_pct": ["rimb_off", "orb_pct"],
+             "ft_rate": ["fga"], "drb_pct": ["rimb_dif", "drb_pct"],
+             "opp_ft_rate": ["opp_t2a", "opp_t3a"]}.get(col)
+    if not serve or any(pd.isna(me.get(c, np.nan)) for c in serve):
+        return np.nan
+    # palle perse % = perse / azioni, con azioni = tiri + 0,44 liberi + perse = possessi +
+    # rimbalzi offensivi (i possessi vengono dalle sole partite con box score completo)
+    if col == "tov_pct":
+        return float(me["pace"]) + float(me["rimb_off"]) / g
+    if col == "opp_tov_pct":
+        return float(me["pace"]) + float(me["opp_rimb_off"]) / g
+    # rimbalzi: la base è quella che restituisce i rimbalzi reali a partita
+    if col == "orb_pct":
+        return float(me["rimb_off"]) / g / (float(me["orb_pct"]) / 100) if me["orb_pct"] else np.nan
+    if col == "drb_pct":
+        return float(me["rimb_dif"]) / g / (float(me["drb_pct"]) / 100) if me["drb_pct"] else np.nan
+    if col == "ft_rate":
+        return float(me["fga"]) / g
+    if col == "opp_ft_rate":
+        return (float(me["opp_t2a"]) + float(me["opp_t3a"])) / g
+    return np.nan
+
+
+def a_partita(col: str, valore: float, base: float) -> float:
+    if col not in UNITA or pd.isna(base):
+        return np.nan
+    return valore * base if col in ("ft_rate", "opp_ft_rate") else valore / 100 * base
+
+
+def leggibile(r, quale: str) -> str:
+    """Valore di una voce per tabelle e frasi: numero a partita con la percentuale tra
+    parentesi; il tiro resta in eFG%."""
+    v = r[quale]
+    pct = f"{v:.2f}" if "ft" in r["colonna"] else f"{v:.1f}%"
+    n = r.get(f"{quale}_n", np.nan)
+    if r["colonna"] not in UNITA or pd.isna(n):
+        return pct.replace(".", ",")
+    if "ft" in r["colonna"]:
+        return f"{n:.1f}".replace(".", ",")
+    return f"{n:.1f} ({pct})".replace(".", ",")
+
+
 def priorita(profile: pd.DataFrame, sid: int) -> pd.DataFrame:
     """Una riga per voce: valore, media e livello delle migliori (quartile), posizione,
     obiettivo (la media se si è sotto, altrimenti il livello delle migliori) e quanto vale
@@ -57,7 +110,11 @@ def priorita(profile: pd.DataFrame, sid: int) -> pd.DataFrame:
         passo = max(0.0, (obiettivo - v) if alto else (v - obiettivo))
         d_net = abs(peso) * passo
         pos = int(s.rank(ascending=not alto, method="min")[sid])
-        righe.append({"voce": nome, "colonna": col, "lato": lato, "valore": v, "media": media,
+        base = _base(me, col)
+        righe.append({"valore_n": a_partita(col, v, base), "media_n": a_partita(col, media, base),
+                      "migliori_n": a_partita(col, migliori, base),
+                      "obiettivo_n": a_partita(col, obiettivo, base), "unita": UNITA.get(col, ""),
+                      "voce": nome, "colonna": col, "lato": lato, "valore": v, "media": media,
                       "migliori": migliori, "posizione": pos, "squadre": len(s),
                       "sotto_media": sotto, "obiettivo": obiettivo, "guadagno_net": d_net,
                       "vittorie": _vittorie(net, d_net, poss)})
@@ -188,11 +245,18 @@ def sintesi(pri: pd.DataFrame, regalati: pd.DataFrame, dett: pd.DataFrame, n: in
             ) -> list[str]:
     """Le aree principali in parole."""
     out = []
-    for r in pri[pri["sotto_media"]].head(2).itertuples():
-        d = 2 if "ft" in r.colonna else 1
-        out.append(f"{r.voce} ({r.lato.lower()}): {r.valore:.{d}f}, {r.posizione}° su "
-                   f"{r.squadre}; arrivare alla media ({r.media:.{d}f}) vale circa "
-                   f"{r.vittorie:+.1f} vittorie su {PARTITE_STAGIONE} partite")
+    for _, r in pri[pri["sotto_media"]].head(2).iterrows():
+        if r["unita"] and pd.notna(r["valore_n"]):
+            out.append(f"{r['voce'].replace(' %', '')} ({r['lato'].lower()}): "
+                       f"{r['valore_n']:.1f} {r['unita']} a partita, {r['posizione']}° su "
+                       f"{r['squadre']}; arrivare alla media ({r['media_n']:.1f} a partita) vale "
+                       f"circa {r['vittorie']:+.1f} vittorie su {PARTITE_STAGIONE} partite")
+        else:
+            d = 2 if "ft" in r["colonna"] else 1
+            out.append(f"{r['voce']} ({r['lato'].lower()}): {r['valore']:.{d}f}, "
+                       f"{r['posizione']}° su {r['squadre']}; arrivare alla media "
+                       f"({r['media']:.{d}f}) vale circa {r['vittorie']:+.1f} vittorie su "
+                       f"{PARTITE_STAGIONE} partite")
     if not regalati.empty and regalati["differenza"].iloc[0] > 0.5:
         r = regalati.iloc[0]
         out.append(f"{r['voce']}: {r['valore']:.1f} a partita contro {r['media']:.1f} di media")

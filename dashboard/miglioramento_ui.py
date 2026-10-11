@@ -56,16 +56,18 @@ def render(a: App, sid: int):
                      title=f"vittorie in più su {M.PARTITE_STAGIONE} partite")
     fig.update_yaxes(showgrid=False)
     plot(fig, 70 + 40 * len(d), bargap=0.35)
-    fmt = lambda c, v: num(v, 2) if "ft" in c else num(v, 1)
     show(pd.DataFrame({
         "Voce": pri["voce"], "Lato": pri["lato"],
-        "Voi": [fmt(c, v) for c, v in zip(pri["colonna"], pri["valore"])],
-        "Media": [fmt(c, v) for c, v in zip(pri["colonna"], pri["media"])],
-        "Migliori": [fmt(c, v) for c, v in zip(pri["colonna"], pri["migliori"])],
+        "Voi (a partita)": [M.leggibile(r, "valore") for _, r in pri.iterrows()],
+        "Media": [M.leggibile(r, "media") for _, r in pri.iterrows()],
+        "Migliori": [M.leggibile(r, "migliori") for _, r in pri.iterrows()],
         "Posizione": [f"{p}° su {n}" for p, n in zip(pri["posizione"], pri["squadre"])],
-        "Obiettivo": [fmt(c, v) for c, v in zip(pri["colonna"], pri["obiettivo"])],
+        "Obiettivo": [M.leggibile(r, "obiettivo") for _, r in pri.iterrows()],
         "Vittorie in più": [f"+{num(v, 1)}" for v in pri["vittorie"]]}),
         voci=[G["aree_migliorare"]])
+    note_html("Palle perse e rimbalzi: numero a partita con la percentuale tra parentesi "
+              "(la percentuale non dipende dal ritmo, il numero è quello da dare in panchina); "
+              "tiri liberi: liberi segnati a partita.")
     note_html("Arancio: sotto la media del campionato (obiettivo: la media). Blu: già sopra "
               "(obiettivo: il livello del miglior quarto delle squadre). Le vittorie sono una "
               "stima contro un avversario medio.")

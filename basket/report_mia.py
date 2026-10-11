@@ -111,15 +111,16 @@ def build_mia_squadra(ctx: Contesto, sid: int, obiettivi: dict | None = None,
             f"({_fmt(tutte['guadagno_net'], 1, True)} punti ogni 100 possessi). Scenario "
             "migliore, da usare come obiettivo.", S["body"]))
 
-    fmt = lambda c, v: _fmt(v, 2) if "ft" in c else _fmt(v, 1)
     rows = [["Voce", "Lato", "Voi", "Media", "Migliori", "Posizione", "Obiettivo", "Vittorie +"]]
-    for x in pri.itertuples():
-        rows.append([x.voce, x.lato, fmt(x.colonna, x.valore), fmt(x.colonna, x.media),
-                     fmt(x.colonna, x.migliori), f"{x.posizione}° su {x.squadre}",
-                     fmt(x.colonna, x.obiettivo), f"+{_fmt(x.vittorie, 1)}"])
+    for _, x in pri.iterrows():
+        rows.append([x["voce"], x["lato"], M.leggibile(x, "valore"), M.leggibile(x, "media"),
+                     M.leggibile(x, "migliori"), f"{x['posizione']}° su {x['squadre']}",
+                     M.leggibile(x, "obiettivo"), f"+{_fmt(x['vittorie'], 1)}"])
     el += [_titolo("Priorità di lavoro · Four Factors", S),
            _table(rows, [44 * mm, 18 * mm] + [(W - 62 * mm) / 6] * 6, align_left=(1,)),
-           Paragraph("Vittorie in più su 30 partite raggiungendo l'obiettivo: la media del "
+           Paragraph("Palle perse e rimbalzi: numero a partita con la percentuale tra parentesi; "
+                     "tiri liberi: liberi segnati a partita. "
+                     "Vittorie in più su 30 partite raggiungendo l'obiettivo: la media del "
                      "campionato per le voci sotto la media, il livello del miglior quarto per "
                      "le altre. Stima contro un avversario medio.", S["small"])]
 
@@ -175,16 +176,18 @@ def build_mia_squadra(ctx: Contesto, sid: int, obiettivi: dict | None = None,
     el.append(PageBreak())
     goals = {**AV.OBIETTIVI_DEFAULT, **(obiettivi or {})}
     form = AV.rolling_form(ctx.bs, sid)
-    rows = [["Voce", "Obiettivo", "Stagione", "Ultime 5", "Raggiunto"]]
+    rows = [["Voce", "Obiettivo", "A partita", "Stagione", "Ultime 5", "Raggiunto"]]
     for k, lab in OBIETTIVI.items():
         val = me.get(k)
         ult = form[k].tail(5).mean() if not form.empty and k in form else None
         alto = AV.OBIETTIVO_MEGLIO_ALTO[k]
         ok = pd.notna(val) and (val >= goals[k] if alto else val <= goals[k])
         d = 2 if "ft" in k else 1
-        rows.append([lab, _fmt(goals[k], d), _fmt(val, d), _fmt(ult, d), "sì" if ok else "no"])
+        n = M.a_partita(k, goals[k], M._base(me, k))
+        rows.append([lab, _fmt(goals[k], d), "–" if pd.isna(n) else f"{_fmt(n)} {M.UNITA[k]}",
+                     _fmt(val, d), _fmt(ult, d), "sì" if ok else "no"])
     el += [_titolo("Obiettivi Four Factors · impostati dallo staff", S),
-           _table(rows, [70 * mm] + [(W - 70 * mm) / 4] * 4)]
+           _table(rows, [50 * mm, 22 * mm, 46 * mm] + [(W - 118 * mm) / 3] * 3)]
 
     if not form.empty:
         rows = [["Giornata", "Data", "Avversaria", "Risultato", "ORtg", "DRtg", "Net",

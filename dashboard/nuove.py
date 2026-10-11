@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from basket import avvisi as AV
+from basket import miglioramento as M
 from basket import config, mercato
 from basket import previsioni as F
 from basket.glossario import G
@@ -673,9 +674,11 @@ def render_mia_squadra(a: App):
         alto = AV.OBIETTIVO_MEGLIO_ALTO[k]
         ok = pd.notna(val) and (val >= goals[k] if alto else val <= goals[k])
         d = 2 if "ft" in k else 1
-        rows.append((lab, _f(goals[k], d), _f(val, d), _f(ult, d), "✅" if ok else "❌"))
-    show(pd.DataFrame(rows, columns=["Voce", "Obiettivo", "Stagione", "Ultime 5", "Raggiunto"]),
-         voci=[])
+        n = M.a_partita(k, goals[k], M._base(me, k))
+        rows.append((lab, _f(goals[k], d), "–" if pd.isna(n) else f"{_f(n)} {M.UNITA[k]}",
+                     _f(val, d), _f(ult, d), "✅" if ok else "❌"))
+    show(pd.DataFrame(rows, columns=["Voce", "Obiettivo", "Obiettivo a partita", "Stagione",
+                                     "Ultime 5", "Raggiunto"]), voci=[])
 
     if not form.empty:
         section("Andamento", "ORtg e DRtg partita per partita, media mobile su 5")

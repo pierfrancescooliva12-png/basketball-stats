@@ -245,7 +245,7 @@ fonte dati** salva le pagine in `discovery/output` per adeguare il parser.
 | `basket/glossario.py` | Spiegazioni delle statistiche (pulsanti "?") |
 | `dashboard/`, `streamlit_app.py` | Dashboard (`pagine.py`: Home e aree; `analisi.py`: nuove sezioni; `previsioni_ui.py`: area Previsioni) |
 | `assets/logo/` | Logo ASSIST (SVG e PNG; `build_logo.py` lo rigenera) |
-| `tests/` | 67 test automatici (parser, formule, quintetti, nuove analisi, previsioni e validazione, chiavi per vincere, lavagna, PDF, accessi) |
+| `tests/` | 68 test automatici (parser, formule, quintetti, nuove analisi, previsioni e validazione, chiavi per vincere, lavagna, PDF, accessi) |
 
 ```bash
 pip install -r requirements-update.txt

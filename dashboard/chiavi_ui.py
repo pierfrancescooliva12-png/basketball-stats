@@ -92,9 +92,9 @@ def render(a: App, avv: int):
     _grafico_leve(lv)
     tab = pd.DataFrame({
         "Fattore": lv["fattore"], "Lato": lv["lato"],
-        "Atteso": [_fmt(k, v) for k, v in zip(lv["chiave"], lv["atteso"])],
-        "Media": [_fmt(k, v) for k, v in zip(lv["chiave"], lv["media"])],
-        "Obiettivo": [_fmt(k, v) for k, v in zip(lv["chiave"], lv["obiettivo"])],
+        "Atteso a partita": [C.leggibile(r, "atteso") for _, r in lv.iterrows()],
+        "Media": [C.leggibile(r, "media") for _, r in lv.iterrows()],
+        "Obiettivo": [C.leggibile(r, "obiettivo") for _, r in lv.iterrows()],
         "Situazione": lv["situazione"],
         "Probabilità con l'obiettivo": [f"{num(p, 0)}%" for p in lv["prob_obiettivo"]],
         "Guadagno": [f"{num(g, 1, signed=True)} punti" for g in lv["guadagno"]]})
