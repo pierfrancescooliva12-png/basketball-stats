@@ -61,3 +61,17 @@ def test_tutte_insieme():
     t = M.tutte_insieme(pri, 0.0, 70.0)
     assert t["voci"] == int(pri["sotto_media"].sum())
     assert t["vittorie"] >= pri["vittorie"].max()
+
+
+def test_quintetti_estremi():
+    lu = pd.DataFrame({
+        "squadra_id": [1] * 5 + [2],
+        "quintetto": list("abcdef"), "giocatori": list("ABCDEF"),
+        "minuti": [60.0, 6.0, 40.0, 30.0, 2.0, 50.0],
+        "net_rtg": [10.0, 30.0, -12.0, 5.0, -50.0, 99.0]})
+    migliori, peggiori, soglia = M.quintetti_estremi(lu, 1)
+    assert soglia == 5                                   # 2% di 138 minuti, minimo 5
+    # 60 minuti a +10 valgono più di 6 minuti a +30; sotto soglia (2 min) e altre squadre esclusi
+    assert list(migliori["quintetto"]) == ["a", "b", "d"]
+    assert list(peggiori["quintetto"]) == ["c"]
+    assert M.quintetti_estremi(lu, 1, minuti_min=50)[0]["quintetto"].tolist() == ["a"]

@@ -125,3 +125,10 @@ def test_report_post_partita_e_giocatore(ctx):
     gid = ctx.players[ctx.players["squadra_id"] == 10050].sort_values("minuti").iloc[-1]
     pdf = R.build_giocatore(ctx, gid["giocatore_id"], 10050)
     assert pdf[:4] == b"%PDF"
+
+
+def test_pdf_mia_squadra(ctx):
+    from basket.report_mia import build_mia_squadra
+    from test_lavagna import gioco_esempio
+    pdf = build_mia_squadra(ctx, 10050, {"efg_pct": 50.0}, [gioco_esempio()])
+    assert pdf[:4] == b"%PDF" and len(pdf) > 20_000

@@ -106,21 +106,7 @@ def render(a: App, sid: int):
                                                          for v in dett["punti_pg"]]}),
              voci=[G["dettagli_individuali"]])
 
-    peggiori, migliori = M.quintetti_da_rivedere(ctx.lineups, sid)
-    if not peggiori.empty or not migliori.empty:
-        c1, c2 = st.columns(2)
-        for col, df, titolo in ((c1, peggiori, "Quintetti da rivedere"),
-                                (c2, migliori, "Quintetti che funzionano")):
-            with col:
-                section(titolo, "almeno 20 minuti insieme", key="quintetti")
-                if df.empty:
-                    note_html("Nessuno.")
-                else:
-                    show(pd.DataFrame({"Quintetto": df["giocatori"],
-                                       "Minuti": [num(v, 0) for v in df["minuti"]],
-                                       "+/-": [num(v, 0, signed=True) for v in df["plus_minus"]],
-                                       "Net Rtg": [num(v, 1, signed=True) for v in df["net_rtg"]]}),
-                         voci=[])
+    render_quintetti(ctx, sid, noi=True)
 
     qp = C.quando_perdono(ctx.bs, sid)
     section("Cosa cambia quando perdete", "vittorie contro sconfitte", key="quando_perdono")
@@ -134,3 +120,37 @@ def render(a: App, sid: int):
             "Nelle vittorie": [num(v, 2 if f else 1) for v, f in zip(qp["vittorie"], f2)],
             "Nelle sconfitte": [num(v, 2 if f else 1) for v, f in zip(qp["sconfitte"], f2)]}),
             voci=[G["quando_perdono"]])
+
+
+def render_quintetti(ctx, sid: int, noi: bool = False):
+    """Quintetti migliori e peggiori della squadra (Net rating prudente sui minuti insieme)."""
+    migliori, peggiori, soglia = M.quintetti_estremi(ctx.lineups, sid)
+    section("Quintetti migliori e peggiori", f"almeno {num(soglia, 0)} minuti insieme, "
+            "ordinati per Net rating pesato sui minuti", key="quintetti_estremi")
+    if migliori.empty and peggiori.empty:
+        note_html("Servono più partite con quintetti verificati.", "quintetti")
+        return
+    pr = ctx.profile.set_index("squadra_id")
+    if sid in pr.index and int(pr.loc[sid, "partite"]) < 8:
+        note_html("⚠ Inizio stagione: pochi minuti insieme per ogni quintetto, indicazioni da "
+                  "confermare nelle prossime giornate.")
+
+    def tabella(df):
+        return pd.DataFrame({"Quintetto": df["giocatori"],
+                             "Min": [num(v, 0) for v in df["minuti"]],
+                             "PG": df["partite"].astype(int),
+                             "+/-": [num(v, 0, signed=True) for v in df["plus_minus"]],
+                             "ORtg": [num(v, 1) for v in df["ortg"]],
+                             "DRtg": [num(v, 1) for v in df["drtg"]],
+                             "Net Rtg": [num(v, 1, signed=True) for v in df["net_rtg"]]})
+    for df, titolo, vuoto in (
+            (migliori, "✅ " + ("Quelli che funzionano: da usare di più" if noi else
+                                "Migliori: quelli da limitare"), "Nessuno con saldo positivo."),
+            (peggiori, "⚠ " + ("Quelli da rivedere" if noi else
+                               "Peggiori: quelli da cercare in partita"),
+             "Nessuno con saldo negativo.")):
+        st.markdown(f"**{titolo}**")
+        if df.empty:
+            note_html(vuoto)
+        else:
+            show(tabella(df), voci=[])

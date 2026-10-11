@@ -6,7 +6,7 @@
 - punti_regalati(): punti concessi da palle perse, seconde occasioni e contropiede, punti
   lasciati ai liberi, rispetto al campionato;
 - momenti_critici(): i momenti della partita in cui la squadra perde terreno;
-- quintetti_da_rivedere(): quintetti molto usati con saldo negativo, e i migliori;
+- quintetti_estremi(): i quintetti migliori e peggiori, con la soglia di minuti adatta;
 - dettagli_giocatori(): abitudini individuali che costano punti (liberi, palle perse, scelta
   di tiro, tiro da 3, falli), con la stima dei punti a partita in gioco.
 """
@@ -103,15 +103,33 @@ def momenti_critici(momenti: pd.DataFrame, sid: int) -> pd.DataFrame:
     return m.sort_values("diff_pg").reset_index(drop=True)
 
 
-def quintetti_da_rivedere(lineups: pd.DataFrame, sid: int, minuti_min: float = 20.0
-                          ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """(peggiori, migliori) tra i quintetti con almeno minuti_min minuti insieme."""
+# minuti "virtuali" a Net rating zero: il rating di un quintetto con pochi minuti insieme viene
+# avvicinato allo zero, così 6 minuti fortunati non battono 60 minuti solidi
+MINUTI_PRUDENZA = 30.0
+
+
+def soglia_quintetti(lineups: pd.DataFrame, sid: int) -> float:
+    """Minuti minimi insieme per considerare un quintetto: il 2% dei minuti della squadra
+    con quintetti verificati, tra 5 (inizio stagione) e 25."""
+    q = lineups[lineups["squadra_id"] == sid]
+    return float(np.clip(round(0.02 * q["minuti"].sum()), 5, 25)) if not q.empty else 5.0
+
+
+def quintetti_estremi(lineups: pd.DataFrame, sid: int, n: int = 3,
+                      minuti_min: float | None = None
+                      ) -> tuple[pd.DataFrame, pd.DataFrame, float]:
+    """(migliori, peggiori, soglia): quintetti con almeno `soglia` minuti insieme, ordinati per
+    Net rating prudente (net_stimato = net_rtg · minuti / (minuti + MINUTI_PRUDENZA))."""
     if lineups is None or lineups.empty:
-        return pd.DataFrame(), pd.DataFrame()
-    q = lineups[(lineups["squadra_id"] == sid) & (lineups["minuti"] >= minuti_min)]
-    peggiori = q[q["net_rtg"] < 0].sort_values("plus_minus").head(3)
-    migliori = q[q["net_rtg"] > 0].sort_values("plus_minus", ascending=False).head(3)
-    return peggiori.reset_index(drop=True), migliori.reset_index(drop=True)
+        return pd.DataFrame(), pd.DataFrame(), 5.0
+    soglia = soglia_quintetti(lineups, sid) if minuti_min is None else minuti_min
+    q = lineups[(lineups["squadra_id"] == sid) & (lineups["minuti"] >= soglia)].copy()
+    q = q[q["net_rtg"].notna()]
+    q["net_stimato"] = q["net_rtg"] * q["minuti"] / (q["minuti"] + MINUTI_PRUDENZA)
+    migliori = q[q["net_stimato"] > 0].sort_values("net_stimato", ascending=False).head(n)
+    peggiori = q[(q["net_stimato"] < 0) & ~q.index.isin(migliori.index)].sort_values(
+        "net_stimato").head(n)
+    return migliori.reset_index(drop=True), peggiori.reset_index(drop=True), soglia
 
 
 def dettagli_giocatori(players: pd.DataFrame, sid: int, minuti_min: float = 10.0
