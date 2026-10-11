@@ -36,6 +36,14 @@ def _pdf(_ctx, mtime: float, stagione: str, sid: int, mia: int | None = None,
     return build_pdf(_ctx, sid, mia, json.loads(giochi_json))
 
 
+@st.cache_data(show_spinner="Preparo il PDF della squadra…")
+def _pdf_mia(_ctx, mtime: float, stagione: str, sid: int, obiettivi_json: str,
+             giochi_json: str) -> bytes:
+    import json
+    from basket.report_mia import build_mia_squadra
+    return build_mia_squadra(_ctx, sid, json.loads(obiettivi_json), json.loads(giochi_json))
+
+
 def _coverage(a: App):
     cov = a.ctx.copertura
     row = cov[cov["campionato_id"] == a.camp]
@@ -114,6 +122,8 @@ def scouting_extra(a: App):
              .rename(columns={"giocatori": "Quintetto", "minuti": "Min", "partite": "PG",
                               "plus_minus": "+/-", "ortg": "ORtg", "drtg": "DRtg",
                               "net_rtg": "Net Rtg"}), colori={"Net Rtg": True})
+    from . import miglioramento_ui
+    miglioramento_ui.render_quintetti(ctx, sq, noi=sq == a.utente.get("squadra_id"))
     analisi.sezione_taglie(a, sq)
 
     section("+/- e On-Off", "impatto con il giocatore in campo")
@@ -613,6 +623,20 @@ def render_mia_squadra(a: App):
           ("Ritmo", _f(me["pace"]), f"{rank('pace')}° su {n}"),
           ("Punto a punto", me["record_pp"], "margine ≤ 5"),
           ("Fortuna", _f(me["fortuna"], signed=True), "vittorie reali − attese")])
+
+    import json
+    from . import lavagna_ui
+    giochi = lavagna_ui.giochi(a, sid)
+    st.download_button(
+        "⬇ PDF completo della squadra" + (f" (con {len(giochi)} giochi)" if giochi else ""),
+        _pdf_mia(a.ctx, a.mtime, a.stagione, sid, json.dumps(a.archivio.goals(a.club),
+                                                              sort_keys=True),
+                 json.dumps(giochi)),
+        file_name=f"mia_squadra_{slug(me['squadra'])}.pdf", mime="application/pdf",
+        key="pdf_mia_squadra", type="primary",
+        help="Tutte le voci di questa pagina in un documento: sintesi, aree da migliorare, "
+             "quintetti migliori e peggiori, obiettivi, andamento, giocatori, rotazioni, "
+             "avvisi e i giochi della lavagna.")
 
     from . import miglioramento_ui
     miglioramento_ui.render(a, sid)

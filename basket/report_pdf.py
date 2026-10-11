@@ -321,6 +321,21 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
                                ("LEFTPADDING", (0, 0), (-1, -1), 2)]))
         el.append(t)
 
+    from . import miglioramento as M
+    migliori, peggiori, soglia = M.quintetti_estremi(ctx.lineups, squadra_id)
+    if not migliori.empty or not peggiori.empty:
+        el.append(Paragraph(f"QUINTETTI MIGLIORI E PEGGIORI · almeno {_fmt(soglia, 0)} minuti "
+                            "insieme", S["h2"]))
+        for df, testo in ((migliori, "Migliori: da limitare con i cambi"),
+                          (peggiori, "Peggiori: da cercare in partita")):
+            if df.empty:
+                continue
+            rows = [[testo, "Min", "+/-", "ORtg", "DRtg", "Net"]] + [
+                [Paragraph(x.giocatori, S["cell"]), _fmt(x.minuti, 0), _fmt(x.plus_minus, 0, True),
+                 _fmt(x.ortg), _fmt(x.drtg), _fmt(x.net_rtg, signed=True)]
+                for x in df.itertuples()]
+            el.append(_table(rows, [W - 70 * mm] + [14 * mm] * 5))
+
     # Origine dei punti, parziali, falli, timeout
     righe = [["Voce", "Squadra", "Media campionato"]]
 

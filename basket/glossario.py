@@ -271,6 +271,15 @@ G = {
         "quelli ufficiali (scarto massimo 3'); le altre partite sono escluse.",
         "Il quintetto con più minuti è quello di cui l'allenatore si fida; un quintetto con "
         "Net rating molto negativo è un'opportunità per l'avversario."),
+    "quintetti_estremi": Voce(
+        "Quintetti migliori e peggiori",
+        "I quintetti che rendono di più e di meno, tra quelli che hanno giocato abbastanza "
+        "minuti insieme.",
+        "Si considerano i quintetti con almeno il 2% dei minuti della squadra (tra 5 e 25 "
+        "minuti). L'ordine usa il Net rating pesato sui minuti: Net rating × minuti / "
+        "(minuti + 30), così pochi minuti fortunati non superano molti minuti solidi.",
+        "Per la propria squadra: i migliori da usare di più, i peggiori da rivedere. Per "
+        "l'avversaria: i migliori da limitare con i cambi, i peggiori da cercare in partita."),
     "clutch": Voce(
         "Finali punto a punto (clutch)",
         "Chi decide le partite equilibrate e come.",
