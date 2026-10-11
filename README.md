@@ -43,7 +43,11 @@ La dashboard è organizzata in **aree**, con la navigazione in alto (comoda al t
 
 **Report PDF**
 
-- **Scouting** sulla squadra scelta (e ogni lunedì via email sulla prossima avversaria);
+- **Scouting** sulla squadra scelta (e ogni lunedì via email sulla prossima avversaria): si apre con il
+  **piano partita** (probabilità, chiavi per vincere, consigli su come affrontarla in difesa, in attacco,
+  per ritmo e momenti e nei finali), poi le chiavi in dettaglio e tutte le sezioni della pagina Scouting,
+  con le note dello staff e i giochi disegnati;
+- **La mia squadra**: tutte le voci della pagina in un documento;
 - **post-partita** sulla propria ultima partita (allegato anche all'email del lunedì);
 - **individuale** per il giocatore, con lo spazio per gli obiettivi concordati con lo staff.
 
@@ -235,12 +239,13 @@ fonte dati** salva le pagine in `discovery/output` per adeguare il parser.
 | `basket/approfondimenti.py`, `luoghi.py` | Rotazioni, taglia dei quintetti, momenti, presenze, riposo e trasferte, dalla B all'A2, frasi di sintesi |
 | `basket/report_extra.py` | Report PDF post-partita e individuale |
 | `basket/report_mia.py` | PDF completo della propria squadra |
+| `basket/piano_partita.py` | Consigli su come affrontare un'avversaria, dal confronto con i dati della propria squadra |
 | `basket/scouting.py`, `report_pdf.py`, `invio_email.py` | Report di scouting, PDF, invio email |
 | `basket/accesso.py`, `note.py` | Login per club, note, osservati, obiettivi |
 | `basket/glossario.py` | Spiegazioni delle statistiche (pulsanti "?") |
 | `dashboard/`, `streamlit_app.py` | Dashboard (`pagine.py`: Home e aree; `analisi.py`: nuove sezioni; `previsioni_ui.py`: area Previsioni) |
 | `assets/logo/` | Logo ASSIST (SVG e PNG; `build_logo.py` lo rigenera) |
-| `tests/` | 65 test automatici (parser, formule, quintetti, nuove analisi, previsioni e validazione, chiavi per vincere, lavagna, PDF, accessi) |
+| `tests/` | 67 test automatici (parser, formule, quintetti, nuove analisi, previsioni e validazione, chiavi per vincere, lavagna, PDF, accessi) |
 
 ```bash
 pip install -r requirements-update.txt

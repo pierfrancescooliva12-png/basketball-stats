@@ -132,3 +132,27 @@ def test_pdf_mia_squadra(ctx):
     from test_lavagna import gioco_esempio
     pdf = build_mia_squadra(ctx, 10050, {"efg_pct": 50.0}, [gioco_esempio()])
     assert pdf[:4] == b"%PDF" and len(pdf) > 20_000
+
+
+def test_piano_partita_e_pdf_completo(ctx):
+    from basket import piano_partita as PP
+    from basket.report_pdf import build_pdf
+    c = PP.consigli(ctx, 10050)
+    assert list(c) == PP.GRUPPI and all(isinstance(v, list) for v in c.values())
+    assert all(len(v) <= PP.MAX_PER_GRUPPO for v in c.values())
+    nota = [{"testo": "Pressano a tutto campo <dopo i canestri>", "autore": "coach",
+             "creata_il": "2026-10-11"}]
+    for mia in (None, 100118):
+        pdf = build_pdf(ctx, 10050, mia, note=nota)
+        assert pdf[:4] == b"%PDF" and len(pdf) > 20_000
+
+
+def test_piano_partita_confronta_le_due_squadre(ctx):
+    from basket import piano_partita as PP
+    loro = PP.consigli(ctx, 10050)
+    confronto = PP.consigli(ctx, 10050, 100118)
+    assert list(confronto) == PP.GRUPPI
+    # con la propria squadra compaiono i consigli sui vostri giocatori nei finali
+    assert any("Da voi" in t for t in confronto[PP.F]) or confronto != loro
+    # un'avversaria contro sé stessa equivale a nessuna propria squadra
+    assert PP.consigli(ctx, 10050, 10050) == loro

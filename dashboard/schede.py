@@ -345,11 +345,12 @@ def render_scouting(a: App):
             unsafe_allow_html=True)
         frase("In una frase", X.frase_squadra(profile, sq))
         from . import lavagna_ui
-        from .nuove import _pdf
+        from .nuove import _pdf, note_json
         from basket.report_pdf import slug
         st.download_button("⬇ Report PDF per la riunione tecnica",
-                           _pdf(a.ctx, a.mtime, a.stagione, sq, a.utente.get("squadra_id"),
-                                lavagna_ui.giochi_json(a, sq)),
+                           _pdf(a.ctx, a.mtime, a.stagione, sq,
+                                a.utente.get("squadra_id") or st.session_state.get(f"ch_mia_{sq}"),
+                                lavagna_ui.giochi_json(a, sq), note_json(a, sq)),
                            file_name=f"scouting_{slug(r.squadra)}.pdf", mime="application/pdf",
                            type="primary")
         pr = profile.set_index("squadra_id")
