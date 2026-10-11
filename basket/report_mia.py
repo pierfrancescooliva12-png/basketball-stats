@@ -20,7 +20,8 @@ from . import lavagna as L
 from . import miglioramento as M
 from .contesto import Contesto, open_readonly
 from .report_extra import _data_it, _documento, _piede, _testata
-from .report_pdf import _approfondimenti, _fmt, _fonts, _kpis, _styles, _table, slug
+from .report_pdf import (_approfondimenti, _fmt, _fonts, _kpis, _styles, _table, slug,
+                         unisci_titoli)
 
 # stesse voci e nomi del pannello obiettivi della dashboard
 OBIETTIVI = {"efg_pct": "eFG% in attacco", "tov_pct": "Palle perse %",
@@ -250,7 +251,7 @@ def build_mia_squadra(ctx: Contesto, sid: int, obiettivi: dict | None = None,
                                                         "disegnati dallo staff, fase per fase")
 
     piede = _piede(f"{nome} · la mia squadra")
-    doc.build(el, onFirstPage=piede, onLaterPages=piede)
+    doc.build(unisci_titoli(el), onFirstPage=piede, onLaterPages=piede)
     return buf.getvalue()
 
 

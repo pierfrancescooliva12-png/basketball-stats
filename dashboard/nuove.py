@@ -31,9 +31,19 @@ def _team(df: pd.DataFrame, sid) -> pd.DataFrame:
 
 @st.cache_data(show_spinner="Preparo il PDF…")
 def _pdf(_ctx, mtime: float, stagione: str, sid: int, mia: int | None = None,
-         giochi_json: str = "[]") -> bytes:
+         giochi_json: str = "[]", note_json: str = "[]") -> bytes:
     import json
-    return build_pdf(_ctx, sid, mia, json.loads(giochi_json))
+    return build_pdf(_ctx, sid, mia, json.loads(giochi_json), json.loads(note_json))
+
+
+def note_json(a: App, sid) -> str:
+    """Note dello staff sulla squadra, per il PDF di scouting (stringa, per la cache)."""
+    import json
+    try:
+        n = a.archivio.notes(a.club, "squadra", sid)
+        return json.dumps(n[["testo", "autore", "creata_il"]].astype(str).to_dict("records"))
+    except Exception:
+        return "[]"
 
 
 @st.cache_data(show_spinner="Preparo il PDF della squadra…")

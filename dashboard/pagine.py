@@ -179,7 +179,8 @@ def home():
         pulsante(c[1], "Anteprima della partita", "anteprima", f_sq=mia)
         with c[2]:
             st.download_button("⬇ PDF avversaria", nuove._pdf(a.ctx, a.mtime, a.stagione, avv, mia,
-                                                                lavagna_ui.giochi_json(a, avv)),
+                                                                lavagna_ui.giochi_json(a, avv),
+                                                                nuove.note_json(a, avv)),
                                file_name=f"scouting_{analisi.slug(pr.loc[avv, 'squadra'])}.pdf",
                                mime="application/pdf", width="stretch")
     if ultima:
