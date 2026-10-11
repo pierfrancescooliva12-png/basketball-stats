@@ -5,6 +5,7 @@
 """
 
 import re
+import time
 from datetime import datetime
 
 from bs4 import BeautifulSoup
@@ -21,6 +22,9 @@ STAT_COLUMNS = [
 ]
 
 
+TENTATIVI_CALENDARIO = 3
+
+
 class ParseError(Exception):
     """La pagina non ha la struttura attesa: il sito potrebbe essere cambiato."""
 
@@ -30,13 +34,20 @@ class ParseError(Exception):
 def fetch_schedule(client: RateLimitedClient, league: str, giornata: int,
                    season: str = config.STAGIONE) -> list[dict] | None:
     """Partite di una giornata; None se la giornata non esiste."""
-    resp = client.get(config.DOMINO_URL, params={
-        "task": "schedule", "year": season, "league": league, "round": giornata,
-    })
-    if resp.status_code == 404:
-        return None
-    resp.raise_for_status()
-    data = resp.json()
+    params = {"task": "schedule", "year": season, "league": league, "round": giornata}
+    for tentativo in range(1, TENTATIVI_CALENDARIO + 1):
+        resp = client.get(config.DOMINO_URL, params=params)
+        if resp.status_code == 404:
+            return None
+        resp.raise_for_status()
+        try:
+            data = resp.json()
+            break
+        except ValueError:
+            # a volte il servizio risponde con un corpo vuoto: si riprova dopo una pausa
+            if tentativo == TENTATIVI_CALENDARIO:
+                raise ParseError(f"calendario {league} giornata {giornata}: risposta non valida")
+            time.sleep(5 * tentativo)
     if isinstance(data, dict) and "error" in data:
         return None
     return parse_schedule(data, league, season)

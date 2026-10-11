@@ -69,7 +69,13 @@ def update_league(conn, client, league: str, season: str, giornate: set[int] | N
             stats["giornate"] += 1
             continue
 
-        games = fetch_schedule(client, league, giornata, season)
+        try:
+            games = fetch_schedule(client, league, giornata, season)
+        except (ParseError, RuntimeError, requests.RequestException) as exc:
+            # una giornata illeggibile non deve fermare le altre né gli altri campionati
+            log.error("%s giornata %d: calendario non disponibile (%s)", league, giornata, exc)
+            stats["errori"].append(f"{league} giornata {giornata}: calendario non disponibile")
+            continue
         if not games:
             missing_in_a_row += 1
             log.info("%s giornata %d: non presente", league, giornata)
