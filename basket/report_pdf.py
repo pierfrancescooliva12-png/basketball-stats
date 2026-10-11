@@ -592,10 +592,14 @@ def _piano(ctx: Contesto, avv: int, mia: int | None, S, W) -> tuple[list, list]:
                             S["small"]))
     el.append(Spacer(1, 4))
     el += _consigli(ctx, avv, mia, rt, S, W)
-    el.append(Paragraph("Probabilità dal modello di previsione; consigli da regole sui dati "
-                        "della stagione (voci lontane dalla media del campionato). Sono "
-                        "associazioni statistiche, non garanzie: indicano dove guardare.",
-                        S["small"]))
+    el.append(Paragraph(f"Consigli dal confronto tra i dati di {nome_mia} e di {nome_avv} "
+                        "(voci lontane dalla media del campionato). <b>Sfida chiave</b>: un loro "
+                        "punto forte contro un vostro punto debole. <b>Occasione</b>: un vostro "
+                        "punto forte contro un loro punto debole. <b>Forza contro forza</b>: i "
+                        "due punti forti si incontrano. <b>Neutralizzata</b>: un loro punto "
+                        "forte dove siete forti anche voi. <b>Da curare</b>: un vostro punto "
+                        "debole. Probabilità dal modello di previsione; sono associazioni "
+                        "statistiche, non garanzie.", S["small"]))
 
     # ---- dettaglio
     det = [Paragraph("LE CHIAVI IN DETTAGLIO · Four Factors della partita", S["h2"])]

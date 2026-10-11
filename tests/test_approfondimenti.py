@@ -145,3 +145,14 @@ def test_piano_partita_e_pdf_completo(ctx):
     for mia in (None, 100118):
         pdf = build_pdf(ctx, 10050, mia, note=nota)
         assert pdf[:4] == b"%PDF" and len(pdf) > 20_000
+
+
+def test_piano_partita_confronta_le_due_squadre(ctx):
+    from basket import piano_partita as PP
+    loro = PP.consigli(ctx, 10050)
+    confronto = PP.consigli(ctx, 10050, 100118)
+    assert list(confronto) == PP.GRUPPI
+    # con la propria squadra compaiono i consigli sui vostri giocatori nei finali
+    assert any("Da voi" in t for t in confronto[PP.F]) or confronto != loro
+    # un'avversaria contro sé stessa equivale a nessuna propria squadra
+    assert PP.consigli(ctx, 10050, 10050) == loro
