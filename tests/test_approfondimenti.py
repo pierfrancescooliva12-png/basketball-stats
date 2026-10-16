@@ -156,3 +156,20 @@ def test_piano_partita_confronta_le_due_squadre(ctx):
     assert any("Da voi" in t for t in confronto[PP.F]) or confronto != loro
     # un'avversaria contro sé stessa equivale a nessuna propria squadra
     assert PP.consigli(ctx, 10050, 10050) == loro
+
+
+def test_confronto_giocatori(ctx):
+    from basket import confronto as CF
+    from basket import mercato
+    hist = mercato.season_lines(ctx.conn, ["x2627"])
+    top = hist.sort_values("minuti", ascending=False)
+    a, b = top.iloc[0], top.iloc[1]
+    sa, sb = CF.confronta(hist, (a["giocatore_id"], "x2627"), (b["giocatore_id"], "x2627"))
+    for s in (sa, sb):
+        assert set(s["dimensioni"]) == set(CF.DIMENSIONI) and not s["convertito"]
+        assert all(0 <= v <= 100 for v in s["dimensioni"].values() if v == v)
+        p = s["possesso"]
+        assert p["punti_100"] > 0 and 0 <= p["perse_100"] <= 100
+    frasi = CF.verdetto(sa, sb)
+    assert 2 <= len(frasi) <= 3 and all(isinstance(f, str) and f for f in frasi)
+    assert CF._cognome("Stacy Davis IV") == "Davis"

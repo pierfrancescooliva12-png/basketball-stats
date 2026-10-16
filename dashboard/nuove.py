@@ -503,6 +503,9 @@ def render_mercato(a: App):
          height=520, progress={"USG%": (0, 40), "TS%": (0, 80)},
          colori={"Game Score": True, "Punti": True})
 
+    from . import confronto_ui
+    confronto_ui.render(a, hist)
+
     analisi.dalla_b_alla_a2(a, hist, stagione)
 
     section("Talenti di B Nazionale", "giovani con minuti e rendimento da A2")

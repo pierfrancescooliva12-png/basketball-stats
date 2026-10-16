@@ -271,6 +271,26 @@ G = {
         "quelli ufficiali (scarto massimo 3'); le altre partite sono escluse.",
         "Il quintetto con più minuti è quello di cui l'allenatore si fida; un quintetto con "
         "Net rating molto negativo è un'opportunità per l'avversario."),
+    "confronto": Voce(
+        "Confronto giocatori",
+        "Due giocatori messi a confronto su sei dimensioni, con un verdetto in parole.",
+        "Ogni dimensione è la media pesata dei percentili (0-100) di alcune metriche avanzate "
+        "rispetto ai giocatori dello stesso ruolo con almeno 10' di media: realizzazione "
+        "(punti per 40', TS%), creazione (AST%, assist, palle perse %), tiro da fuori (% da 3 "
+        "prudente, tentativi), rimbalzo (REB%, rimbalzi offensivi), difesa e attività "
+        "(recuperi, stoppate, falli), impatto (Game Score per 40', On-Off). Se i due giocano in "
+        "categorie diverse, i numeri di B Nazionale sono riportati alla scala dell'A2.",
+        "Una differenza di 12 punti di percentile o più è netta. Il verdetto indica dove "
+        "ognuno è superiore e il ruolo per cui è più adatto; con meno di 150 minuti giocati "
+        "il profilo è indicativo."),
+    "possesso_giocatore": Voce(
+        "Cosa produce ogni possesso",
+        "Quanto rende ogni possesso che il giocatore usa: con un tiro, un viaggio in lunetta o "
+        "una palla persa.",
+        "Possessi usati = tiri dal campo + 0,44 × tiri liberi + palle perse. Punti prodotti, "
+        "palle perse e tiri sbagliati sono riportati a 100 possessi usati.",
+        "Separa il volume dall'efficienza: un realizzatore da 18 punti che produce 90 punti "
+        "ogni 100 possessi costa alla squadra più di uno da 12 che ne produce 115."),
     "quintetti_estremi": Voce(
         "Quintetti migliori e peggiori",
         "I quintetti che rendono di più e di meno, tra quelli che hanno giocato abbastanza "
