@@ -1,14 +1,15 @@
 [theme]
 base = "dark"
 primaryColor = "#ff7a1a"
-backgroundColor = "#0b1220"
-secondaryBackgroundColor = "#141d30"
-textColor = "#e6eaf2"
-borderColor = "#24304a"
-dataframeHeaderBackgroundColor = "#141d30"
+backgroundColor = "#0a0e15"
+secondaryBackgroundColor = "#111722"
+textColor = "#e8ecf3"
+borderColor = "#1f2735"
+dataframeHeaderBackgroundColor = "#161d2b"
 font = "Inter, sans-serif"
-headingFont = "'Barlow Condensed', sans-serif"
+headingFont = "Inter, sans-serif"
 baseRadius = "10px"
+showWidgetBorder = true
 
 [server]
 headless = true

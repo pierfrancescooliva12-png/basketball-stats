@@ -8,7 +8,7 @@ from basket import config
 from basket import confronto as CF
 
 from .stato import App
-from .ui import ARANCIO, BLU, GRIGIO, TESTO, TESTO_2, esc, it, note_html, num, plot, section, show
+from .ui import ARANCIO, BLU, TESTO, TESTO_2, esc, it, note_html, num, plot, section, show
 
 
 def _scelta(col, hist: pd.DataFrame, chiave: str, stagioni: list[str], i_default: int,
@@ -85,13 +85,18 @@ def render(a: App, hist: pd.DataFrame):
     for s, n, colore in ((sa, na, BLU), (sb, nb, ARANCIO)):
         v = [s["dimensioni"].get(d) if pd.notna(s["dimensioni"].get(d)) else 0 for d in dims]
         fig.add_trace(go.Scatterpolar(
-            r=v + v[:1], theta=dims + dims[:1], name=n, fill="toself", opacity=0.55,
-            line=dict(color=colore, width=2),
+            r=v + v[:1], theta=dims + dims[:1], name=n, fill="toself",
+            fillcolor=f"rgba({int(colore[1:3], 16)},{int(colore[3:5], 16)},{int(colore[5:7], 16)},0.16)",
+            line=dict(color=colore, width=2), marker=dict(size=7, color=colore),
             hovertemplate="%{theta}: %{r:.0f}° percentile<extra>" + n + "</extra>"))
     fig.update_layout(polar=dict(bgcolor="rgba(0,0,0,0)",
                                  radialaxis=dict(range=[0, 100], tickvals=[25, 50, 75],
-                                                 gridcolor=GRIGIO, tickfont=dict(color=TESTO_2)),
-                                 angularaxis=dict(gridcolor=GRIGIO, tickfont=dict(color=TESTO))),
+                                                 gridcolor="rgba(255,255,255,0.08)",
+                                                 linecolor="rgba(0,0,0,0)",
+                                                 tickfont=dict(color="#7d889c", size=11)),
+                                 angularaxis=dict(gridcolor="rgba(255,255,255,0.08)",
+                                                  linecolor="rgba(255,255,255,0.10)",
+                                                  tickfont=dict(color=TESTO, size=12.5))),
                       legend=dict(orientation="h", y=-0.12, font=dict(color=TESTO)),
                       margin=dict(l=40, r=40, t=30, b=30))
     c1, c2 = st.columns([3, 2])
