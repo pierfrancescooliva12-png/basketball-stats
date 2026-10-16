@@ -155,3 +155,61 @@ def render(a: App, hist: pd.DataFrame):
     note_html("Percentuali di tiro prudenti: ai tiri del giocatore si aggiungono alcuni tentativi "
               "alla media della categoria, così chi ha tirato poco non sembra un 100%. On-Off solo "
               "per la stagione in corso, dalle partite con quintetti verificati.")
+
+    # ---- affidabilità
+    conn = a.ctx.conn
+    aa = CF.in_scala(CF.affidabilita(conn, *sa_), sa)
+    ab = CF.in_scala(CF.affidabilita(conn, *sb_), sb)
+    section("Affidabilità", "costanza partita per partita, avversarie forti e deboli, forma",
+            key="affidabilita_giocatore")
+    if aa.get("partite") and ab.get("partite"):
+        frasi = CF.frasi_affidabilita(aa, ab, na, nb)
+        if frasi:
+            note_html(" ".join(frasi))
+        voci_a = [("Partite (almeno 5')", "partite", 0, ""),
+                  ("Game Score per 40'", "gs_p40", 1, ""),
+                  ("Partite storte (sotto metà della sua media)", "partite_storte", 0, "%"),
+                  ("Contro la metà alta del campionato (GS/40)", "forti_p40", 1, ""),
+                  ("Contro la metà bassa (GS/40)", "deboli_p40", 1, ""),
+                  ("Ultime 5 partite (GS/40)", "ultime5_p40", 1, "")]
+        show(pd.DataFrame([{"Voce": lab, na: num(aa.get(k), d) + suf if pd.notna(aa.get(k)) else "–",
+                            nb: num(ab.get(k), d) + suf if pd.notna(ab.get(k)) else "–"}
+                           for lab, k, d, suf in voci_a]), voci=[])
+        if sa["convertito"] or sb["convertito"]:
+            note_html("Game Score di B Nazionale riportato alla scala dell'A2, come gli altri "
+                      "numeri; le partite storte non cambiano.")
+    else:
+        note_html("Partite insufficienti per misurare la costanza.")
+
+    # ---- per la vostra squadra
+    fit = pd.DataFrame()
+    mia = a.mia_squadra
+    if mia is not None:
+        pr = a.profile[a.profile["squadra_id"] == mia]
+        if not pr.empty:
+            lega = a.profile[a.profile["campionato_id"] == pr["campionato_id"].iloc[0]]
+            fit = CF.adattamento(hist, lega, mia, [sa_, sb_])
+    if not fit.empty:
+        nome_mia = pr["squadra"].iloc[0]
+        section(f"Per {nome_mia}", "quanto ognuno copre le carenze della squadra (0-100)",
+                key="fabbisogni")
+        fr = CF.frase_adattamento(fit, [sa_, sb_], [na, nb])
+        if fr:
+            note_html(fr)
+        show(pd.DataFrame({"Bisogno": fit["bisogno"], "Priorità": fit["priorita"],
+                           "Perché": fit["motivo"].map(it),
+                           na: [num(v, 0) if pd.notna(v) else "fuori profilo" for v in fit[sa_]],
+                           nb: [num(v, 0) if pd.notna(v) else "fuori profilo" for v in fit[sb_]]}),
+             voci=[])
+        note_html("Adattamento: percentile del giocatore nel profilo richiesto, nella sua categoria "
+                  "e stagione. \"Fuori profilo\": non ha il volume minimo per quel tipo di "
+                  "giocatore (es. tiri da 3 per il tiratore).")
+
+    # ---- PDF
+    from basket.report_confronto import build_confronto
+    pdf = build_confronto(sa, sb, aa, ab, fit, [sa_, sb_], [na, nb],
+                          pr["squadra"].iloc[0] if not fit.empty else None)
+    st.download_button("⬇ Confronto in PDF (una pagina per il direttore sportivo)", pdf,
+                       file_name=f"confronto_{CF._cognome(sa['riga']['giocatore']).lower()}_"
+                                 f"{CF._cognome(sb['riga']['giocatore']).lower()}.pdf",
+                       mime="application/pdf", key="pdf_confronto")

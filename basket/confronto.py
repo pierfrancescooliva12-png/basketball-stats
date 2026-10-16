@@ -146,6 +146,7 @@ def scheda(hist: pd.DataFrame, giocatore_id: str, stagione: str, scala: str | No
     pool_poss = pd.DataFrame([_possesso(x) for _, x in pool.iterrows()]) if len(pool) else \
         pd.DataFrame()
     return {"riga": r, "categoria_originale": mie.iloc[0]["categoria"], "scala": categoria,
+            "fattore_gs": fattori.get("game_score_p40", (None, 1.0))[1] if convertito else 1.0,
             "convertito": convertito, "dimensioni": dims, "percentili": dettagli,
             "possesso": poss, "possesso_ruolo": pool_poss.median().to_dict()
             if not pool_poss.empty else {},
@@ -221,3 +222,124 @@ def verdetto(sa: dict, sb: dict) -> list[str]:
     if ruoli:
         out.append("Più adatti: " + "; ".join(ruoli) + ".")
     return out
+
+
+# ------------------------------------------------------------------ affidabilità
+
+def affidabilita(conn, giocatore_id: str, stagione: str) -> dict:
+    """Quanto ci si può fidare del rendimento: costanza partita per partita, rendimento contro
+    la metà alta e la metà bassa del campionato, forma nelle ultime 5 partite. Tutto in Game
+    Score per 40 minuti."""
+    from . import analysis as A
+    bg = A.load_box_giocatore(conn, stagione)
+    g = bg[(bg["giocatore_id"] == giocatore_id) & (bg["minuti"] >= 5)].copy()
+    vuoto = {"partite": 0}
+    if g.empty:
+        return vuoto
+    g["gs"] = A.game_score(g)
+    g = g.sort_values(["data", "partita_id"])
+
+    def per40(d):
+        return 40 * d["gs"].sum() / d["minuti"].sum() if d["minuti"].sum() else np.nan
+    media = g["gs"].mean()
+    bs = A.load_box_squadra(conn, stagione)
+    t = A.team_summary(bs[bs["campionato_id"] == g["campionato_id"].iloc[0]])
+    forti = set(t.loc[t["net_rtg"] >= t["net_rtg"].median(), "squadra_id"])
+    contro_forti = g[g["avversario_id"].isin(forti)]
+    contro_deboli = g[~g["avversario_id"].isin(forti)]
+    ultime = g.tail(5)
+    return {"partite": len(g), "gs_p40": per40(g),
+            "partite_storte": 100 * float((g["gs"] < 0.5 * media).mean()) if media > 0 else np.nan,
+            "deviazione": float(g["gs"].std()) if len(g) > 1 else np.nan,
+            "media_gs": float(media),
+            "forti_p40": per40(contro_forti), "partite_forti": len(contro_forti),
+            "deboli_p40": per40(contro_deboli), "partite_deboli": len(contro_deboli),
+            "ultime5_p40": per40(ultime), "forma": per40(ultime) - per40(g)}
+
+
+# ------------------------------------------------------------------ adattamento alla squadra
+
+def adattamento(hist: pd.DataFrame, profile: pd.DataFrame, squadra_id: int,
+                giocatori: list[tuple[str, str]], max_bisogni: int = 4) -> pd.DataFrame:
+    """Per le carenze principali della squadra (mercato.team_needs): quanto ognuno dei
+    giocatori si adatta a quel tipo di giocatore (0-100, percentile nella sua categoria e
+    stagione). Una riga per carenza, una colonna per giocatore."""
+    needs = mercato.team_needs(profile, squadra_id)
+    top = needs[needs["gravita"] >= mercato.SOGLIA_BISOGNO].head(max_bisogni)
+    if top.empty:
+        top = needs.head(2)
+    righe = []
+    fit_cache = {}
+    for n in top.to_dict("records"):
+        r = {"tipo": n["tipo"], "bisogno": n["nome"], "priorita": n["priorita"],
+             "motivo": n["motivi"][0] if n["motivi"] else ""}
+        for gid, stagione in giocatori:
+            k = (n["tipo"], stagione)
+            if k not in fit_cache:
+                fit_cache[k] = mercato.fit_scores(hist[hist["stagione"] == stagione], n["tipo"])
+            f = fit_cache[k]
+            v = f.loc[f["giocatore_id"] == gid, "adattamento"]
+            r[(gid, stagione)] = float(v.max()) if not v.empty else np.nan
+        righe.append(r)
+    return pd.DataFrame(righe)
+
+
+def in_scala(aff: dict, s: dict) -> dict:
+    """Affidabilità riportata alla stessa scala del confronto (B Nazionale -> A2)."""
+    f = s.get("fattore_gs", 1.0) or 1.0
+    if f == 1.0 or not aff.get("partite"):
+        return aff
+    out = dict(aff)
+    for k in ("gs_p40", "media_gs", "forti_p40", "deboli_p40", "ultime5_p40", "forma",
+              "deviazione"):
+        if pd.notna(out.get(k)):
+            out[k] = out[k] * f
+    return out
+
+
+def frasi_affidabilita(aa: dict, ab: dict, na: str, nb: str) -> list[str]:
+    """Costanza, rendimento contro le forti e forma, in parole."""
+    out = []
+    if not aa.get("partite") or not ab.get("partite"):
+        return out
+    sa, sb = aa["partite_storte"], ab["partite_storte"]
+    if pd.notna(sa) and pd.notna(sb) and abs(sa - sb) >= 10:
+        piu, meno = (na, nb) if sa < sb else (nb, na)
+        out.append(f"{piu} è più costante: {_n(min(sa, sb))}% di partite storte (sotto metà della "
+                   f"sua media) contro {_n(max(sa, sb))}% di {meno}.")
+    for nome, d in ((na, aa), (nb, ab)):
+        if pd.notna(d["forti_p40"]) and pd.notna(d["deboli_p40"]) and d["partite_forti"] >= 3 \
+                and d["partite_deboli"] >= 3 and d["deboli_p40"] > 0:
+            calo = d["forti_p40"] / d["deboli_p40"] - 1
+            if calo <= -0.25:
+                out.append(f"{nome} cala contro le squadre forti ({_n(d['forti_p40'], 1)} di Game "
+                           f"Score per 40' contro {_n(d['deboli_p40'], 1)} con le deboli).")
+            elif calo >= 0.1:
+                out.append(f"{nome} rende anche contro le squadre forti ({_n(d['forti_p40'], 1)} "
+                           f"contro {_n(d['deboli_p40'], 1)} con le deboli).")
+    for nome, d in ((na, aa), (nb, ab)):
+        if d["partite"] >= 8 and pd.notna(d["forma"]) and d["gs_p40"] and \
+                abs(d["forma"]) >= 0.2 * abs(d["gs_p40"]):
+            out.append(f"{nome} è {'in crescita' if d['forma'] > 0 else 'in calo'} nelle ultime 5 "
+                       f"partite ({_n(d['ultime5_p40'], 1)} contro {_n(d['gs_p40'], 1)} di media).")
+    return out
+
+
+def frase_adattamento(fit: pd.DataFrame, chiavi: list, nomi: list[str]) -> str | None:
+    if fit.empty:
+        return None
+    k1, k2 = chiavi
+    validi = fit[fit[k1].notna() | fit[k2].notna()]
+    if validi.empty:
+        return "Nessuno dei due corrisponde ai profili che mancano alla vostra squadra."
+    r = validi.iloc[0]
+    a, b = r[k1], r[k2]
+    if pd.isna(b) or (pd.notna(a) and a - b >= 10):
+        chi, v = nomi[0], a
+    elif pd.isna(a) or b - a >= 10:
+        chi, v = nomi[1], b
+    else:
+        return (f"Per il bisogno principale della vostra squadra ({r['bisogno'].lower()}) i due "
+                f"si equivalgono ({_n(a)} e {_n(b)} su 100).")
+    return (f"Per il bisogno principale della vostra squadra ({r['bisogno'].lower()}: "
+            f"{r['motivo']}) è più adatto {chi} ({_n(v)} su 100).")

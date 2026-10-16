@@ -283,6 +283,15 @@ G = {
         "Una differenza di 12 punti di percentile o più è netta. Il verdetto indica dove "
         "ognuno è superiore e il ruolo per cui è più adatto; con meno di 150 minuti giocati "
         "il profilo è indicativo."),
+    "affidabilita_giocatore": Voce(
+        "Affidabilità",
+        "Quanto ci si può fidare del rendimento di un giocatore, partita dopo partita.",
+        "Tutto in Game Score per 40 minuti, dalle partite con almeno 5 minuti: partite storte "
+        "(Game Score sotto metà della propria media), rendimento contro la metà alta e la metà "
+        "bassa del campionato (per Net rating), ultime 5 partite rispetto alla stagione.",
+        "Un giocatore con poche partite storte e lo stesso rendimento contro le forti è una "
+        "certezza; uno che cala del 25% o più contro le forti rende soprattutto contro le "
+        "deboli."),
     "possesso_giocatore": Voce(
         "Cosa produce ogni possesso",
         "Quanto rende ogni possesso che il giocatore usa: con un tiro, un viaggio in lunetta o "

@@ -173,3 +173,11 @@ def test_confronto_giocatori(ctx):
     frasi = CF.verdetto(sa, sb)
     assert 2 <= len(frasi) <= 3 and all(isinstance(f, str) and f for f in frasi)
     assert CF._cognome("Stacy Davis IV") == "Davis"
+    ka, kb = (a["giocatore_id"], "x2627"), (b["giocatore_id"], "x2627")
+    aa = CF.affidabilita(ctx.conn, *ka)
+    assert aa["partite"] >= 1 and aa["gs_p40"] == aa["gs_p40"]
+    fit = CF.adattamento(hist, ctx.profile, int(a["squadra_id"]), [ka, kb])
+    assert {"bisogno", "priorita", ka, kb} <= set(fit.columns)
+    from basket.report_confronto import build_confronto
+    pdf = build_confronto(sa, sb, aa, CF.affidabilita(ctx.conn, *kb), fit, [ka, kb], ["A", "B"])
+    assert pdf[:4] == b"%PDF"
