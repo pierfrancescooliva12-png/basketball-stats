@@ -1448,6 +1448,10 @@ if (MODALITA === "streamlit") {
       else gioco = esempio();
       tutto();
     } else aggiornaElenco();
+    if (a.apri && a.apri !== window.__aperto) {      // gioco appena creato (per esempio dal video)
+      const g = giochi.find(x => x.id === a.apri);
+      if (g) { window.__aperto = a.apri; gioco = clona(g); faseIdx = 0; storia = []; tutto(); }
+    }
     altezza();
   });
   window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:componentReady", apiVersion: 1 }, "*");
