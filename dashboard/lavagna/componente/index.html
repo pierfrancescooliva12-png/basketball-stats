@@ -871,6 +871,12 @@ function inseguiDifesa(prima, nuova, dt) {
   });
 }
 function riproduci() {
+  if (videoCollegato()) {             // video e lavagna collegati: parte il video, la lavagna lo segue
+    if (!video.paused) { video.pause(); return; }
+    const T = tempi(), n = gioco.fasi.length;
+    if (video.currentTime < T[0] || video.currentTime >= T[n - 1] || video.ended) video.currentTime = T[0];
+    video.play(); return;
+  }
   if (animazione) { cancelAnimationFrame(animazione); animazione = null; $("riproduci").textContent = "▶ Riproduci"; tutto(); return; }
   if (gioco.fasi.length < 2) { suggerisci("Aggiungi almeno una fase per vedere il gioco in movimento."); return; }
   $("riproduci").textContent = "■ Ferma";
@@ -1232,6 +1238,7 @@ let videoAperto = false, videoUrl = null, cicloVideo = null, difVideo = null, tV
 const tempi = () => (gioco.video && Array.isArray(gioco.video.tempi)) ? gioco.video.tempi : [];
 const videoPronto = () => !!videoUrl && video.readyState >= 1;
 const sincronizzato = () => videoPronto() && gioco.fasi.length >= 2 && tempi().length >= gioco.fasi.length;
+const videoCollegato = () => videoAperto && sincronizzato();      // il video si vede ed è collegato
 function orario(t) {
   const m = Math.floor(t / 60), s = t - m * 60;
   return `${m}:${s.toFixed(1).padStart(4, "0").replace(".", ",")}`;
@@ -1272,6 +1279,7 @@ function aggiornaVideo() {
   $("pannello-video").hidden = !videoAperto;
   document.querySelector(".tavola").classList.toggle("con-video", videoAperto);
   if (sincronizzato()) $("play3d").textContent = video.paused ? "▶ Play" : "❚❚ Pausa";
+  if (!animazione) $("riproduci").textContent = videoCollegato() && !video.paused ? "❚❚ Pausa" : "▶ Riproduci";
   $("apri-video").setAttribute("aria-pressed", videoAperto);
   $("apri-video").textContent = videoAperto ? "✕ Chiudi video" : "Video";
   video.hidden = !videoUrl; $("video-vuoto").hidden = !!videoUrl;
@@ -1288,7 +1296,7 @@ function aggiornaVideo() {
   else if (!videoPronto()) stato = "Caricamento della clip…";
   else if (n < 2) stato = "Disegna almeno due fasi, poi segna nel video il momento di ognuna.";
   else if (segnate < n) stato = `Porta il video al momento della fase ${segnate + 1} (pausa o rallentatore) e premi “Segna”. Fasi segnate: ${segnate} di ${n}.`;
-  else stato = `Sincronizzato: premi play sul video, la lavagna lo segue (anche in 3D). Tocca una fase per saltare a quel punto.`;
+  else stato = `Collegati: ▶ Riproduci fa partire video e lavagna insieme (anche in 3D). Tocca una fase per saltare a quel punto.`;
   $("stato-video").textContent = stato;
   if (vista3d) vista3d.orologio(sincronizzato() ? istanteVideo : null);
 }
@@ -1448,6 +1456,10 @@ if (MODALITA === "streamlit") {
       else gioco = esempio();
       tutto();
     } else aggiornaElenco();
+    if (a.apri && a.apri !== window.__aperto) {      // gioco appena creato (per esempio dal video)
+      const g = giochi.find(x => x.id === a.apri);
+      if (g) { window.__aperto = a.apri; gioco = clona(g); faseIdx = 0; storia = []; tutto(); }
+    }
     altezza();
   });
   window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:componentReady", apiVersion: 1 }, "*");

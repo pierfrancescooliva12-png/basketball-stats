@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="it" class="in-app">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tocchi ASSIST</title>
+<style>
+/* Tocchi dello staff sulla clip: i 4 angoli dell'area (prima volta in un palazzetto) e
+   attacco/difesa nei momenti chiave. Un tocco, una scelta: niente da trascinare. */
+:root {
+  --bg: #0a0e15; --pannello: #111722; --pannello-2: #161d2b; --testo: #e9edf4; --tenue: #9aa6b8;
+  --bordo: rgba(255,255,255,.12); --accento: #ff7a1a; --attacco: #3987e5; --difesa: #d95926;
+  --nessuno: rgba(233,237,244,.55);
+}
+html, body { margin: 0; background: var(--bg); color: var(--testo);
+  font: 15px/1.4 Inter, "Helvetica Neue", Arial, sans-serif; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+.app { padding: 4px 2px 12px; }
+.istruzione { margin: 0 0 10px; font-size: 1rem; }
+.istruzione b { color: var(--accento); }
+.quadro { position: relative; width: 100%; border-radius: 10px; overflow: hidden; background: #000;
+  touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.quadro img { display: block; width: 100%; height: auto; }
+.quadro svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.barra { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+button { font: inherit; color: inherit; min-height: 44px; padding: 0 14px; border-radius: 10px;
+  border: 1px solid var(--bordo); background: var(--pannello-2); cursor: pointer; font-weight: 600; }
+button.primario { background: var(--accento); border-color: var(--accento); color: #fff; }
+button:disabled { opacity: .45; cursor: default; }
+.conta { color: var(--tenue); font-size: .92rem; }
+.legenda { display: flex; gap: 14px; flex-wrap: wrap; color: var(--tenue); font-size: .88rem; margin-top: 6px; }
+.legenda i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px;
+  vertical-align: -1px; }
+.schema { float: right; margin: 0 0 6px 12px; }
+.punti { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 10px; }
+.punti span { padding: 2px 8px; border-radius: 6px; background: var(--pannello-2); color: var(--tenue);
+  font-size: .85rem; }
+.punti span.fatto { background: rgba(255,122,26,.18); color: var(--testo); }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- 4 angoli dell'area -->
+  <section id="modo-punti" hidden>
+    <svg class="schema" width="150" height="104" viewBox="0 0 150 104" aria-hidden="true">
+      <rect x="1" y="1" width="148" height="102" rx="4" fill="#161d2b" stroke="#9aa6b8"/>
+      <rect x="10" y="30" width="60" height="44" fill="none" stroke="#e9edf4" stroke-width="1.5"/>
+      <line x1="10" y1="10" x2="10" y2="94" stroke="#e9edf4" stroke-width="1.5"/>
+      <circle cx="10" cy="30" r="6" fill="#ff7a1a"/><text x="10" y="33" font-size="8" text-anchor="middle" fill="#fff">1</text>
+      <circle cx="10" cy="74" r="6" fill="#ff7a1a"/><text x="10" y="77" font-size="8" text-anchor="middle" fill="#fff">2</text>
+      <circle cx="70" cy="30" r="6" fill="#ff7a1a"/><text x="70" y="33" font-size="8" text-anchor="middle" fill="#fff">3</text>
+      <circle cx="70" cy="74" r="6" fill="#ff7a1a"/><text x="70" y="77" font-size="8" text-anchor="middle" fill="#fff">4</text>
+      <text x="110" y="20" font-size="9" fill="#9aa6b8" text-anchor="middle">lontano</text>
+      <text x="110" y="96" font-size="9" fill="#9aa6b8" text-anchor="middle">vicino</text>
+      <text x="110" y="56" font-size="9" fill="#9aa6b8" text-anchor="middle">telecamera ↓</text>
+    </svg>
+    <p class="istruzione" id="istr-punti"></p>
+    <div class="punti" id="stato-punti"></div>
+    <div class="quadro" id="quadro-punti"><img id="img-punti" alt="Fotogramma della clip"><svg id="svg-punti"></svg></div>
+    <div class="barra">
+      <button id="annulla-punto">Annulla l'ultimo</button>
+      <button id="ricomincia">Ricomincia</button>
+      <button class="primario" id="conferma-punti" disabled>Conferma il campo</button>
+    </div>
+  </section>
+
+  <!-- attacco e difesa nei momenti chiave -->
+  <section id="modo-squadre" hidden>
+    <p class="istruzione">Tocca i giocatori per indicare <b>attacco</b> e difesa: ogni tocco cambia
+      attacco → difesa → nessuno (arbitri, panchine). Basta correggere la proposta.</p>
+    <div class="quadro"><img id="img-squadre" alt="Momento chiave della clip"><svg id="svg-squadre"></svg></div>
+    <div class="legenda"><span><i style="background:var(--attacco)"></i>Attacco</span>
+      <span><i style="background:var(--difesa)"></i>Difesa</span>
+      <span><i style="border:2px solid var(--nessuno)"></i>Nessuno</span></div>
+    <div class="barra">
+      <button id="prima">◀</button>
+      <span class="conta" id="momento"></span>
+      <button id="dopo">▶</button>
+      <button id="inverti">Inverti attacco e difesa</button>
+      <span class="conta" id="conta"></span>
+      <button class="primario" id="conferma-squadre">Crea la bozza del gioco</button>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = (id) => document.getElementById(id);
+const NS = "http://www.w3.org/2000/svg";
+const NOMI_PUNTI = ["1 · angolo dell'area sul fondo, lato lontano", "2 · angolo dell'area sul fondo, lato vicino",
+                    "3 · angolo della lunetta, lato lontano", "4 · angolo della lunetta, lato vicino"];
+let args = {}, punti = [], momenti = [], idx = 0, avviato = false;
+
+function invia(valore) {
+  window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setComponentValue",
+                              value: valore, dataType: "json" }, "*");
+}
+function altezza() {
+  window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setFrameHeight",
+                              height: Math.ceil(document.body.scrollHeight + 8) }, "*");
+}
+function el(tag, attrs, padre) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  padre.appendChild(e); return e;
+}
+function viewbox(svg, img) {
+  // le coordinate dell'SVG sono quelle del fotogramma originale
+  svg.setAttribute("viewBox", `0 0 ${args.larghezza} ${args.altezza}`);
+  svg.setAttribute("preserveAspectRatio", "none");
+}
+function inOriginale(ev, svg) {
+  const r = svg.getBoundingClientRect();
+  return [(ev.clientX - r.left) / r.width * args.larghezza, (ev.clientY - r.top) / r.height * args.altezza];
+}
+
+// ------------------------------------------------------------------ 4 punti
+function disegnaPunti() {
+  const svg = $("svg-punti"); svg.textContent = ""; viewbox(svg);
+  const s = args.larghezza / 400;
+  if (punti.length >= 2) {
+    const ordine = [0, 1, 3, 2].filter(i => i < punti.length).map(i => punti[i]);
+    el("polygon", { points: ordine.map(p => p.join(",")).join(" "), fill: "rgba(255,122,26,.15)",
+                    stroke: "#ff7a1a", "stroke-width": 1.2 * s }, svg);
+  }
+  punti.forEach((p, i) => {
+    el("circle", { cx: p[0], cy: p[1], r: 7 * s, fill: "#ff7a1a", stroke: "#fff", "stroke-width": 1.5 * s }, svg);
+    const t = el("text", { x: p[0], y: p[1] + 3.5 * s, "text-anchor": "middle", "font-size": 10 * s,
+                           "font-weight": 700, fill: "#fff" }, svg);
+    t.textContent = i + 1;
+  });
+  $("istr-punti").innerHTML = punti.length < 4
+    ? `Tocca sul fotogramma: <b>${NOMI_PUNTI[punti.length]}</b>. Serve solo la prima volta in questo palazzetto.`
+    : "Fatto. Se i 4 punti sono giusti, conferma: il campo si calibra e il palazzetto resta memorizzato.";
+  $("stato-punti").innerHTML = NOMI_PUNTI.map((n, i) => `<span class="${i < punti.length ? "fatto" : ""}">${n}</span>`).join("");
+  $("conferma-punti").disabled = punti.length !== 4;
+  $("annulla-punto").disabled = !punti.length;
+}
+$("svg-punti").addEventListener("pointerdown", (ev) => {
+  if (punti.length >= 4) return;
+  punti.push(inOriginale(ev, $("svg-punti")).map(v => Math.round(v * 10) / 10)); disegnaPunti();
+});
+$("annulla-punto").addEventListener("click", () => { punti.pop(); disegnaPunti(); });
+$("ricomincia").addEventListener("click", () => { punti = []; disegnaPunti(); });
+$("conferma-punti").addEventListener("click", () => invia({ punti, t: Date.now() }));
+
+// ------------------------------------------------------------------ attacco e difesa
+const COLORE = { A: "#3987e5", D: "#d95926", "": "rgba(233,237,244,.55)" };
+const RIEMPI = { A: "rgba(57,135,229,.2)", D: "rgba(217,89,38,.2)", "": "rgba(0,0,0,0)" };   // tutto il box si tocca
+function disegnaSquadre() {
+  const m = momenti[idx]; if (!m) return;
+  $("img-squadre").src = m.img;
+  const svg = $("svg-squadre"); svg.textContent = ""; viewbox(svg);
+  const s = args.larghezza / 400;
+  m.box.forEach((b, j) => {
+    const v = m.scelta[j];
+    const g = el("g", { "data-j": j, style: "cursor:pointer" }, svg);
+    el("rect", { x: b[0], y: b[1], width: b[2] - b[0], height: b[3] - b[1], rx: 3 * s,
+                 fill: RIEMPI[v],
+                 stroke: COLORE[v], "stroke-width": (v ? 3 : 1.5) * s,
+                 "stroke-dasharray": v ? "none" : `${4 * s} ${3 * s}` }, g);
+    if (v) {
+      const t = el("text", { x: (b[0] + b[2]) / 2, y: b[1] - 4 * s, "text-anchor": "middle",
+                             "font-size": 11 * s, "font-weight": 700, fill: COLORE[v] }, g);
+      t.textContent = v === "A" ? "ATT" : "DIF";
+    }
+  });
+  const a = m.scelta.filter(v => v === "A").length, d = m.scelta.filter(v => v === "D").length;
+  $("momento").textContent = `Momento ${idx + 1} di ${momenti.length} · ${m.t.toLocaleString("it-IT")} s`;
+  $("conta").textContent = `Attacco ${a} · Difesa ${d}` + (a > 5 || d > 5 ? " · al massimo 5 per squadra" : "");
+  $("conta").style.color = a > 5 || d > 5 ? "#ff9a8a" : "";
+  $("prima").disabled = idx === 0; $("dopo").disabled = idx === momenti.length - 1;
+}
+$("svg-squadre").addEventListener("pointerdown", (ev) => {
+  const g = ev.target.closest("[data-j]"); if (!g) return;
+  const m = momenti[idx], j = Number(g.dataset.j);
+  m.scelta[j] = { A: "D", D: "", "": "A" }[m.scelta[j]]; disegnaSquadre();
+});
+$("prima").addEventListener("click", () => { idx = Math.max(0, idx - 1); disegnaSquadre(); });
+$("dopo").addEventListener("click", () => { idx = Math.min(momenti.length - 1, idx + 1); disegnaSquadre(); });
+$("inverti").addEventListener("click", () => {
+  for (const m of momenti) m.scelta = m.scelta.map(v => ({ A: "D", D: "A", "": "" })[v]); disegnaSquadre();
+});
+$("conferma-squadre").addEventListener("click", () => {
+  const troppi = momenti.findIndex(m => ["A", "D"].some(c => m.scelta.filter(v => v === c).length > 5));
+  if (troppi >= 0) {                     // non si indovina chi togliere: lo decide lo staff
+    idx = troppi; disegnaSquadre();
+    $("conta").textContent += " · togli quelli in più prima di confermare"; $("conta").style.color = "#ff9a8a";
+    return;
+  }
+  const marcature = {};
+  for (const m of momenti) {
+    marcature[m.k] = { A: m.scelta.flatMap((v, j) => v === "A" ? [j] : []),
+                       D: m.scelta.flatMap((v, j) => v === "D" ? [j] : []) };
+  }
+  invia({ marcature, t: Date.now() });
+});
+
+// ------------------------------------------------------------------ Streamlit
+window.addEventListener("message", (ev) => {
+  const d = ev.data || {};
+  if (d.type !== "streamlit:render") return;
+  if (avviato) return;                 // lo stato dei tocchi resta finché la pagina non cambia passo
+  avviato = true; args = d.args || {};
+  if (args.modo === "punti") {
+    $("modo-punti").hidden = false; $("img-punti").src = args.img;
+    $("img-punti").onload = () => { disegnaPunti(); altezza(); };
+    disegnaPunti();
+  } else {
+    $("modo-squadre").hidden = false;
+    momenti = (args.momenti || []).map(m => ({ ...m, scelta: m.proposta.slice() }));
+    $("img-squadre").onload = altezza;
+    disegnaSquadre();
+  }
+  altezza();
+});
+new ResizeObserver(altezza).observe(document.body);
+window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:componentReady", apiVersion: 1 }, "*");
+})();
+</script>
+</body>
+</html>

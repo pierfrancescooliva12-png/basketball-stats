@@ -1,9 +1,12 @@
 name: Aggiornamento dati
 
 on:
-  # Ogni lunedì alle 05:00 UTC (07:00 ora legale italiana, 06:00 ora solare)
+  # Ogni giorno alle 05:00 UTC (07:00 ora legale italiana, 06:00 ora solare): si gioca anche
+  # il sabato, il mercoledì e in altri giorni (anticipi, turni infrasettimanali), così risultati
+  # e calendario (orari spostati) sono aggiornati il mattino dopo e la diretta parte all'ora giusta.
+  # Il report agli abbonati resta settimanale (lunedì).
   schedule:
-    - cron: "0 5 * * 1"
+    - cron: "0 5 * * *"
   # Avvio manuale dall'app/sito GitHub: Actions > Aggiornamento dati > Run workflow
   workflow_dispatch:
     inputs:
@@ -94,7 +97,12 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           MITTENTE: ${{ secrets.MITTENTE }}
           ABBONATI: ${{ secrets.ABBONATI }}
-        run: python -m basket.invio_email
+        run: |
+          # nelle esecuzioni automatiche il report parte solo il lunedì
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ] && [ "$(date -u +%u)" != "1" ]; then
+            echo "Report settimanale: solo il lunedì"; exit 0
+          fi
+          python -m basket.invio_email
 
       - name: Conserva i PDF generati
         uses: actions/upload-artifact@v4

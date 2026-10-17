@@ -300,6 +300,29 @@ G = {
         "palle perse e tiri sbagliati sono riportati a 100 possessi usati.",
         "Separa il volume dall'efficienza: un realizzatore da 18 punti che produce 90 punti "
         "ogni 100 possessi costa alla squadra più di uno da 12 che ne produce 115."),
+    "leverage": Voce(
+        "Leverage",
+        "Quanto un giocatore ha spostato la probabilità di vittoria della sua squadra, azione dopo "
+        "azione: pesa di più il canestro che decide la partita di quello sul +20. Adattamento della "
+        "statistica Leverage della NBA alla cronaca di A2 e B.",
+        "Per ogni azione si confronta la probabilità di vittoria dopo l'azione con quella dopo l'esito "
+        "opposto (tiro segnato contro sbagliato, libero, palla persa contro possesso conservato, rimbalzo "
+        "contro l'esito atteso). Lo swing va a chi fa l'azione per il 70% (tiro assistito: 45% al "
+        "tiratore, 25% all'assistman), il resto ai compagni in campo; alla squadra che subisce va lo "
+        "stesso valore col segno meno (chi recupera o stoppa ne prende metà). La probabilità viene da "
+        "margine, tempo, possesso e forze delle squadre, tarata sulla cronaca 2025/26.",
+        "1,0 = 10 punti percentuali di probabilità di vittoria. Sopra 2 per 40 minuti è un impatto "
+        "alto; negativo vuol dire che il giocatore ha tolto probabilità (errori e palle perse nei "
+        "momenti che contavano). Senza tracciamento ottico non si misurano difficoltà del tiro e "
+        "pressione difensiva."),
+    "probabilita_live": Voce(
+        "Probabilità di vittoria in partita",
+        "La probabilità che una squadra vinca, aggiornata a ogni azione.",
+        "Dal margine, dal tempo che resta, da chi ha la palla e dal margine atteso prima della partita "
+        "(forze e fattore campo): Φ((margine + valore del possesso + atteso × tempo rimasto) / "
+        "√(13² × tempo rimasto + 1,5²)), con i parametri tarati sulle partite 2025/26 (il tempo è la frazione di partita che resta).",
+        "Calibrata: quando dice 70%, le squadre vincono circa 7 volte su 10. Nei finali punto a punto "
+        "cambia molto a ogni azione, sul +20 quasi niente."),
     "quintetti_estremi": Voce(
         "Quintetti migliori e peggiori",
         "I quintetti che rendono di più e di meno, tra quelli che hanno giocato abbastanza "

@@ -329,6 +329,10 @@ def partita_extra(a: App, pid: str | None):
     fig.update_yaxes(title="vantaggio casa")
     plot(fig, 320)
 
+    from . import leverage_ui
+    r0 = row.iloc[0] if not row.empty else {}
+    leverage_ui.partita(a, pid, r0.get("casa", "casa"), r0.get("ospite", "ospite"))
+
     from . import tiri_ui
     tiri_ui.render_partita(a, pid)
 

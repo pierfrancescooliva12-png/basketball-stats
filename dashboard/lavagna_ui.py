@@ -14,6 +14,7 @@ import streamlit.components.v1 as components
 from basket.report_pdf import build_giochi, slug
 
 from .lavagna.catalogo import SCHEMI
+from . import video_ui
 from .stato import App
 from .ui import note_html, section
 
@@ -57,8 +58,10 @@ def giochi(a: App, riferimento) -> list[dict]:
 
 def render(a: App, riferimento: int, contesto: str, titolo: str, nome_squadra: str):
     """Lavagna con i giochi della squadra riferimento ("nostro" o "avversaria")."""
+    video_ui.render(a, riferimento, contesto, nome_squadra)
     valore = _lavagna(giochi=giochi(a, riferimento), contesto=contesto, titolo=titolo,
-                      schemi=SCHEMI, tema="dark", key=f"lavagna_{contesto}_{riferimento}",
+                      schemi=SCHEMI, tema="dark", apri=st.session_state.get(f"lavagna_apri_{contesto}_{riferimento}"),
+                      key=f"lavagna_{contesto}_{riferimento}",
                       default=None)
     chiave = f"lavagna_ultima_{contesto}_{riferimento}"
     if isinstance(valore, dict) and valore.get("t") != st.session_state.get(chiave):
