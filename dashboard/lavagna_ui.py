@@ -26,7 +26,8 @@ def pagina_componente() -> str:
     corpo = (BASE / "lavagna.html").read_text()
     return ('<!doctype html><html lang="it" class="in-app"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
-            '<script>window.LAVAGNA_MODALITA = "streamlit";</script></head><body>'
+            '<script>window.LAVAGNA_MODALITA = "streamlit"; window.LAVAGNA_THREE = "three.min.js";'
+            '</script></head><body>'
             + corpo + "</body></html>\n")
 
 

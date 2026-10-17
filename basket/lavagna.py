@@ -224,6 +224,33 @@ def disegno_fase(fase: dict, difesa: bool, larghezza: float) -> Drawing:
 
 # ------------------------------------------------------------------ flowable per i PDF
 
+DIFESE = {"uomo": "a uomo", "2-3": "zona 2-3", "3-2": "zona 3-2", "1-3-1": "zona 1-3-1",
+          "1-2-2": "zona 1-2-2", "box1": "box-and-one", "manuale": "disegnata a mano"}
+# difesa a uomo sul pick and roll: (nome, lettura per l'attacco), come nella lavagna
+COPERTURE = {
+    "sopra": ("passa sopra", "rollare forte o aprirsi (pop): il lungo deve scegliere"),
+    "sotto": ("passa sotto", "tiro dal palleggio dietro il blocco o ri-blocco subito"),
+    "cambio": ("cambio", "cercare il mismatch: post del lungo sul piccolo, isolamento sul lungo, slip"),
+    "show": ("show alto", "short roll o slip del bloccante, 4 contro 3 con gli altri spaziati"),
+    "drop": ("contenimento basso", "tiro dal palleggio dalla media o da 3, floater, pop del lungo"),
+    "ice": ("fondo (ice)", "blocco più centrale, short corner del lungo, taglio dal lato debole"),
+    "raddoppio": ("raddoppio", "palla via presto: short roll e 4 contro 3, angolo debole libero"),
+}
+
+
+def descrizione_difesa(g: dict) -> str:
+    """Riga del PDF con la difesa scelta sulla lavagna (vuota se non c'è)."""
+    tipo = g.get("difesaTipo") or ("manuale" if g.get("difesa") else None)
+    if not tipo or tipo == "nessuna":
+        return ""
+    testo = "Difesa " + DIFESE.get(tipo, tipo)
+    if tipo == "box1":
+        testo += f" (uomo su {g.get('difesaSu') or 1})"
+    if tipo == "uomo":
+        nome, lettura = COPERTURE.get(g.get("copertura") or "sopra", COPERTURE["sopra"])
+        testo += f"; sul pick and roll {nome}. Per l'attacco: {lettura}"
+    return testo + "."
+
 def flowables(giochi: list[dict], S: dict, W: float, titolo: str, colonne: int = 2) -> list:
     """Sezione del PDF con i giochi: per ognuno nome e tutte le fasi affiancate con le note.
     S: stili del report (h2, body, small)."""
@@ -247,8 +274,11 @@ def flowables(giochi: list[dict], S: dict, W: float, titolo: str, colonne: int =
                                  ("RIGHTPADDING", (0, 0), (-1, -1), 3 * mm),
                                  ("BOTTOMPADDING", (0, 0), (-1, -1), 4)]))
         nome = _esc(g.get("nome") or "Gioco senza nome")
-        el.append(KeepTogether([Paragraph(f"<b>{nome}</b> · {len(celle)} fasi", S["body"]),
-                                Spacer(1, 2), tab, Spacer(1, 6)]))
+        dif = descrizione_difesa(g)
+        testa = [Paragraph(f"<b>{nome}</b> · {len(celle)} fasi", S["body"])]
+        if dif:
+            testa.append(Paragraph(_esc(dif), S["small"]))
+        el.append(KeepTogether(testa + [Spacer(1, 2), tab, Spacer(1, 6)]))
     return el
 
 
