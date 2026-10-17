@@ -150,6 +150,15 @@ button, input, select, textarea { font: inherit; color: inherit; }
         <option value="box1">Box-and-one</option>
         <option value="manuale">Difesa manuale</option>
       </select>
+      <select id="copertura" class="scelta" aria-label="Difesa sul pick and roll" hidden>
+        <option value="sopra">P&amp;R: passa sopra</option>
+        <option value="sotto">P&amp;R: passa sotto</option>
+        <option value="cambio">P&amp;R: cambio</option>
+        <option value="show">P&amp;R: show alto</option>
+        <option value="drop">P&amp;R: contenimento basso</option>
+        <option value="ice">P&amp;R: fondo (ice)</option>
+        <option value="raddoppio">P&amp;R: raddoppio</option>
+      </select>
       <select id="difesa-su" class="scelta" aria-label="Giocatore marcato a uomo" hidden>
         <option value="1">Uomo su 1</option><option value="2">Uomo su 2</option>
         <option value="3">Uomo su 3</option><option value="4">Uomo su 4</option>
@@ -320,10 +329,93 @@ function pallaDi(stato) {
   const p = stato.giocatori.find(g => g.id === stato.palla) || stato.giocatori.find(g => g.tipo === "o");
   return p ? [p.x, p.y] : [75, 100];
 }
-function difesaAuto(giocatori, b, tipo, su = 1) {
-  const att = giocatori.filter(p => p.tipo === "o").sort((p, q) => p.n - q.n);
+// Pick and roll contro la difesa a uomo: come reagiscono il difensore del portatore e quello
+// del bloccante. Per ognuna, la lettura che conviene all'attacco.
+const COPERTURE = {
+  sopra: ["Passa sopra", "Il difensore del portatore passa sopra il blocco, il lungo resta al livello.",
+          "Rollare forte verso il ferro o aprirsi (pop): il lungo deve scegliere tra portatore e bloccante."],
+  sotto: ["Passa sotto", "Il difensore del portatore passa sotto il blocco, tra bloccante e canestro.",
+          "Tiro dal palleggio dietro il blocco, oppure ri-blocco subito (re-screen) per prendere il vantaggio."],
+  cambio: ["Cambio", "I due difensori si scambiano gli uomini: nessun vantaggio immediato, ma nasce un mismatch.",
+           "Cercare il mismatch: il lungo sigilla il piccolo in post, il piccolo attacca il lungo in isolamento; slip del blocco prima del contatto."],
+  show: ["Show alto", "Il lungo esce alto sul portatore per fermarlo, poi recupera sul bloccante.",
+         "Short roll o slip del bloccante: passaggio rapido al lungo nel 4 contro 3, gli altri spaziati."],
+  drop: ["Contenimento basso", "Il lungo scende in area all'altezza della lunetta, il difensore insegue da dietro.",
+         "Tiro dal palleggio dalla media o da 3, floater; se il lungo è un tiratore, pop."],
+  ice: ["Fondo (ice)", "Si nega il blocco: il difensore si mette dal lato del blocco e manda il portatore verso il fondo, dove aspetta il lungo.",
+        "Rifiutare il blocco non paga: spostare il blocco più centrale (step-up), short corner per il lungo, taglio dal lato debole."],
+  raddoppio: ["Raddoppio", "Entrambi i difensori aggrediscono il portatore; il lato debole ruota sul bloccante.",
+              "Liberarsi presto della palla: short roll del bloccante e gioco del 4 contro 3; l'angolo del lato debole resta libero dopo la rotazione."],
+};
+const liscio = (x) => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
+function bloccoSullaPalla(f) {
+  // blocco di un compagno sul portatore: vicino al punto di partenza o al percorso del palleggio
+  const port = f.giocatori.find(p => p.id === f.palla && p.tipo === "o"); if (!port) return null;
+  const traccia = [[port.x, port.y]];
+  for (const l of f.linee) if (l.da === port.id && l.tipo !== "passaggio") traccia.push(...l.punti);
+  for (const l of f.linee) {
+    if (l.tipo !== "blocco" || !l.da || l.da === port.id || !l.da.startsWith("o")) continue;
+    const P = puntoFinale(l);
+    if (traccia.some(q => Math.hypot(q[0] - P[0], q[1] - P[1]) < 16)) return { S: l.da, B: port.id, P };
+  }
+  return null;
+}
+function difesaUomo(att, b, ctx) {
+  const g = ctx.g || gioco, tipo = g.copertura || "sopra";
+  const A = Object.fromEntries(att.map(a => [a.id, a]));
+  const guardia = {};                                  // difensore → attaccante
+  for (const a of att) guardia[a.n] = a.id;
+  const chi = (aid) => Object.keys(guardia).find(n => guardia[n] === aid);
+  const blocchi = ctx.i == null ? [] : g.fasi.map(bloccoSullaPalla);
+  const scambia = (bl) => { const x = chi(bl.B), y = chi(bl.S); if (x && y) [guardia[x], guardia[y]] = [guardia[y], guardia[x]]; };
+  if (tipo === "cambio") for (let j = 0; j < ctx.i; j++) if (blocchi[j]) scambia(blocchi[j]);
   const pos = {};
-  if (tipo === "uomo") for (const a of att) pos[a.n] = marca([a.x, a.y], b);
+  for (const [n, aid] of Object.entries(guardia)) pos[n] = marca([A[aid].x, A[aid].y], b);
+  // blocco in corso (fase i) o appena avvenuto (inizio della fase dopo, il recupero)
+  const k = ctx.k || 0, ora = blocchi[ctx.i], prima = ctx.i > 0 ? blocchi[ctx.i - 1] : null;
+  let bl = null, w = 0;
+  if (ora) { bl = ora; w = liscio((k - 0.3) / 0.45); }
+  if (prima && tipo !== "cambio") { const w2 = 1 - liscio(k / 0.6); if (w2 > w) { bl = prima; w = w2; } }
+  if (!bl || w <= 0 || !A[bl.B] || !A[bl.S]) return pos;
+  const Bp = [A[bl.B].x, A[bl.B].y], Sp = [A[bl.S].x, A[bl.S].y], H = CANESTRO;
+  const dB = chi(bl.B), dS = chi(bl.S), t = {};
+  const unit = (v) => { const n = Math.hypot(v[0], v[1]) || 1; return [v[0] / n, v[1] / n]; };
+  if (tipo === "cambio") {                             // a metà blocco i due si scambiano
+    t[dB] = marca(Sp, b); t[dS] = marca(Bp, b);
+  } else if (tipo === "sopra") {
+    t[dB] = verso(Bp, Sp, 4.5); t[dS] = misto(Sp, Bp, 0.45);
+  } else if (tipo === "sotto") {
+    t[dB] = misto(misto(Sp, H, 0.22), Bp, 0.3); t[dS] = misto(Sp, H, 0.1);
+  } else if (tipo === "show") {
+    const fuori = unit([Bp[0] - Sp[0], Bp[1] - Sp[1]]), su = unit([Bp[0] - H[0], Bp[1] - H[1]]);
+    t[dB] = verso(Bp, Sp, 4.5);
+    t[dS] = [Bp[0] + fuori[0] * 4 + su[0] * 2.5, Bp[1] + fuori[1] * 4 + su[1] * 2.5];
+  } else if (tipo === "drop") {
+    const q = misto(Bp, H, 0.5);
+    t[dB] = verso(Bp, Sp, 4.5); t[dS] = [q[0], Math.min(q[1], 50)];
+  } else if (tipo === "ice") {
+    const lato = Math.sign(Bp[0] - bl.P[0]) || (Bp[0] < 75 ? -1 : 1);   // lontano dal blocco
+    t[dB] = [Bp[0] - lato * 4.5, Bp[1] + 1]; t[dS] = [Bp[0] + lato * 3, Bp[1] - 9];
+  } else if (tipo === "raddoppio") {
+    const a = unit([H[0] - Bp[0], H[1] - Bp[1]]), perp = [-a[1], a[0]];
+    const ls = Math.sign((Sp[0] - Bp[0]) * perp[0] + (Sp[1] - Bp[1]) * perp[1]) || 1;
+    t[dB] = [Bp[0] + a[0] * 4 - perp[0] * 3.5 * ls, Bp[1] + a[1] * 4 - perp[1] * 3.5 * ls];
+    t[dS] = [Bp[0] + a[0] * 4 + perp[0] * 3.5 * ls, Bp[1] + a[1] * 4 + perp[1] * 3.5 * ls];
+    // rotazione: il più vicino al bloccante tra gli altri lo prende
+    let aiuto = null, d0 = Infinity;
+    for (const n of Object.keys(pos)) {
+      if (n === dB || n === dS) continue;
+      const d = Math.hypot(pos[n][0] - Sp[0], pos[n][1] - Sp[1]); if (d < d0) { d0 = d; aiuto = n; }
+    }
+    if (aiuto) t[aiuto] = verso(Sp, H, 4);
+  }
+  for (const [n, q] of Object.entries(t)) if (pos[n]) pos[n] = misto(pos[n], q, w);
+  return pos;
+}
+function difesaAuto(giocatori, b, tipo, su = 1, ctx = {}) {
+  const att = giocatori.filter(p => p.tipo === "o").sort((p, q) => p.n - q.n);
+  let pos = {};
+  if (tipo === "uomo") pos = difesaUomo(att, b, ctx);
   else {
     const base = ZONE[tipo] || ZONE["2-3"];
     const sx = (b[0] - 75) * 0.3, sy = (b[1] - 62) * 0.16;
@@ -357,18 +449,18 @@ function difesaAuto(giocatori, b, tipo, su = 1) {
     return { id: "x" + n, tipo: "x", n: Number(n), x, y };
   });
 }
-function difensori(stato, b = pallaDi(stato)) {
+function difensori(stato, b = pallaDi(stato), i = faseIdx, k = 0) {
   const t = tipoDifesa();
   if (t === "nessuna") return [];
   if (t === "manuale") return stato.giocatori.filter(p => p.tipo === "x");
-  return difesaAuto(stato.giocatori, b, t, gioco.difesaSu || 1);
+  return difesaAuto(stato.giocatori, b, t, gioco.difesaSu || 1, { g: gioco, i, k });
 }
 function materializza(g, t) {
   // scrive nelle fasi le X calcolate (per la difesa manuale e per i PDF)
-  for (const f of g.fasi) {
+  g.fasi.forEach((f, i) => {
     const att = f.giocatori.filter(p => p.tipo === "o");
-    f.giocatori = att.concat(t === "nessuna" ? [] : difesaAuto(att, pallaDi(f), t, g.difesaSu || 1));
-  }
+    f.giocatori = att.concat(t === "nessuna" ? [] : difesaAuto(att, pallaDi(f), t, g.difesaSu || 1, { g, i, k: 0 }));
+  });
 }
 function rendiManuale(da) {
   materializza(gioco, da);
@@ -636,6 +728,8 @@ function aggiornaDifesa() {
   $("tipo-difesa").value = t;
   $("tipo-difesa").classList.toggle("attiva", t !== "nessuna");
   $("difesa-su").hidden = t !== "box1";
+  $("copertura").hidden = t !== "uomo";
+  $("copertura").value = gioco.copertura || "sopra";
   $("difesa-su").value = String(gioco.difesaSu || 1);
 }
 $("tipo-difesa").addEventListener("change", (e) => {
@@ -647,7 +741,17 @@ $("tipo-difesa").addEventListener("change", (e) => {
   }
   gioco.difesaTipo = t; gioco.difesa = t !== "nessuna";
   aggiornaDifesa(); disegna(); salvaBozzaLocale();
-  suggerisci(SPIEGA_DIFESA[t]);
+  suggerisci(t === "uomo" ? SPIEGA_DIFESA.uomo + " Sui blocchi: " + spiegaCopertura() : SPIEGA_DIFESA[t]);
+  if (vista3d) vista3d.ricostruisci();
+});
+function spiegaCopertura() {
+  const [nome, cosa, attacco] = COPERTURE[gioco.copertura || "sopra"];
+  const c = gioco.fasi.some(bloccoSullaPalla) ? "" : " (Disegna un blocco sul portatore per vederla.)";
+  return `${nome}: ${cosa} Per l'attacco: ${attacco}${c}`;
+}
+$("copertura").addEventListener("change", (e) => {
+  ricorda(); gioco.copertura = e.target.value; disegna(); salvaBozzaLocale();
+  suggerisci(spiegaCopertura());
   if (vista3d) vista3d.ricostruisci();
 });
 $("difesa-su").addEventListener("change", (e) => {
@@ -735,7 +839,7 @@ function riproduci() {
     if (t0 === null) t0 = ts;
     const k = Math.min(1, (ts - t0) / DUR);
     const { stato, palla, volo } = statoAl(percorsi, i, k);
-    dif = inseguiDifesa(dif, difensori(stato, palla), tPrima === null ? 0 : ts - tPrima);
+    dif = inseguiDifesa(dif, difensori(stato, palla, i, k), tPrima === null ? 0 : ts - tPrima);
     tPrima = ts;
     faseIdx = i; aggiornaFasi();
     disegna(stato, k < 1, dif);
@@ -926,7 +1030,7 @@ function creaVista3D(T) {
     const f = gioco.fasi[fine ? gioco.fasi.length - 1 : i];
     const { stato, palla: b, volo } = fine ? { stato: clona(f), palla: pallaDi(f), volo: null }
                                            : (gioco.fasi.length < 2 ? { stato: clona(f), palla: pallaDi(f), volo: null } : statoAl(percorsi, i, k));
-    const d = difensori(stato, b);
+    const d = difensori(stato, b, fine ? gioco.fasi.length - 1 : i, fine ? 0 : k);
     dif = inseguiDifesa(dif, d, dt * vel);
     const visti = new Set();
     for (const p of stato.giocatori.filter(q => q.tipo === "o").concat(dif)) {
@@ -957,8 +1061,11 @@ function creaVista3D(T) {
     }
     lineeFase(f);
     $("fase3d").textContent = `FASE ${fine ? gioco.fasi.length : i + 1} / ${gioco.fasi.length}` +
-      (tipoDifesa() !== "nessuna" ? ` · ${$("tipo-difesa").selectedOptions[0].textContent.toUpperCase()}` : "");
-    $("nota3d").textContent = f.nota || "";
+      (tipoDifesa() !== "nessuna" ? ` · ${$("tipo-difesa").selectedOptions[0].textContent.toUpperCase()}` : "") +
+      (tipoDifesa() === "uomo" && gioco.fasi.some(bloccoSullaPalla) ? ` · P&R: ${COPERTURE[gioco.copertura || "sopra"][0].toUpperCase()}` : "");
+    const pr = tipoDifesa() === "uomo" && !fine && bloccoSullaPalla(gioco.fasi[i]) && k > 0.3;
+    const [cn, , ca] = COPERTURE[gioco.copertura || "sopra"];
+    $("nota3d").textContent = pr ? `${cn} sul pick and roll · per l'attacco: ${ca[0].toLowerCase() + ca.slice(1)}` : (f.nota || "");
     return { b, stato };
   }
 
@@ -1106,11 +1213,12 @@ function aggiornaSchemi() {
 $("schemi").addEventListener("change", (e) => {
   const x = schemi.find(v => v.id === e.target.value); if (!x) return;
   ricorda();
-  const dt = tipoDifesa(), su = gioco.difesaSu;
+  const dt = tipoDifesa(), su = gioco.difesaSu, cop = gioco.copertura;
   gioco = clona(x); delete gioco.categoria; delete gioco.descrizione;
   gioco.id = "g" + Date.now(); gioco.tipo = contesto || "nostro";
   if (dt !== "manuale" && !x.difesa) {   // la difesa scelta resta, per provarla sugli schemi
     gioco.difesaTipo = dt; gioco.difesa = dt !== "nessuna"; if (su) gioco.difesaSu = su;
+    if (cop) gioco.copertura = cop;
   }
   faseIdx = 0; tutto(); e.target.value = "";
   avvisa(`Schema caricato: ${x.nome}. ${x.descrizione || ""} Premi ▶ Riproduci, poi modificalo e salvalo con il tuo nome.`);

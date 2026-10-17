@@ -83,3 +83,18 @@ def test_difese_e_vista_3d():
         assert f'data-camera="{camera}"' in html
     assert (base / "componente" / "three.min.js").stat().st_size > 100_000
     assert "cdn" not in html.lower()
+
+
+def test_difesa_sul_pick_and_roll():
+    """Le coperture del P&R sono le stesse nella lavagna e nei PDF, con la lettura per l'attacco."""
+    import re
+    base = Path(__file__).resolve().parent.parent / "dashboard" / "lavagna"
+    html = (base / "lavagna.html").read_text()
+    js = re.search(r"const COPERTURE = \{(.*?)\n\};", html, re.S).group(1)
+    assert set(re.findall(r"^  (\w+): \[", js, re.M)) == set(L.COPERTURE)
+    g = gioco_esempio()
+    g.update(difesaTipo="uomo", copertura="show")
+    testo = L.descrizione_difesa(g)
+    assert "show alto" in testo and "Per l'attacco" in testo
+    assert L.descrizione_difesa({"difesa": False}) == ""
+    assert L.descrizione_difesa({"difesa": True}) == "Difesa disegnata a mano."
