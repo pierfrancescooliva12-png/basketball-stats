@@ -86,6 +86,28 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .scelta-schemi:focus-visible { outline: 3px solid var(--accento); outline-offset: 2px; }
 .avviso { font-size: .85rem; color: var(--tenue); }
 .conferma { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.scelta { height: 48px; min-width: 0; padding: 0 10px; font-weight: 600; width: 100%;
+  border: 1px solid var(--bordo); border-radius: 10px; background: var(--pannello); }
+@media (max-width: 899px) { .scelta { width: auto; } }
+.scelta.attiva { border: 2px solid var(--difesa); }
+/* vista 3D: sola riproduzione, nella stessa tavola del campo */
+.vista3d { position: relative; }
+.vista3d .scena { width: 100%; aspect-ratio: 4 / 3; max-height: 72vh; border-radius: 8px;
+  overflow: hidden; background: #0a0e15; touch-action: none; cursor: grab; }
+.vista3d .scena canvas { display: block; width: 100% !important; height: 100% !important; }
+.comandi3d { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.comandi3d .segmenti button { height: 40px; padding: 0 10px; font-size: .9rem; }
+.velocita { display: flex; align-items: center; gap: 6px; font-size: .9rem; color: var(--tenue); }
+.velocita input { width: 110px; accent-color: var(--accento); }
+.fase3d { position: absolute; left: 20px; top: 20px; padding: 4px 10px; border-radius: 6px;
+  background: rgba(10, 14, 21, .72); color: #e9edf4; font-family: var(--display); font-weight: 700;
+  letter-spacing: .06em; font-size: .95rem; pointer-events: none; }
+.nota3d { position: absolute; left: 20px; right: 20px; bottom: 74px; padding: 6px 10px;
+  border-radius: 6px; background: rgba(10, 14, 21, .72); color: #e9edf4; font-size: .88rem;
+  pointer-events: none; }
+.nota3d:empty { display: none; }
+.app.in-3d .strumenti { opacity: .4; pointer-events: none; }
+.app.in-3d #fasi, .app.in-3d #nota { display: none; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
@@ -117,9 +139,22 @@ button, input, select, textarea { font: inherit; color: inherit; }
         <svg viewBox="0 0 34 22" aria-hidden="true"><path d="M8 18h18M10 15l9-11 7 6-8 8H12z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>Cancella</button>
     </div>
     <div class="gruppo">
-      <div class="etichetta">Giocatori</div>
-      <button class="btn" id="difesa" aria-pressed="false">
-        <svg viewBox="0 0 34 22" aria-hidden="true"><path d="M11 5l12 12M23 5L11 17" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Difesa</button>
+      <div class="etichetta">Difesa</div>
+      <select id="tipo-difesa" class="scelta" aria-label="Difesa">
+        <option value="nessuna">Difesa: nessuna</option>
+        <option value="uomo">Difesa a uomo</option>
+        <option value="2-3">Zona 2-3</option>
+        <option value="3-2">Zona 3-2</option>
+        <option value="1-3-1">Zona 1-3-1</option>
+        <option value="1-2-2">Zona 1-2-2</option>
+        <option value="box1">Box-and-one</option>
+        <option value="manuale">Difesa manuale</option>
+      </select>
+      <select id="difesa-su" class="scelta" aria-label="Giocatore marcato a uomo" hidden>
+        <option value="1">Uomo su 1</option><option value="2">Uomo su 2</option>
+        <option value="3">Uomo su 3</option><option value="4">Uomo su 4</option>
+        <option value="5">Uomo su 5</option>
+      </select>
       <button class="btn" id="annulla">
         <svg viewBox="0 0 34 22" aria-hidden="true"><path d="M10 7h11a6 6 0 010 12H12" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M12 2L5 7l7 5z" fill="currentColor"/></svg>Annulla</button>
     </div>
@@ -128,6 +163,21 @@ button, input, select, textarea { font: inherit; color: inherit; }
   <main class="centro">
     <div class="tavola">
       <svg id="campo" viewBox="-4 -4 158 148" role="img" aria-label="Metà campo con i giocatori e le linee del gioco"></svg>
+      <div class="vista3d" id="vista3d" hidden>
+        <div class="scena" id="scena" role="img" aria-label="Riproduzione 3D del gioco"></div>
+        <div class="fase3d" id="fase3d"></div>
+        <div class="nota3d" id="nota3d"></div>
+        <div class="comandi3d">
+          <button class="btn primario" id="play3d">❚❚ Pausa</button>
+          <div class="segmenti" role="group" aria-label="Telecamera">
+            <button data-camera="alto" aria-pressed="true">Dall'alto</button>
+            <button data-camera="tribuna" aria-pressed="false">Tribuna</button>
+            <button data-camera="canestro" aria-pressed="false">Dietro il canestro</button>
+            <button data-camera="portatore" aria-pressed="false">Occhi del portatore</button>
+          </div>
+          <label class="velocita">Velocità <input type="range" id="velocita" min="0.4" max="2" step="0.1" value="1"> <span id="velocita-v">1×</span></label>
+        </div>
+      </div>
       <p class="suggerimento" id="suggerimento"></p>
     </div>
 
@@ -135,6 +185,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
     <div class="fasi">
       <button class="btn primario" id="nuova-fase">+ Fase successiva</button>
       <button class="btn" id="riproduci">▶ Riproduci</button>
+      <button class="btn" id="apri3d">Vista 3D</button>
       <button class="btn pericolo" id="elimina-fase">Elimina fase</button>
     </div>
     <textarea class="nota" id="nota" aria-label="Note della fase" placeholder="Note della fase: letture, tempi, chiamata…"></textarea>
@@ -226,6 +277,111 @@ function prossimaFase(f) {
   return n;
 }
 
+// ------------------------------------------------------------------ difesa
+// La difesa è facoltativa. "manuale" usa le X salvate nelle fasi (trascinabili); gli altri tipi
+// le calcolano a ogni fase, e a ogni fotogramma della riproduzione, da palla e attaccanti.
+const CANESTRO = [75, 15.75];
+const ZONE = {                       // posizioni base x1…x5 (null = marcatura a uomo)
+  "2-3": [[56, 62], [94, 62], [30, 32], [120, 32], [75, 24]],
+  "3-2": [[75, 76], [38, 58], [112, 58], [56, 28], [94, 28]],
+  "1-3-1": [[75, 82], [34, 56], [116, 56], [75, 46], [75, 22]],
+  "1-2-2": [[75, 86], [48, 66], [102, 66], [52, 30], [98, 30]],
+  "box1": [null, [56, 56], [94, 56], [56, 26], [94, 26]],
+};
+const SPIEGA_DIFESA = {
+  nessuna: "Solo attacco. Scegli una difesa per vedere come reagisce al gioco.",
+  uomo: "A uomo: pressione sul portatore, anticipo a un passaggio, aiuto in area dal lato debole.",
+  "2-3": "Zona 2-3: due guardie alte, tre sotto. Si sposta con la palla, chi è più vicino esce sul portatore.",
+  "3-2": "Zona 3-2: tre davanti a chiudere il tiro da fuori, due sotto canestro.",
+  "1-3-1": "Zona 1-3-1: uno in punta, tre in linea sul gomito, uno sul fondo a coprire gli angoli.",
+  "1-2-2": "Zona 1-2-2: punta alta e due ali avanzate, due lunghi a protezione dell'area.",
+  box1: "Box-and-one: quattro a zona in quadrato, uno a uomo sul giocatore scelto.",
+  manuale: "Difesa manuale: trascina le X dove vuoi, fase per fase.",
+};
+const tipoDifesa = (g = gioco) => g.difesaTipo || (g.difesa ? "manuale" : "nessuna");
+const automatica = () => !["nessuna", "manuale"].includes(tipoDifesa());
+const verso = (a, b, d) => {          // punto a distanza d da a, in direzione di b
+  const dx = b[0] - a[0], dy = b[1] - a[1], n = Math.hypot(dx, dy) || 1;
+  return [a[0] + dx / n * Math.min(d, n), a[1] + dy / n * Math.min(d, n)];
+};
+const misto = (a, b, w) => [a[0] + (b[0] - a[0]) * w, a[1] + (b[1] - a[1]) * w];
+const entro = (q) => [Math.max(2, Math.min(148, q[0])), Math.max(3, Math.min(138, q[1]))];
+function marca(a, b) {
+  // a uomo: sul portatore tra uomo e canestro; lontano dalla palla scende verso l'area
+  // e verso la linea della palla (aiuto). Continuo, così l'animazione non salta.
+  const dB = Math.hypot(a[0] - b[0], a[1] - b[1]);
+  const f = Math.max(0, Math.min(1, (dB - 42) / 45));     // 0 = un passaggio, 1 = lato debole
+  const t = 0.10 + 0.30 * f, s = 0.06 + 0.20 * f;
+  const lontano = [a[0] + (CANESTRO[0] - a[0]) * t + (b[0] - a[0]) * s,
+                   a[1] + (CANESTRO[1] - a[1]) * t + (b[1] - a[1]) * s];
+  return misto(lontano, verso(a, CANESTRO, 5.5), Math.max(0, Math.min(1, 1 - dB / 10)));
+}
+function pallaDi(stato) {
+  const p = stato.giocatori.find(g => g.id === stato.palla) || stato.giocatori.find(g => g.tipo === "o");
+  return p ? [p.x, p.y] : [75, 100];
+}
+function difesaAuto(giocatori, b, tipo, su = 1) {
+  const att = giocatori.filter(p => p.tipo === "o").sort((p, q) => p.n - q.n);
+  const pos = {};
+  if (tipo === "uomo") for (const a of att) pos[a.n] = marca([a.x, a.y], b);
+  else {
+    const base = ZONE[tipo] || ZONE["2-3"];
+    const sx = (b[0] - 75) * 0.3, sy = (b[1] - 62) * 0.16;
+    const zona = [];
+    base.forEach((q, i) => {
+      const n = i + 1;
+      if (!q) {                                   // box-and-one: x1 sul giocatore scelto
+        const a = att.find(p => p.n === Number(su)) || att[0];
+        if (a) pos[n] = marca([a.x, a.y], b);
+        return;
+      }
+      let z = [q[0] + sx, q[1] + sy * (q[1] > 45 ? 1 : 0.45)];
+      // chi ha un attaccante nella sua area gli si avvicina (senza lasciare la zona)
+      let best = null, d0 = 24;
+      for (const a of att) {
+        if (tipo === "box1" && a.n === Number(su)) continue;
+        const d = Math.hypot(a.x - z[0], a.y - z[1]);
+        if (d < d0) { d0 = d; best = a; }
+      }
+      if (best) z = misto(z, verso([best.x, best.y], CANESTRO, 6), 0.5 * (1 - d0 / 24));
+      zona.push(n); pos[n] = z;
+    });
+    // il più vicino alla palla esce sul portatore
+    let chi = null, d0 = Infinity;
+    for (const n of zona) { const d = Math.hypot(pos[n][0] - b[0], pos[n][1] - b[1]); if (d < d0) { d0 = d; chi = n; } }
+    if (chi && !(tipo === "box1" && att.some(a => a.n === Number(su) && Math.hypot(a.x - b[0], a.y - b[1]) < 3)))
+      pos[chi] = misto(pos[chi], verso(b, CANESTRO, 5.5), Math.max(0.5, Math.min(0.95, 1.3 - d0 / 60)));
+  }
+  return Object.entries(pos).map(([n, q]) => {
+    const [x, y] = entro(q);
+    return { id: "x" + n, tipo: "x", n: Number(n), x, y };
+  });
+}
+function difensori(stato, b = pallaDi(stato)) {
+  const t = tipoDifesa();
+  if (t === "nessuna") return [];
+  if (t === "manuale") return stato.giocatori.filter(p => p.tipo === "x");
+  return difesaAuto(stato.giocatori, b, t, gioco.difesaSu || 1);
+}
+function materializza(g, t) {
+  // scrive nelle fasi le X calcolate (per la difesa manuale e per i PDF)
+  for (const f of g.fasi) {
+    const att = f.giocatori.filter(p => p.tipo === "o");
+    f.giocatori = att.concat(t === "nessuna" ? [] : difesaAuto(att, pallaDi(f), t, g.difesaSu || 1));
+  }
+}
+function rendiManuale(da) {
+  materializza(gioco, da);
+  gioco.difesaTipo = "manuale"; gioco.difesa = true;
+  $("tipo-difesa").value = "manuale"; aggiornaDifesa();
+}
+function perSalvare() {
+  const g = clona(gioco), t = tipoDifesa(g);
+  g.difesa = t !== "nessuna";
+  if (t !== "manuale") materializza(g, t);
+  return g;
+}
+
 // ------------------------------------------------------------------ disegno
 function el(tag, attrs = {}, padre = svg) {
   const e = document.createElementNS(NS, tag);
@@ -260,14 +416,28 @@ function curva(punti) {
   return d;
 }
 function campiona(punti, passo) {
-  // punti lungo la curva a distanza costante (per palleggio e animazione)
-  const tmp = document.createElementNS(NS, "path");
-  tmp.setAttribute("d", curva(punti));
-  svg.appendChild(tmp);
-  const L = tmp.getTotalLength(), out = [];
-  for (let s = 0; s <= L; s += passo) { const q = tmp.getPointAtLength(s); out.push([q.x, q.y]); }
-  const q = tmp.getPointAtLength(L); out.push([q.x, q.y]);
-  svg.removeChild(tmp);
+  // punti lungo la stessa curva di curva() a distanza costante (palleggio, animazione, 3D);
+  // calcolato a mano, così funziona anche con il campo 2D nascosto
+  if (punti.length < 2) return { punti: punti.slice(), lunghezza: 0 };
+  const fitto = [punti[0]];
+  for (let i = 0; i < punti.length - 1; i++) {
+    const p0 = punti[i - 1] || punti[i], p1 = punti[i], p2 = punti[i + 1], p3 = punti[i + 2] || p2;
+    const c1 = punti.length < 3 ? p1 : [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2 = punti.length < 3 ? p2 : [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    for (let k = 1; k <= 24; k++) {
+      const t = k / 24, u = 1 - t, a = u * u * u, b = 3 * u * u * t, c = 3 * u * t * t, d = t * t * t;
+      fitto.push([a * p1[0] + b * c1[0] + c * c2[0] + d * p2[0], a * p1[1] + b * c1[1] + c * c2[1] + d * p2[1]]);
+    }
+  }
+  const out = [fitto[0]]; let L = 0, resto = 0;
+  for (let i = 1; i < fitto.length; i++) {
+    const a = fitto[i - 1], b = fitto[i], d = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    L += d;
+    let s0 = passo - resto;
+    while (s0 <= d) { const t = s0 / (d || 1); out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); s0 += passo; }
+    resto = d - (s0 - passo);
+  }
+  out.push(fitto[fitto.length - 1]);
   return { punti: out, lunghezza: L };
 }
 function accorcia(punti, quanto) {
@@ -340,14 +510,14 @@ function disegnaGiocatore(p, g, palla) {
     t.textContent = p.n;
   }
 }
-function disegna(stato = fase(), linee = true) {
+function disegna(stato = fase(), linee = true, dif = null) {
   svg.textContent = "";
   const c = el("g"); campo(c);
   const gl = el("g");
   if (linee) for (const l of stato.linee) disegnaLinea(l, gl);
   const gg = el("g");
-  for (const p of stato.giocatori) if (p.tipo === "x" ? gioco.difesa : true)
-    disegnaGiocatore(p, gg, p.id === stato.palla);
+  for (const p of dif || difensori(stato)) disegnaGiocatore(p, gg, false);
+  for (const p of stato.giocatori) if (p.tipo === "o") disegnaGiocatore(p, gg, p.id === stato.palla);
   if (bozza) bozza.disegna();
 }
 
@@ -362,7 +532,7 @@ function vicino(x, y, escludi, ancheArrivi = false) {
   // così un passaggio verso chi sta tagliando gli consegna la palla nella fase dopo
   let best = null, d0 = AGGANCIO;
   for (const p of fase().giocatori) {
-    if (p.id === escludi || (p.tipo === "x" && !gioco.difesa)) continue;
+    if (p.id === escludi || (p.tipo === "x" && tipoDifesa() !== "manuale")) continue;
     const d = Math.hypot(p.x - x, p.y - y);
     if (d < d0) { d0 = d; best = { id: p.id, x: p.x, y: p.y }; }
   }
@@ -398,6 +568,10 @@ svg.addEventListener("pointerdown", (ev) => {
   if (strumento === "sposta") {
     if (!gEl) return;
     ricorda();
+    if (gEl.dataset.giocatore.startsWith("x") && automatica()) {
+      rendiManuale(tipoDifesa());
+      suggerisci("Difesa passata a manuale: ora puoi spostare le X fase per fase.");
+    }
     trascina = { id: gEl.dataset.giocatore, mosso: false };
     svg.setPointerCapture(ev.pointerId);
     return;
@@ -457,17 +631,28 @@ document.querySelectorAll("[data-strumento]").forEach(b => b.addEventListener("c
   suggerisci();
 }));
 $("annulla").addEventListener("click", annulla);
-$("difesa").addEventListener("click", () => {
+function aggiornaDifesa() {
+  const t = tipoDifesa();
+  $("tipo-difesa").value = t;
+  $("tipo-difesa").classList.toggle("attiva", t !== "nessuna");
+  $("difesa-su").hidden = t !== "box1";
+  $("difesa-su").value = String(gioco.difesaSu || 1);
+}
+$("tipo-difesa").addEventListener("change", (e) => {
   ricorda();
-  gioco.difesa = !gioco.difesa;
-  if (gioco.difesa) for (const f of gioco.fasi) {
-    if (f.giocatori.some(p => p.tipo === "x")) continue;
-    for (const p of f.giocatori.filter(q => q.tipo === "o").slice()) {
-      const dx = 75 - p.x, dy = 15.75 - p.y, d = Math.hypot(dx, dy) || 1;
-      f.giocatori.push({ id: "x" + p.n, tipo: "x", n: p.n, x: p.x + dx / d * 9, y: p.y + dy / d * 9 });
-    }
+  const t = e.target.value, prima = tipoDifesa();
+  if (t === "manuale" && prima !== "manuale") {
+    // si parte dalla difesa che si stava guardando (o da quella a uomo)
+    materializza(gioco, prima === "nessuna" ? "uomo" : prima);
   }
-  tutto();
+  gioco.difesaTipo = t; gioco.difesa = t !== "nessuna";
+  aggiornaDifesa(); disegna(); salvaBozzaLocale();
+  suggerisci(SPIEGA_DIFESA[t]);
+  if (vista3d) vista3d.ricostruisci();
+});
+$("difesa-su").addEventListener("change", (e) => {
+  ricorda(); gioco.difesaSu = Number(e.target.value); disegna(); salvaBozzaLocale();
+  if (vista3d) vista3d.ricostruisci();
 });
 
 function aggiornaFasi() {
@@ -504,33 +689,58 @@ $("tipo-nostro").addEventListener("click", () => tipo("nostro"));
 $("tipo-avv").addEventListener("click", () => tipo("avversaria"));
 
 // ------------------------------------------------------------------ riproduzione
-function riproduci() {
-  if (animazione) { cancelAnimationFrame(animazione); animazione = null; $("riproduci").textContent = "▶ Riproduci"; tutto(); return; }
-  if (gioco.fasi.length < 2) { suggerisci("Aggiungi almeno una fase per vedere il gioco in movimento."); return; }
-  $("riproduci").textContent = "■ Ferma";
-  let i = 0, t0 = null; const DUR = 1300, PAUSA = 450;
-  const percorsi = gioco.fasi.map(f => {
+// La stessa linea del tempo serve alla riproduzione 2D e alla vista 3D.
+const DUR = 1300, PAUSA = 450;
+function percorsiDi(g) {
+  return g.fasi.map(f => {
     const m = {};
     for (const l of f.linee) if (l.da && l.tipo !== "passaggio") m[l.da] = campiona(l.punti, 0.8).punti;
     return m;
   });
+}
+const morbido = (k) => k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+function statoAl(percorsi, i, k) {
+  // fase i al punto k (0…1): giocatori sui loro percorsi, palla (anche in volo), difesa
+  const f = gioco.fasi[i], e = morbido(k), stato = clona(f);
+  for (const p of stato.giocatori) {
+    const c = percorsi[i][p.id];
+    if (c) { const q = c[Math.min(c.length - 1, Math.round(e * (c.length - 1)))]; p.x = q[0]; p.y = q[1]; }
+  }
+  let palla = pallaDi(stato), volo = null;
+  const pas = f.linee.find(l => l.tipo === "passaggio" && l.a);
+  if (pas && k > 0) {
+    const a = pas.punti[0], r = stato.giocatori.find(p => p.id === pas.a);
+    const b = r ? [r.x, r.y] : pas.punti[1];
+    palla = misto(a, b, e);
+    volo = { e, lunghezza: Math.hypot(b[0] - a[0], b[1] - a[1]) };
+  }
+  return { stato, palla, volo, e };
+}
+function inseguiDifesa(prima, nuova, dt) {
+  // le X inseguono la posizione ideale: niente scatti quando la palla cambia lato
+  if (!prima) return nuova;
+  const w = 1 - Math.exp(-dt / 140);
+  return nuova.map(d => {
+    const p = prima.find(q => q.id === d.id);
+    return p ? { ...d, x: p.x + (d.x - p.x) * w, y: p.y + (d.y - p.y) * w } : d;
+  });
+}
+function riproduci() {
+  if (animazione) { cancelAnimationFrame(animazione); animazione = null; $("riproduci").textContent = "▶ Riproduci"; tutto(); return; }
+  if (gioco.fasi.length < 2) { suggerisci("Aggiungi almeno una fase per vedere il gioco in movimento."); return; }
+  $("riproduci").textContent = "■ Ferma";
+  let i = 0, t0 = null, tPrima = null, dif = null;
+  const percorsi = percorsiDi(gioco);
   function passo(ts) {
     if (t0 === null) t0 = ts;
-    const f = gioco.fasi[i], dopo = gioco.fasi[i + 1];
-    const k = Math.min(1, (ts - t0) / DUR), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
-    const stato = clona(f);
-    for (const p of stato.giocatori) {
-      const c = percorsi[i][p.id];
-      if (c) { const q = c[Math.min(c.length - 1, Math.round(e * (c.length - 1)))]; p.x = q[0]; p.y = q[1]; }
-    }
+    const k = Math.min(1, (ts - t0) / DUR);
+    const { stato, palla, volo } = statoAl(percorsi, i, k);
+    dif = inseguiDifesa(dif, difensori(stato, palla), tPrima === null ? 0 : ts - tPrima);
+    tPrima = ts;
     faseIdx = i; aggiornaFasi();
-    disegna(stato, k < 1);
-    const pas = f.linee.find(l => l.tipo === "passaggio" && l.a);
-    if (pas && k > 0) {
-      const a = pas.punti[0], b = stato.giocatori.find(p => p.id === pas.a) || { x: pas.punti[1][0], y: pas.punti[1][1] };
-      el("circle", { cx: a[0] + (b.x - a[0]) * e, cy: a[1] + (b.y - a[1]) * e, r: 1.9,
-                     fill: "var(--accento)", stroke: "var(--inchiostro)", "stroke-width": .35 });
-    }
+    disegna(stato, k < 1, dif);
+    if (volo) el("circle", { cx: palla[0], cy: palla[1], r: 1.9,
+                             fill: "var(--accento)", stroke: "var(--inchiostro)", "stroke-width": .35 });
     if (ts - t0 >= DUR + PAUSA) {
       i += 1; t0 = ts;
       if (i >= gioco.fasi.length - 1) {
@@ -542,6 +752,322 @@ function riproduci() {
   animazione = requestAnimationFrame(passo);
 }
 $("riproduci").addEventListener("click", riproduci);
+
+// ------------------------------------------------------------------ vista 3D
+// Sola riproduzione: si disegna in 2D, qui si guarda il gioco da quattro telecamere.
+// three.js è incluso nel progetto e si carica solo alla prima apertura.
+let vista3d = null, caricaThree = null, in3d = false;
+function three() {
+  if (window.THREE) return Promise.resolve(window.THREE);
+  caricaThree ||= new Promise((ok, ko) => {
+    const s = document.createElement("script");
+    s.src = window.LAVAGNA_THREE || "componente/three.min.js";
+    s.onload = () => window.THREE ? ok(window.THREE) : ko(new Error("three"));
+    s.onerror = () => { caricaThree = null; ko(new Error("three")); };
+    document.head.appendChild(s);
+  });
+  return caricaThree;
+}
+const W3 = (x, y) => [(x - 75) / 10, y / 10];          // decimetri del campo → metri della scena
+const COL3 = { attacco: 0x3987e5, difesa: 0xd95926, palla: 0xff9d2e, righe: "#e8edf5",
+               pavimento: "#141b28", area: "#1c2638", fuori: 0x0a0e15 };
+const CAMERE = {
+  alto: { target: [0, 0, 6.6], raggio: 16.5, azim: 0, elev: 1.25 },
+  tribuna: { target: [0, 0.6, 6.2], raggio: 14, azim: Math.PI / 2, elev: 0.42 },
+  canestro: { target: [0, 1.2, 7.5], raggio: 12.8, azim: Math.PI, elev: 0.3 },
+  portatore: null,
+};
+
+function creaVista3D(T) {
+  const scena = $("scena");
+  const renderer = new T.WebGLRenderer({ antialias: true, powerPreference: "low-power" });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
+  if ("outputEncoding" in renderer) renderer.outputEncoding = T.sRGBEncoding;
+  scena.appendChild(renderer.domElement);
+  const s = new T.Scene(); s.background = new T.Color(COL3.fuori);
+  s.fog = new T.Fog(COL3.fuori, 26, 48);
+  const cam = new T.PerspectiveCamera(42, 4 / 3, 0.1, 120);
+
+  // luci
+  s.add(new T.HemisphereLight(0xdfe8ff, 0x1a1f2a, 0.75));
+  const sole = new T.DirectionalLight(0xffffff, 0.85);
+  sole.position.set(-6, 14, 2); sole.target.position.set(0, 0, 7);
+  sole.castShadow = true; sole.shadow.mapSize.set(1024, 1024);
+  Object.assign(sole.shadow.camera, { left: -10, right: 10, top: 10, bottom: -10, near: 1, far: 40 });
+  sole.shadow.bias = -0.0004;
+  s.add(sole, sole.target);
+
+  // pavimento con le righe (stesse misure del campo 2D)
+  function tela(w, h) { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; }
+  const cr = tela(1500, 1400), g = cr.getContext("2d");
+  g.fillStyle = COL3.pavimento; g.fillRect(0, 0, 1500, 1400);
+  g.scale(10, 10);
+  g.fillStyle = COL3.area; g.fillRect(50.5, 0, 49, 58);
+  g.strokeStyle = COL3.righe; g.lineWidth = 0.55;
+  const linee2d = ["M0 0H150V140H0Z", "M50.5 0V58H99.5V0", "M57 58 A18 18 0 0 0 93 58",
+    "M9 0 V29.9 A67.5 67.5 0 0 0 141 29.9 V0", "M62.5 15.75 A12.5 12.5 0 0 0 87.5 15.75",
+    "M57 140 A18 18 0 0 1 93 140"];
+  for (const d of linee2d) g.stroke(new Path2D(d));
+  g.setLineDash([2, 2]); g.stroke(new Path2D("M57 58 A18 18 0 0 1 93 58")); g.setLineDash([]);
+  const texCampo = new T.CanvasTexture(cr);
+  texCampo.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  if ("encoding" in texCampo) texCampo.encoding = T.sRGBEncoding;
+  const pav = new T.Mesh(new T.PlaneGeometry(15, 14),
+                         new T.MeshStandardMaterial({ map: texCampo, roughness: 0.82, metalness: 0.05 }));
+  pav.rotation.x = -Math.PI / 2; pav.position.set(0, 0, 7); pav.receiveShadow = true; s.add(pav);
+  const fuori = new T.Mesh(new T.PlaneGeometry(80, 80), new T.MeshStandardMaterial({ color: 0x0b1018, roughness: 1 }));
+  fuori.rotation.x = -Math.PI / 2; fuori.position.set(0, -0.01, 7); fuori.receiveShadow = true; s.add(fuori);
+
+  // linee del gioco della fase in corso, disegnate sul parquet
+  const cl = tela(1500, 1400), gl = cl.getContext("2d");
+  const texLinee = new T.CanvasTexture(cl);
+  const strato = new T.Mesh(new T.PlaneGeometry(15, 14),
+                            new T.MeshBasicMaterial({ map: texLinee, transparent: true, depthWrite: false }));
+  strato.rotation.x = -Math.PI / 2; strato.position.set(0, 0.004, 7); s.add(strato);
+  function lineeFase(f) {
+    gl.setTransform(1, 0, 0, 1, 0, 0); gl.clearRect(0, 0, 1500, 1400); gl.setTransform(10, 0, 0, 10, 0, 0);
+    if (f) for (const l of f.linee) {
+      gl.strokeStyle = l.tipo === "blocco" ? "rgba(255,157,46,.85)" : "rgba(233,237,244,.55)";
+      gl.lineWidth = l.tipo === "blocco" ? 0.9 : 0.6;
+      gl.setLineDash(l.tipo === "passaggio" ? [2.4, 1.8] : l.tipo === "palleggio" ? [0.8, 1.2] : []);
+      gl.stroke(new Path2D(curva(l.punti)));
+    }
+    gl.setLineDash([]); texLinee.needsUpdate = true;
+  }
+
+  // canestro: palo, tabellone, ferro, retina
+  const metallo = new T.MeshStandardMaterial({ color: 0x9aa6b8, metalness: 0.6, roughness: 0.4 });
+  const palo = new T.Mesh(new T.BoxGeometry(0.22, 3.4, 0.22), metallo); palo.position.set(0, 1.7, -0.9);
+  const braccio = new T.Mesh(new T.BoxGeometry(0.16, 0.16, 2.1), metallo); braccio.position.set(0, 3.25, 0.15);
+  const tab = new T.Mesh(new T.BoxGeometry(1.8, 1.05, 0.04),
+    new T.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.28, roughness: 0.1 }));
+  tab.position.set(0, 3.42, 1.2);
+  const bordoTab = new T.LineSegments(new T.EdgesGeometry(tab.geometry), new T.LineBasicMaterial({ color: 0xffffff }));
+  bordoTab.position.copy(tab.position);
+  const quadrato = new T.LineSegments(new T.EdgesGeometry(new T.PlaneGeometry(0.59, 0.45)),
+                                      new T.LineBasicMaterial({ color: 0xffffff }));
+  quadrato.position.set(0, 3.27, 1.225);
+  const ferro = new T.Mesh(new T.TorusGeometry(0.225, 0.012, 8, 32),
+                           new T.MeshStandardMaterial({ color: 0xff6a13, metalness: 0.4, roughness: 0.4 }));
+  ferro.rotation.x = Math.PI / 2; ferro.position.set(0, 3.05, 1.575);
+  const rete = new T.Mesh(new T.CylinderGeometry(0.225, 0.14, 0.42, 16, 1, true),
+    new T.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.5 }));
+  rete.position.set(0, 2.84, 1.575);
+  palo.castShadow = braccio.castShadow = tab.castShadow = true;
+  s.add(palo, braccio, tab, bordoTab, quadrato, ferro, rete);
+
+  // giocatori
+  function etichetta(testo, colore) {
+    const c = tela(128, 64), x = c.getContext("2d");
+    x.fillStyle = "rgba(10,14,21,.78)"; x.beginPath(); x.roundRect ? x.roundRect(14, 6, 100, 52, 14) : x.rect(14, 6, 100, 52); x.fill();
+    x.fillStyle = colore; x.font = "700 40px Barlow Condensed, Arial Narrow, sans-serif";
+    x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(testo, 64, 34);
+    const t = new T.CanvasTexture(c); if ("encoding" in t) t.encoding = T.sRGBEncoding;
+    const sp = new T.Sprite(new T.SpriteMaterial({ map: t, depthTest: false, transparent: true }));
+    sp.scale.set(0.72, 0.36, 1); sp.position.y = 2.32; sp.renderOrder = 10;
+    return sp;
+  }
+  function omino(colore, testo, coloreTesto) {
+    const o = new T.Group();
+    const mat = new T.MeshStandardMaterial({ color: colore, roughness: 0.55, metalness: 0.05 });
+    const corpo = new T.Mesh(new T.CapsuleGeometry(0.25, 1.05, 4, 14), mat); corpo.position.y = 0.78;
+    const testa = new T.Mesh(new T.SphereGeometry(0.15, 16, 12),
+                             new T.MeshStandardMaterial({ color: 0xd9b59a, roughness: 0.7 }));
+    testa.position.y = 1.72;
+    const anello = new T.Mesh(new T.RingGeometry(0.34, 0.44, 32),
+                              new T.MeshBasicMaterial({ color: colore, transparent: true, opacity: 0.85 }));
+    anello.rotation.x = -Math.PI / 2; anello.position.y = 0.012;
+    corpo.castShadow = testa.castShadow = true;
+    o.add(corpo, testa, anello, etichetta(testo, coloreTesto));
+    s.add(o); return o;
+  }
+  const palla = new T.Mesh(new T.SphereGeometry(0.15, 20, 16),    // un po' più grande del vero, per vederla
+                           new T.MeshStandardMaterial({ color: COL3.palla, roughness: 0.6, emissive: 0x7a3300 }));
+  palla.castShadow = true; s.add(palla);
+  const bloccoMat = new T.MeshBasicMaterial({ color: COL3.palla, transparent: true, opacity: 0 });
+  let attori = {}, blocchi = [];
+
+  // timeline
+  let percorsi = [], t = 0, inPausa = false, vel = 1, ultimo = null, raf = null, dif = null;
+  let camera = "alto", orbita = { ...CAMERE.alto, target: CAMERE.alto.target.slice() }, meta = null, guarda = null;
+  const durata = () => Math.max(1, gioco.fasi.length - 1) * (DUR + PAUSA) + 900;
+
+  function ricostruisci() {
+    for (const o of Object.values(attori)) s.remove(o);
+    for (const b of blocchi) s.remove(b.mesh);
+    attori = {}; blocchi = []; dif = null;
+    percorsi = percorsiDi(gioco);
+    const nomi = new Set();
+    for (const f of gioco.fasi) for (const p of f.giocatori) if (p.tipo === "o") nomi.add(p.id);
+    for (const id of nomi) {
+      const p = gioco.fasi[0].giocatori.find(q => q.id === id) || { n: id.slice(1) };
+      attori[id] = omino(COL3.attacco, String(p.n), "#8fc0ff");
+    }
+    if (tipoDifesa() !== "nessuna") for (let n = 1; n <= 5; n++) attori["x" + n] = omino(COL3.difesa, "X" + n, "#ffb08a");
+    gioco.fasi.forEach((f, i) => f.linee.filter(l => l.tipo === "blocco").forEach(l => {
+      const m = new T.Mesh(new T.BoxGeometry(0.95, 0.03, 0.14), bloccoMat.clone());
+      const [a, b] = [l.punti[Math.max(0, l.punti.length - 2)], l.punti[l.punti.length - 1]];
+      const [x, z] = W3(b[0], b[1]); m.position.set(x, 0.02, z);
+      m.rotation.y = Math.atan2(-(b[0] - a[0]), -(b[1] - a[1]));   // di traverso al movimento
+      s.add(m); blocchi.push({ fase: i, mesh: m });
+    }));
+    t = Math.min(t, durata()); disegnaIstante(0);
+  }
+
+  function istante() {
+    const n = gioco.fasi.length;
+    if (n < 2) return { i: 0, k: 0 };
+    const tf = DUR + PAUSA, i = Math.min(n - 2, Math.floor(t / tf));
+    return { i, k: Math.min(1, (t - i * tf) / DUR), fine: t >= (n - 1) * tf };
+  }
+  function disegnaIstante(dt) {
+    const { i, k, fine } = istante();
+    const f = gioco.fasi[fine ? gioco.fasi.length - 1 : i];
+    const { stato, palla: b, volo } = fine ? { stato: clona(f), palla: pallaDi(f), volo: null }
+                                           : (gioco.fasi.length < 2 ? { stato: clona(f), palla: pallaDi(f), volo: null } : statoAl(percorsi, i, k));
+    const d = difensori(stato, b);
+    dif = inseguiDifesa(dif, d, dt * vel);
+    const visti = new Set();
+    for (const p of stato.giocatori.filter(q => q.tipo === "o").concat(dif)) {
+      const o = attori[p.id]; if (!o) continue;
+      const [x, z] = W3(p.x, p.y), prima = o.position.clone();
+      o.position.set(x, 0, z); visti.add(p.id);
+      // ognuno guarda la palla (i difensori) o il canestro (gli attaccanti)
+      const bersaglio = p.tipo === "x" ? W3(b[0], b[1]) : [0, 1.575];
+      o.rotation.y = Math.atan2(bersaglio[0] - x, bersaglio[1] - z);
+      o.userData.vel = prima.distanceTo(o.position);
+    }
+    for (const [id, o] of Object.entries(attori)) o.visible = visti.has(id);
+    // palla: in mano, in palleggio o ad arco sul passaggio
+    const [bx, bz] = W3(b[0], b[1]);
+    if (volo) {
+      const h = 0.35 + volo.lunghezza * 0.012;
+      palla.position.set(bx, 1.25 + 4 * h * volo.e * (1 - volo.e), bz);
+    } else {
+      const port = stato.giocatori.find(p => p.id === stato.palla);
+      const palleggia = port && f.linee.some(l => l.tipo === "palleggio" && l.da === port.id) && !fine && k < 1;
+      const verso2 = [-bx, 1.575 - bz], n = Math.hypot(...verso2) || 1;
+      const y = palleggia ? 0.13 + Math.abs(Math.sin(t / 95)) * 0.85 : 1.05;
+      palla.position.set(bx + verso2[0] / n * 0.32 + 0.12, y, bz + verso2[1] / n * 0.32);
+    }
+    for (const bl of blocchi) {
+      // il blocco compare quando il bloccante arriva, e resta per la fase
+      bl.mesh.material.opacity = !fine && bl.fase === i ? 0.9 * Math.max(0, (k - 0.55) / 0.45) : 0;
+    }
+    lineeFase(f);
+    $("fase3d").textContent = `FASE ${fine ? gioco.fasi.length : i + 1} / ${gioco.fasi.length}` +
+      (tipoDifesa() !== "nessuna" ? ` · ${$("tipo-difesa").selectedOptions[0].textContent.toUpperCase()}` : "");
+    $("nota3d").textContent = f.nota || "";
+    return { b, stato };
+  }
+
+  // telecamere e rotazione con il dito
+  function posiziona(dt, info) {
+    if (camera === "portatore") {
+      const [bx, bz] = W3(info.b[0], info.b[1]);
+      const dx = bx, dz = bz - 1.575, n = Math.hypot(dx, dz) || 1;
+      const occhi = new T.Vector3(bx - dx / n * 0.2, 1.8, bz - dz / n * 0.2);   // alla testa del portatore
+      const io = attori[info.stato.palla]; if (io) io.visible = false;
+      const dove = new T.Vector3(0, 1.4, 1.575);
+      if (!guarda) guarda = { p: occhi.clone(), l: dove.clone() };
+      const w = 1 - Math.exp(-dt / 220);
+      guarda.p.lerp(occhi, w); guarda.l.lerp(dove, w);
+      cam.position.copy(guarda.p); cam.lookAt(guarda.l);
+      return;
+    }
+    if (meta) {                                  // passaggio morbido tra le telecamere
+      const w = 1 - Math.exp(-dt / 160);
+      for (const k of ["raggio", "azim", "elev"]) orbita[k] += (meta[k] - orbita[k]) * w;
+      for (let j = 0; j < 3; j++) orbita.target[j] += (meta.target[j] - orbita.target[j]) * w;
+      if (Math.abs(meta.azim - orbita.azim) < 1e-3 && Math.abs(meta.elev - orbita.elev) < 1e-3) meta = null;
+    }
+    const { target: c, raggio: r, azim: a, elev: e } = orbita;
+    cam.position.set(c[0] + r * Math.cos(e) * Math.sin(a), c[1] + r * Math.sin(e), c[2] + r * Math.cos(e) * Math.cos(a));
+    cam.lookAt(c[0], c[1], c[2]);
+  }
+  function scegliCamera(nome) {
+    camera = nome; guarda = null;
+    document.querySelectorAll("[data-camera]").forEach(b => b.setAttribute("aria-pressed", b.dataset.camera === nome));
+    if (CAMERE[nome]) meta = { ...CAMERE[nome], target: CAMERE[nome].target.slice() };
+    scena.style.cursor = nome === "portatore" ? "default" : "grab";
+  }
+  const tocchi = new Map(); let distanza0 = null;
+  scena.addEventListener("pointerdown", (ev) => { tocchi.set(ev.pointerId, [ev.clientX, ev.clientY]); scena.setPointerCapture(ev.pointerId); });
+  scena.addEventListener("pointermove", (ev) => {
+    if (!tocchi.has(ev.pointerId) || camera === "portatore") return;
+    const [x0, y0] = tocchi.get(ev.pointerId); tocchi.set(ev.pointerId, [ev.clientX, ev.clientY]);
+    meta = null;
+    if (tocchi.size === 2) {                     // due dita: zoom
+      const [p, q] = [...tocchi.values()], d = Math.hypot(p[0] - q[0], p[1] - q[1]);
+      if (distanza0) orbita.raggio = Math.max(5, Math.min(30, orbita.raggio * distanza0 / d));
+      distanza0 = d; return;
+    }
+    orbita.azim -= (ev.clientX - x0) * 0.008;
+    orbita.elev = Math.max(0.08, Math.min(1.5, orbita.elev + (ev.clientY - y0) * 0.006));
+  });
+  const via = (ev) => { tocchi.delete(ev.pointerId); if (tocchi.size < 2) distanza0 = null; };
+  scena.addEventListener("pointerup", via); scena.addEventListener("pointercancel", via);
+  scena.addEventListener("wheel", (ev) => {
+    if (camera === "portatore") return;
+    ev.preventDefault(); meta = null;
+    orbita.raggio = Math.max(5, Math.min(30, orbita.raggio * (1 + Math.sign(ev.deltaY) * 0.08)));
+  }, { passive: false });
+
+  function misura() {
+    const w = scena.clientWidth, h = scena.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
+  }
+  new ResizeObserver(misura).observe(scena);
+
+  function ciclo(ts) {
+    const dt = ultimo === null ? 16 : Math.min(64, ts - ultimo); ultimo = ts;
+    if (!inPausa) {
+      t += dt * vel;
+      if (t > durata()) { t = 0; dif = null; }
+    }
+    const info = disegnaIstante(dt);
+    posiziona(dt, info);
+    renderer.render(s, cam);
+    raf = requestAnimationFrame(ciclo);
+  }
+  return {
+    apri() { misura(); ricostruisci(); t = 0; ultimo = null; inPausa = false; $("play3d").textContent = "❚❚ Pausa";
+             orbita = { ...CAMERE.alto, target: CAMERE.alto.target.slice() }; scegliCamera(camera);
+             if (!raf) raf = requestAnimationFrame(ciclo); },
+    chiudi() { if (raf) cancelAnimationFrame(raf); raf = null; },
+    ricostruisci,
+    pausa() { inPausa = !inPausa; $("play3d").textContent = inPausa ? "▶ Riprendi" : "❚❚ Pausa"; },
+    velocita(v) { vel = v; },
+    scegliCamera,
+  };
+}
+function apri3d(aperta) {
+  in3d = aperta;
+  $("vista3d").hidden = !aperta; svg.style.display = aperta ? "none" : "";
+  document.querySelector(".app").classList.toggle("in-3d", aperta);
+  $("apri3d").textContent = aperta ? "✕ Torna al 2D" : "Vista 3D";
+  $("apri3d").setAttribute("aria-pressed", aperta);
+  ["riproduci", "nuova-fase", "elimina-fase"].forEach(id => { $(id).disabled = aperta || (id === "elimina-fase" && gioco.fasi.length < 2); });
+  if (!aperta) { if (vista3d) vista3d.chiudi(); tutto(); return; }
+  if (animazione) riproduci();
+  suggerisci("Vista 3D: trascina per ruotare, due dita per lo zoom. Si disegna nella vista 2D.");
+  three().then((T) => {
+    if (!vista3d) vista3d = creaVista3D(T);
+    vista3d.apri();
+  }).catch(() => {
+    apri3d(false);
+    suggerisci("La vista 3D non è disponibile su questo dispositivo (serve WebGL).");
+  });
+}
+$("apri3d").addEventListener("click", () => apri3d(!in3d));
+$("play3d").addEventListener("click", () => vista3d && vista3d.pausa());
+document.querySelectorAll("[data-camera]").forEach(b => b.addEventListener("click", () => vista3d && vista3d.scegliCamera(b.dataset.camera)));
+$("velocita").addEventListener("input", (e) => {
+  const v = Number(e.target.value); $("velocita-v").textContent = v.toLocaleString("it-IT") + "×";
+  if (vista3d) vista3d.velocita(v);
+});
 
 // ------------------------------------------------------------------ biblioteca
 const CHIAVE = "assist-lavagna-v1";
@@ -580,8 +1106,12 @@ function aggiornaSchemi() {
 $("schemi").addEventListener("change", (e) => {
   const x = schemi.find(v => v.id === e.target.value); if (!x) return;
   ricorda();
+  const dt = tipoDifesa(), su = gioco.difesaSu;
   gioco = clona(x); delete gioco.categoria; delete gioco.descrizione;
   gioco.id = "g" + Date.now(); gioco.tipo = contesto || "nostro";
+  if (dt !== "manuale" && !x.difesa) {   // la difesa scelta resta, per provarla sugli schemi
+    gioco.difesaTipo = dt; gioco.difesa = dt !== "nessuna"; if (su) gioco.difesaSu = su;
+  }
   faseIdx = 0; tutto(); e.target.value = "";
   avvisa(`Schema caricato: ${x.nome}. ${x.descrizione || ""} Premi ▶ Riproduci, poi modificalo e salvalo con il tuo nome.`);
 });
@@ -592,10 +1122,10 @@ $("elenco").addEventListener("change", (e) => {
 $("salva").addEventListener("click", () => {
   if (!gioco.nome.trim()) { $("nome").focus(); avvisa("Dai un nome al gioco prima di salvarlo."); return; }
   if (gioco.id === "esempio") gioco.id = "g" + Date.now();
-  const i = giochi.findIndex(g => g.id === gioco.id);
-  if (i >= 0) giochi[i] = clona(gioco); else giochi.push(clona(gioco));
+  const i = giochi.findIndex(g => g.id === gioco.id), salvato = perSalvare();
+  if (i >= 0) giochi[i] = salvato; else giochi.push(clona(salvato));
   aggiornaElenco();
-  if (MODALITA === "streamlit") invia({ azione: "salva", gioco: clona(gioco), t: Date.now() });
+  if (MODALITA === "streamlit") invia({ azione: "salva", gioco: clona(salvato), t: Date.now() });
   else scriviLocale();
   avvisa(`Salvato: ${gioco.nome}.`);
 });
@@ -657,8 +1187,9 @@ if (MODALITA === "streamlit") {
 function tutto() {
   $("nome").value = gioco.nome || "";
   tipo(contesto || gioco.tipo || "nostro");
-  $("difesa").setAttribute("aria-pressed", !!gioco.difesa);
+  aggiornaDifesa();
   aggiornaFasi(); aggiornaElenco(); aggiornaSchemi(); disegna(); suggerisci();
+  if (in3d && vista3d) vista3d.ricostruisci();
 }
 tutto();
 })();
