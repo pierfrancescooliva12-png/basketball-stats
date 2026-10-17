@@ -240,8 +240,8 @@ COPERTURE = {
 
 def orario(t: float) -> str:
     """Istante del video come nella lavagna: 1:05,3."""
-    m = int(t // 60)
-    return f"{m}:{t - 60 * m:04.1f}".replace(".", ",")
+    d = int(t * 10 + 0.5)                     # arrotonda come la lavagna (0,25 → 0,3)
+    return f"{d // 600}:{d % 600 // 10:02d},{d % 10}"
 
 
 def descrizione_difesa(g: dict) -> str:
