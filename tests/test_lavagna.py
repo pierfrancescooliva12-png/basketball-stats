@@ -98,3 +98,15 @@ def test_difesa_sul_pick_and_roll():
     assert "show alto" in testo and "Per l'attacco" in testo
     assert L.descrizione_difesa({"difesa": False}) == ""
     assert L.descrizione_difesa({"difesa": True}) == "Difesa disegnata a mano."
+
+
+def test_video_sincronizzato_nel_pdf():
+    """I tempi del video segnati sulla lavagna finiscono nel PDF dei giochi."""
+    from basket.report_pdf import build_giochi
+    assert L.orario(65.34) == "1:05,3" and L.orario(3) == "0:03,0"
+    g = gioco_esempio()
+    g["video"] = {"nome": "clip.mp4", "tempi": [1.0, 3.25]}
+    pdf = build_giochi([g], "Prova")
+    assert pdf[:4] == b"%PDF"
+    html = (Path(__file__).resolve().parent.parent / "dashboard" / "lavagna" / "lavagna.html").read_text()
+    assert 'id="video"' in html and "createObjectURL" in html
