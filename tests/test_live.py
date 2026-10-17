@@ -47,3 +47,22 @@ def test_suggerimenti_parziale_falli_finale():
     fin = _ev([(0, 4, 2380, 1, "a1", "tiro3_fatto", 70, 67)])
     s = live.stato(fin, 1)
     assert any("niente triple" in x["testo"] for x in live.suggerimenti(s))
+
+
+def test_calendario_e_finestra_della_diretta():
+    import sqlite3
+    c = sqlite3.connect(":memory:")
+    c.executescript("""
+        CREATE TABLE squadre (squadra_id INTEGER, nome TEXT);
+        INSERT INTO squadre VALUES (1, 'Casa'), (2, 'Ospite');
+        CREATE TABLE calendario (partita_id TEXT, gameid TEXT, campionato_id TEXT, stagione TEXT, giornata INT,
+            data TEXT, ora TEXT, stato TEXT, squadra_casa_id INT, squadra_ospite_id INT, palazzetto TEXT);
+        INSERT INTO calendario VALUES ('p1', 'g1', 'ita2', 's', 1, '2026-10-21', '20:30', 'ready', 1, 2, NULL),
+                                      ('p2', 'g2', 'ita2', 's', 2, '2026-10-25', '18:00', 'ready', 2, 1, NULL);
+    """)
+    fasi = lambda t: live.calendario(c, "s", 1, da=pd.Timestamp(t))["fase"].tolist()  # noqa: E731
+    assert fasi("2026-10-21 12:00") == ["oggi", "in programma"]          # mercoledì: turno infrasettimanale
+    assert fasi("2026-10-21 20:15") == ["in corso", "in programma"]      # la diretta si apre 20' prima
+    assert fasi("2026-10-21 23:30") == ["finita", "in programma"]
+    d = live.calendario(c, "s", 1, da=pd.Timestamp("2026-10-20 09:00"))
+    assert d["giorno"].iloc[0] == "mercoledì 21/10"

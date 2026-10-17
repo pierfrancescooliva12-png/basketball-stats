@@ -5,8 +5,6 @@ tra tutti quelli che guardano). Senza partita in corso si può rivedere una part
 fermandola a un minuto qualsiasi, come allenamento o per preparare i finali.
 """
 
-from datetime import date, timedelta
-
 import pandas as pd
 import streamlit as st
 
@@ -100,6 +98,77 @@ def pannello(a: App, ev: pd.DataFrame, noi, nomi: dict, casa: str, ospite: str, 
     leverage_ui.grafico_probabilita(e, casa, ospite, None, 260)
 
 
+def _quando(delta: pd.Timedelta) -> str:
+    m = int(delta.total_seconds() // 60)
+    if m < 60: return f"tra {m} minuti"
+    h, m = divmod(m, 60)
+    if h < 24: return f"tra {h} ore e {m} minuti" if m else f"tra {h} ore"
+    g, h = divmod(h, 24)
+    return (f"tra 1 giorno" if g == 1 else f"tra {g} giorni") + (f" e {h} ore" if h and g < 3 else "")
+
+
+def diretta(a: App, noi, nomi: dict):
+    """Diretta della partita in corso: la pagina sa dal calendario quando si gioca (anche nei turni
+    infrasettimanali e negli anticipi) e si apre da sola 20 minuti prima della palla a due."""
+    ora = live.adesso()
+    cal = live.calendario(a.ctx.conn, a.stagione, da=ora, giorni=14)
+    if cal.empty:
+        st.info("Calendario non disponibile.")
+        return
+    mie = cal[(cal["squadra_casa_id"] == noi) | (cal["squadra_ospite_id"] == noi)]
+    in_corso = cal[cal["fase"] == "in corso"]
+    scelte = {}
+    for r in pd.concat([mie[mie["fase"] == "in corso"], in_corso]).drop_duplicates("partita_id").itertuples():
+        scelte[r.partita_id] = f"{r.casa} – {r.ospite} · {r.ora} · {r.campionato_id.replace('ita2', 'A2').replace('ita3_a', 'B girone A').replace('ita3_b', 'B girone B')}"
+    if scelte:
+        pid = st.selectbox("Partita in corso", list(scelte), format_func=scelte.get, key="live_pid",
+                           help="Prima la vostra; si possono seguire anche le altre partite in corso, per esempio la prossima avversaria.")
+        r = cal[cal["partita_id"] == pid].iloc[0]
+        sguardo = noi if noi in (r.squadra_casa_id, r.squadra_ospite_id) else r.squadra_casa_id
+
+        @st.fragment(run_every=AGGIORNA)
+        def aggiorna():
+            try:
+                cr = _cronaca(r.gameid, r.campionato_id, r.stagione)
+            except Exception as e:                                  # noqa: BLE001 (sito non raggiungibile)
+                st.warning(f"Cronaca non disponibile in questo momento ({type(e).__name__}): riprovo tra {AGGIORNA} secondi.")
+                return
+            ev = live.da_cronaca(cr, r.squadra_casa_id, r.squadra_ospite_id, r.partita_id)
+            pannello(a, ev, sguardo, {**nomi, **cr.get("nomi", {})}, r.casa, r.ospite,
+                     _attesa(a, r.campionato_id, r.squadra_casa_id, r.squadra_ospite_id),
+                     f"aggiornato ogni {AGGIORNA} secondi")
+        aggiorna()
+    else:
+        prossima = mie[mie["fase"].isin(["oggi", "in programma"])].head(1)
+        if prossima.empty:
+            st.info("Nessuna partita della vostra squadra nei prossimi 14 giorni.")
+        else:
+            r = prossima.iloc[0]
+            st.info(f"Prossima partita: {r.casa} – {r.ospite}, {r.giorno} alle {r.ora}. La diretta si apre da sola "
+                    f"{live.PRIMA} minuti prima della palla a due ({_quando(r.apre - ora)}): basta tenere aperta questa pagina.")
+
+            @st.fragment(run_every=60)
+            def attesa():                                         # alla palla a due si ricarica la pagina
+                if live.adesso() >= r.apre:
+                    st.rerun(scope="app")
+            attesa()
+    # calendario dei prossimi giorni
+    section("Prossime partite", "dal calendario della lega: anche anticipi e turni infrasettimanali")
+    vis = mie[mie["fase"] != "finita"].head(6)
+    if not vis.empty:
+        show(pd.DataFrame({"Giorno": vis["giorno"], "Ora": vis["ora"],
+                           "Partita": vis["casa"] + " – " + vis["ospite"],
+                           "In casa": ["sì" if c == noi else "no" for c in vis["squadra_casa_id"]],
+                           "Diretta": [{"in corso": "in corso", "oggi": "oggi, si apre " + _quando(x.apre - ora),
+                                        "in programma": "si apre " + _quando(x.apre - ora)}.get(x.fase, "")
+                                       for x in vis.itertuples()]}), voci=[])
+    oggi = cal[cal["inizio"].dt.date == ora.date()]
+    if not oggi.empty:
+        with st.expander(f"Tutte le partite di oggi ({len(oggi)})"):
+            show(pd.DataFrame({"Ora": oggi["ora"], "Campionato": oggi["campionato_id"],
+                               "Partita": oggi["casa"] + " – " + oggi["ospite"], "Stato": oggi["fase"]}), voci=[])
+
+
 def render(a: App):
     noi = a.mia_squadra
     if noi is None:
@@ -108,31 +177,7 @@ def render(a: App):
     nomi = _nomi(a)
     modo = st.radio("Partita", ["In diretta", "Rivedi una partita giocata"], horizontal=True, key="live_modo")
     if modo == "In diretta":
-        oggi = date.today()
-        pg = pd.concat([live.partite_di_oggi(a.ctx.conn, a.stagione, (oggi - timedelta(days=d)).isoformat())
-                        for d in (0, 1)])
-        pg = pg[(pg["squadra_casa_id"] == noi) | (pg["squadra_ospite_id"] == noi)]
-        if pg.empty:
-            ng = a.ctx.next_game(noi)
-            st.info("Oggi la vostra squadra non gioca." + (
-                f" Prossima partita: {ng['casa']} – {ng['ospite']}, {pd.Timestamp(ng['data']).strftime('%d/%m')}"
-                f"{' alle ' + ng['ora'] if ng.get('ora') else ''}." if ng else "")
-                + " Intanto puoi rivedere una partita giocata.")
-            return
-        r = pg.iloc[0]
-
-        @st.fragment(run_every=AGGIORNA)
-        def diretta():
-            try:
-                cr = _cronaca(r.gameid, r.campionato_id, r.stagione)
-            except Exception as e:                                  # noqa: BLE001 (sito non raggiungibile)
-                st.warning(f"Cronaca non disponibile in questo momento ({type(e).__name__}): riprovo tra {AGGIORNA} secondi.")
-                return
-            ev = live.da_cronaca(cr, r.squadra_casa_id, r.squadra_ospite_id, r.partita_id)
-            nomi_l = {**nomi, **cr.get("nomi", {})}
-            pannello(a, ev, noi, nomi_l, r.casa, r.ospite, _attesa(a, r.campionato_id, r.squadra_casa_id, r.squadra_ospite_id),
-                     f"aggiornato ogni {AGGIORNA} secondi")
-        diretta()
+        diretta(a, noi, nomi)
         return
     # rivedere una partita giocata
     ev_all = a.ctx.ev

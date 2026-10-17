@@ -236,6 +236,44 @@ def scarica(gameid: str, campionato: str, stagione: str) -> dict:
     return fetch_pbp(RateLimitedClient(min_interval=0, retries=2), gameid, campionato, stagione)
 
 
+PRIMA, DURATA_MAX = 20, 150     # minuti: la diretta si apre 20' prima della palla a due e dura al massimo 2 ore e mezza
+FUSO = "Europe/Rome"
+GIORNI = ["lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica"]
+
+
+def adesso():
+    """Ora italiana (il calendario della lega è in ora locale), senza fuso per i confronti."""
+    return pd.Timestamp.now(tz=FUSO).tz_localize(None)
+
+
+def calendario(conn, stagione: str, squadra=None, da=None, giorni: int = 400) -> pd.DataFrame:
+    """Partite in calendario con inizio, apertura e chiusura della diretta e stato:
+    'finita', 'in corso', 'oggi' (più tardi), 'in programma'."""
+    q = ("SELECT c.partita_id, c.gameid, c.campionato_id, c.stagione, c.giornata, c.data, c.ora, c.stato, "
+         "c.squadra_casa_id, c.squadra_ospite_id, sc.nome AS casa, so.nome AS ospite, c.palazzetto "
+         "FROM calendario c JOIN squadre sc ON sc.squadra_id = c.squadra_casa_id "
+         "JOIN squadre so ON so.squadra_id = c.squadra_ospite_id WHERE c.stagione = ?")
+    par = [stagione]
+    if squadra is not None:
+        q += " AND (c.squadra_casa_id = ? OR c.squadra_ospite_id = ?)"; par += [int(squadra), int(squadra)]
+    d = pd.read_sql_query(q, conn, params=par)
+    if d.empty:
+        return d
+    d["inizio"] = pd.to_datetime(d["data"] + " " + d["ora"].fillna("18:00"), errors="coerce")
+    d["apre"] = d["inizio"] - pd.Timedelta(minutes=PRIMA)
+    d["chiude"] = d["inizio"] + pd.Timedelta(minutes=DURATA_MAX)
+    ora = da if da is not None else adesso()
+    def fase(r):
+        if r.stato == "finished" or ora > r.chiude: return "finita"
+        if ora >= r.apre: return "in corso"
+        if r.inizio.date() == ora.date(): return "oggi"
+        return "in programma"
+    d["fase"] = [fase(r) for r in d.itertuples()]
+    d["giorno"] = [f"{GIORNI[t.weekday()]} {t.strftime('%d/%m')}" for t in d["inizio"]]
+    d = d[d["inizio"] <= ora + pd.Timedelta(days=giorni)]
+    return d.sort_values("inizio").reset_index(drop=True)
+
+
 def partite_di_oggi(conn, stagione: str, giorno: str) -> pd.DataFrame:
     """Partite in calendario nel giorno indicato (AAAA-MM-GG), anche quelle non ancora finite."""
     return pd.read_sql_query(
