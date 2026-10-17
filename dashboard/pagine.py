@@ -276,6 +276,8 @@ def p_squadre():
 def p_giocatori():
     titolo_pagina("Giocatori", "medie, avanzate, ruolo, andamento")
     schede.render_giocatori(APP)
+    from . import leverage_ui
+    leverage_ui.classifica(APP)
 
 
 def p_giocatore():
@@ -297,6 +299,12 @@ def p_mia():
     a = APP
     nuove.render_mia_squadra(a)
     analisi.ultima_partita(a)
+
+
+def p_live():
+    titolo_pagina("Live", "la partita in diretta, con i suggerimenti per lo staff")
+    from . import live_ui
+    live_ui.render(APP)
 
 
 def p_lavagna():
@@ -345,6 +353,7 @@ def mappa() -> dict:
                       P(p_giocatore, "Scheda giocatore", "giocatore", "giocatore"),
                       P(p_mercato, "Mercato", "mercato", "mercato")],
         "La mia squadra": [P(p_mia, "La mia squadra", "mia-squadra", "mia"),
+                           P(p_live, "Live · partita in diretta", "live", "live"),
                            P(p_lavagna, "Lavagna dei giochi", "lavagna", "lavagna"),
                            P(p_avvisi, "Avvisi", "avvisi", "avvisi")],
         "Campionato": [P(p_panoramica, "Panoramica", "panoramica", "panoramica"),

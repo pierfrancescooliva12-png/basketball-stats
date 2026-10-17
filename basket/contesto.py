@@ -8,6 +8,7 @@ import pandas as pd
 from . import analysis as A
 from . import approfondimenti as X
 from . import avvisi, config, db
+from . import leverage as L
 from . import pbp as P
 from . import previsioni as F
 
@@ -224,6 +225,38 @@ class Contesto:
         except KeyError:
             g["previsione"] = None
         return g
+
+    # ---------------------------------------------------------------- leverage
+    def margine_atteso(self, partite: pd.DataFrame) -> dict:
+        """Margine atteso della casa prima della partita (forze attuali e fattore campo)."""
+        out = {}
+        for camp, g in partite.groupby("campionato_id"):
+            try:
+                f, h = self.forze(camp), self.hca(camp)
+            except Exception:
+                continue
+            for pid, casa, osp in g[["partita_id", "squadra_casa_id", "squadra_ospite_id"]].itertuples(index=False):
+                try:
+                    out[pid] = F.predict(f, casa, osp, h)["margine"]
+                except KeyError:
+                    pass
+        return out
+
+    @cached_property
+    def leverage_eventi(self) -> pd.DataFrame:
+        """Cronaca con lo swing di probabilità di ogni azione e la probabilità della casa."""
+        if self.ev.empty:
+            return pd.DataFrame()
+        partite = self.ev.drop_duplicates("partita_id")[["partita_id", "campionato_id",
+                                                           "squadra_casa_id", "squadra_ospite_id"]]
+        return L.swing(self.ev, self.margine_atteso(partite))
+
+    @cached_property
+    def leverage(self) -> pd.DataFrame:
+        """Merito di ogni azione per giocatore (somma zero tra le squadre)."""
+        sw = self.leverage_eventi
+        return L.crediti(sw, self.stints) if not sw.empty else pd.DataFrame(
+            columns=["partita_id", "n", "giocatore_id", "squadra_id", "leverage", "categoria"])
 
     def simulation(self, campionato_id: str, n: int = 5000) -> pd.DataFrame:
         return F.simulate(self.conn, campionato_id, self.stagione, n=n)
