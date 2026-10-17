@@ -238,6 +238,12 @@ COPERTURE = {
 }
 
 
+def orario(t: float) -> str:
+    """Istante del video come nella lavagna: 1:05,3."""
+    d = int(t * 10 + 0.5)                     # arrotonda come la lavagna (0,25 → 0,3)
+    return f"{d // 600}:{d % 600 // 10:02d},{d % 10}"
+
+
 def descrizione_difesa(g: dict) -> str:
     """Riga del PDF con la difesa scelta sulla lavagna (vuota se non c'è)."""
     tipo = g.get("difesaTipo") or ("manuale" if g.get("difesa") else None)
@@ -260,10 +266,12 @@ def flowables(giochi: list[dict], S: dict, W: float, titolo: str, colonne: int =
     larg = (W - (colonne - 1) * 3 * mm) / colonne
     for g in giochi:
         celle = []
+        tempi = (g.get("video") or {}).get("tempi") or []
         for i, f in enumerate(g.get("fasi", []), start=1):
             nota = (f.get("nota") or "").strip()
+            quando = f" ({orario(tempi[i - 1])} nel video)" if len(tempi) >= i else ""
             celle.append([disegno_fase(f, bool(g.get("difesa")), larg),
-                          Paragraph(f"<b>Fase {i}</b>" + (f" · {_esc(nota)}" if nota else ""),
+                          Paragraph(f"<b>Fase {i}</b>{quando}" + (f" · {_esc(nota)}" if nota else ""),
                                     S["small"])])
         righe = [celle[i:i + colonne] for i in range(0, len(celle), colonne)]
         for r in righe:
@@ -278,6 +286,9 @@ def flowables(giochi: list[dict], S: dict, W: float, titolo: str, colonne: int =
         testa = [Paragraph(f"<b>{nome}</b> · {len(celle)} fasi", S["body"])]
         if dif:
             testa.append(Paragraph(_esc(dif), S["small"]))
+        clip = (g.get("video") or {}).get("nome")
+        if clip and tempi:
+            testa.append(Paragraph(f"Sincronizzato con la clip «{_esc(clip)}».", S["small"]))
         el.append(KeepTogether(testa + [Spacer(1, 2), tab, Spacer(1, 6)]))
     return el
 

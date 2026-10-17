@@ -102,12 +102,29 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .fase3d { position: absolute; left: 20px; top: 20px; padding: 4px 10px; border-radius: 6px;
   background: rgba(10, 14, 21, .72); color: #e9edf4; font-family: var(--display); font-weight: 700;
   letter-spacing: .06em; font-size: .95rem; pointer-events: none; }
-.nota3d { position: absolute; left: 20px; right: 20px; bottom: 74px; padding: 6px 10px;
+.nota3d { position: absolute; left: 20px; right: 20px; top: 52px; padding: 6px 10px;
   border-radius: 6px; background: rgba(10, 14, 21, .72); color: #e9edf4; font-size: .88rem;
   pointer-events: none; }
 .nota3d:empty { display: none; }
 .app.in-3d .strumenti { opacity: .4; pointer-events: none; }
 .app.in-3d #fasi, .app.in-3d #nota { display: none; }
+/* video sincronizzato: sopra il campo, comanda la lavagna */
+.video { margin-bottom: 10px; }
+@media (min-width: 1000px) {         /* schermo largo: video e lavagna affiancati */
+  .tavola.con-video { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: 10px; align-items: start; }
+  .tavola.con-video .video { margin-bottom: 0; }
+  .tavola.con-video .suggerimento { grid-column: 1 / -1; }
+}
+.video video { display: block; width: 100%; max-height: 46vh; border-radius: 8px; background: #000; }
+.video .vuoto { display: grid; place-items: center; aspect-ratio: 16 / 7; border-radius: 8px;
+  border: 1px dashed var(--bordo); color: var(--tenue); text-align: center; padding: 12px; }
+.comandi-video { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.comandi-video .segmenti button { height: 40px; padding: 0 10px; font-size: .9rem; }
+.stato-video { font-size: .88rem; color: var(--tenue); margin: 6px 2px 0; }
+.fase small { display: block; font-family: var(--corpo); font-weight: 500; font-size: .66rem;
+  line-height: 1; color: inherit; opacity: .8; margin-top: -2px; }
+.fase:has(small) { height: 48px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
@@ -171,6 +188,23 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
   <main class="centro">
     <div class="tavola">
+      <div class="video" id="pannello-video" hidden>
+        <video id="video" playsinline controls preload="metadata" hidden></video>
+        <label class="vuoto" id="video-vuoto" for="file-video">Apri una clip dal dispositivo: resta sul dispositivo, nel gioco si salvano solo i tempi delle fasi.</label>
+        <div class="comandi-video">
+          <label class="btn" for="file-video">Apri clip…</label>
+          <input type="file" id="file-video" accept="video/*" hidden>
+          <div class="segmenti" role="group" aria-label="Velocità del video">
+            <button data-rate="0.25" aria-pressed="false">0,25×</button>
+            <button data-rate="0.5" aria-pressed="false">0,5×</button>
+            <button data-rate="1" aria-pressed="true">1×</button>
+          </div>
+          <button class="btn primario" id="segna">Segna qui la fase 1</button>
+          <button class="btn" id="ricomincia-tempi">Ricomincia a segnare</button>
+          <button class="btn pericolo" id="scollega">Scollega</button>
+        </div>
+        <p class="stato-video" id="stato-video"></p>
+      </div>
       <svg id="campo" viewBox="-4 -4 158 148" role="img" aria-label="Metà campo con i giocatori e le linee del gioco"></svg>
       <div class="vista3d" id="vista3d" hidden>
         <div class="scena" id="scena" role="img" aria-label="Riproduzione 3D del gioco"></div>
@@ -195,6 +229,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
       <button class="btn primario" id="nuova-fase">+ Fase successiva</button>
       <button class="btn" id="riproduci">▶ Riproduci</button>
       <button class="btn" id="apri3d">Vista 3D</button>
+      <button class="btn" id="apri-video" aria-pressed="false">Video</button>
       <button class="btn pericolo" id="elimina-fase">Elimina fase</button>
     </div>
     <textarea class="nota" id="nota" aria-label="Note della fase" placeholder="Note della fase: letture, tempi, chiamata…"></textarea>
@@ -765,7 +800,12 @@ function aggiornaFasi() {
     const b = document.createElement("button");
     b.className = "fase"; b.textContent = i + 1; b.setAttribute("aria-label", "Fase " + (i + 1));
     b.setAttribute("aria-current", i === faseIdx);
-    b.addEventListener("click", () => { faseIdx = i; tutto(); });
+    const tv = tempi()[i];
+    if (tv != null) { const t = document.createElement("small"); t.textContent = orario(tv); b.appendChild(t); }
+    b.addEventListener("click", () => {
+      faseIdx = i; tutto();
+      if (videoPronto() && tv != null) { $("video").pause(); $("video").currentTime = tv; }
+    });
     c.appendChild(b);
   });
   $("elimina-fase").disabled = gioco.fasi.length < 2;
@@ -803,9 +843,10 @@ function percorsiDi(g) {
   });
 }
 const morbido = (k) => k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
-function statoAl(percorsi, i, k) {
-  // fase i al punto k (0…1): giocatori sui loro percorsi, palla (anche in volo), difesa
-  const f = gioco.fasi[i], e = morbido(k), stato = clona(f);
+function statoAl(percorsi, i, k, lineare = false) {
+  // fase i al punto k (0…1): giocatori sui loro percorsi, palla (anche in volo), difesa.
+  // lineare: con il video il tempo è quello reale, senza accelerazioni
+  const f = gioco.fasi[i], e = lineare ? k : morbido(k), stato = clona(f);
   for (const p of stato.giocatori) {
     const c = percorsi[i][p.id];
     if (c) { const q = c[Math.min(c.length - 1, Math.round(e * (c.length - 1)))]; p.x = q[0]; p.y = q[1]; }
@@ -993,7 +1034,7 @@ function creaVista3D(T) {
   let attori = {}, blocchi = [];
 
   // timeline
-  let percorsi = [], t = 0, inPausa = false, vel = 1, ultimo = null, raf = null, dif = null;
+  let orologio = null, percorsi = [], t = 0, inPausa = false, vel = 1, ultimo = null, raf = null, dif = null;
   let camera = "alto", orbita = { ...CAMERE.alto, target: CAMERE.alto.target.slice() }, meta = null, guarda = null;
   const durata = () => Math.max(1, gioco.fasi.length - 1) * (DUR + PAUSA) + 900;
 
@@ -1020,6 +1061,7 @@ function creaVista3D(T) {
   }
 
   function istante() {
+    if (orologio) return orologio();
     const n = gioco.fasi.length;
     if (n < 2) return { i: 0, k: 0 };
     const tf = DUR + PAUSA, i = Math.min(n - 2, Math.floor(t / tf));
@@ -1029,7 +1071,7 @@ function creaVista3D(T) {
     const { i, k, fine } = istante();
     const f = gioco.fasi[fine ? gioco.fasi.length - 1 : i];
     const { stato, palla: b, volo } = fine ? { stato: clona(f), palla: pallaDi(f), volo: null }
-                                           : (gioco.fasi.length < 2 ? { stato: clona(f), palla: pallaDi(f), volo: null } : statoAl(percorsi, i, k));
+                                           : (gioco.fasi.length < 2 ? { stato: clona(f), palla: pallaDi(f), volo: null } : statoAl(percorsi, i, k, !!orologio));
     const d = difensori(stato, b, fine ? gioco.fasi.length - 1 : i, fine ? 0 : k);
     dif = inseguiDifesa(dif, d, dt * vel);
     const visti = new Set();
@@ -1052,7 +1094,7 @@ function creaVista3D(T) {
       const port = stato.giocatori.find(p => p.id === stato.palla);
       const palleggia = port && f.linee.some(l => l.tipo === "palleggio" && l.da === port.id) && !fine && k < 1;
       const verso2 = [-bx, 1.575 - bz], n = Math.hypot(...verso2) || 1;
-      const y = palleggia ? 0.13 + Math.abs(Math.sin(t / 95)) * 0.85 : 1.05;
+      const y = palleggia ? 0.13 + Math.abs(Math.sin((orologio ? $("video").currentTime * 1000 : t) / 95)) * 0.85 : 1.05;
       palla.position.set(bx + verso2[0] / n * 0.32 + 0.12, y, bz + verso2[1] / n * 0.32);
     }
     for (const bl of blocchi) {
@@ -1130,7 +1172,7 @@ function creaVista3D(T) {
 
   function ciclo(ts) {
     const dt = ultimo === null ? 16 : Math.min(64, ts - ultimo); ultimo = ts;
-    if (!inPausa) {
+    if (!inPausa && !orologio) {
       t += dt * vel;
       if (t > durata()) { t = 0; dif = null; }
     }
@@ -1147,6 +1189,7 @@ function creaVista3D(T) {
     ricostruisci,
     pausa() { inPausa = !inPausa; $("play3d").textContent = inPausa ? "▶ Riprendi" : "❚❚ Pausa"; },
     velocita(v) { vel = v; },
+    orologio(f) { orologio = f; dif = null; },
     scegliCamera,
   };
 }
@@ -1162,18 +1205,140 @@ function apri3d(aperta) {
   suggerisci("Vista 3D: trascina per ruotare, due dita per lo zoom. Si disegna nella vista 2D.");
   three().then((T) => {
     if (!vista3d) vista3d = creaVista3D(T);
-    vista3d.apri();
+    vista3d.apri(); aggiornaVideo();
   }).catch(() => {
     apri3d(false);
     suggerisci("La vista 3D non è disponibile su questo dispositivo (serve WebGL).");
   });
 }
 $("apri3d").addEventListener("click", () => apri3d(!in3d));
-$("play3d").addEventListener("click", () => vista3d && vista3d.pausa());
+$("play3d").addEventListener("click", () => {
+  if (sincronizzato()) { video.paused ? video.play() : video.pause(); return; }   // comanda il video
+  if (vista3d) vista3d.pausa();
+});
 document.querySelectorAll("[data-camera]").forEach(b => b.addEventListener("click", () => vista3d && vista3d.scegliCamera(b.dataset.camera)));
 $("velocita").addEventListener("input", (e) => {
   const v = Number(e.target.value); $("velocita-v").textContent = v.toLocaleString("it-IT") + "×";
   if (vista3d) vista3d.velocita(v);
+});
+
+// ------------------------------------------------------------------ video sincronizzato
+// La clip si apre dal dispositivo e non viene caricata da nessuna parte: nel gioco si salvano
+// solo il nome del file e l'istante in cui il video mostra ogni fase. Comanda il video: la
+// lavagna (2D o 3D) si ricava dal suo istante, anche in pausa, al rallentatore o spostando
+// il cursore. Tra due fasi i giocatori si muovono nel tempo reale del video.
+const video = $("video");
+let videoAperto = false, videoUrl = null, cicloVideo = null, difVideo = null, tVideoPrima = null, ultimaFaseVideo = -1;
+const tempi = () => (gioco.video && Array.isArray(gioco.video.tempi)) ? gioco.video.tempi : [];
+const videoPronto = () => !!videoUrl && video.readyState >= 1;
+const sincronizzato = () => videoPronto() && gioco.fasi.length >= 2 && tempi().length >= gioco.fasi.length;
+function orario(t) {
+  const m = Math.floor(t / 60), s = t - m * 60;
+  return `${m}:${s.toFixed(1).padStart(4, "0").replace(".", ",")}`;
+}
+function istanteVideo() {
+  // fase e avanzamento corrispondenti all'istante del video
+  const T = tempi(), n = gioco.fasi.length, t = video.currentTime;
+  if (t <= T[0]) return { i: 0, k: 0, fine: false };
+  if (t >= T[n - 1]) return { i: n - 2, k: 1, fine: true };
+  let i = 0; while (i < n - 2 && t >= T[i + 1]) i++;
+  return { i, k: Math.max(0, Math.min(1, (t - T[i]) / ((T[i + 1] - T[i]) || 1))), fine: false };
+}
+let percorsiVideo = null;
+function disegnaDalVideo(ts) {
+  if (!sincronizzato() || in3d || animazione || trascina || bozza) return;
+  const { i, k, fine } = istanteVideo();
+  percorsiVideo ||= percorsiDi(gioco);
+  const fi = fine ? gioco.fasi.length - 1 : i;
+  const { stato, palla, volo } = fine ? { stato: clona(gioco.fasi[fi]), palla: pallaDi(gioco.fasi[fi]), volo: null }
+                                      : statoAl(percorsiVideo, i, k, true);
+  const dt = tVideoPrima === null ? 0 : (ts || 0) - tVideoPrima; tVideoPrima = ts || 0;
+  difVideo = inseguiDifesa(difVideo, difensori(stato, palla, fi, fine ? 0 : k), video.paused ? 1e4 : dt);
+  const faseVista = k >= 1 && !fine ? i + 1 : fi;
+  if (faseVista !== ultimaFaseVideo) { ultimaFaseVideo = faseVista; faseIdx = faseVista; aggiornaFasi(); }
+  disegna(stato, !fine && k > 0 && k < 1, difVideo);
+  if (volo) el("circle", { cx: palla[0], cy: palla[1], r: 1.9, fill: "var(--accento)",
+                           stroke: "var(--inchiostro)", "stroke-width": .35 });
+}
+function avviaCicloVideo() {
+  if (cicloVideo) return;
+  const passo = (ts) => {
+    disegnaDalVideo(ts);
+    cicloVideo = video.paused || video.ended ? null : requestAnimationFrame(passo);
+  };
+  cicloVideo = requestAnimationFrame(passo);
+}
+function aggiornaVideo() {
+  $("pannello-video").hidden = !videoAperto;
+  document.querySelector(".tavola").classList.toggle("con-video", videoAperto);
+  if (sincronizzato()) $("play3d").textContent = video.paused ? "▶ Play" : "❚❚ Pausa";
+  $("apri-video").setAttribute("aria-pressed", videoAperto);
+  $("apri-video").textContent = videoAperto ? "✕ Chiudi video" : "Video";
+  video.hidden = !videoUrl; $("video-vuoto").hidden = !!videoUrl;
+  const T = tempi(), n = gioco.fasi.length, segnate = Math.min(T.length, n);
+  const prossima = segnate < n ? segnate : faseIdx;
+  $("segna").textContent = segnate < n ? `📍 Segna qui la fase ${prossima + 1}` : `📍 Sposta qui la fase ${faseIdx + 1}`;
+  $("segna").disabled = !videoPronto();
+  $("ricomincia-tempi").disabled = !T.length;
+  $("scollega").disabled = !videoUrl && !gioco.video;
+  let stato;
+  if (!videoUrl && gioco.video && gioco.video.nome)
+    stato = `Questo gioco è sincronizzato con «${gioco.video.nome}»: riapri la clip per rivederlo insieme alla lavagna.`;
+  else if (!videoUrl) stato = "";
+  else if (!videoPronto()) stato = "Caricamento della clip…";
+  else if (n < 2) stato = "Disegna almeno due fasi, poi segna nel video il momento di ognuna.";
+  else if (segnate < n) stato = `Porta il video al momento della fase ${segnate + 1} (pausa o rallentatore) e premi “Segna”. Fasi segnate: ${segnate} di ${n}.`;
+  else stato = `Sincronizzato: premi play sul video, la lavagna lo segue (anche in 3D). Tocca una fase per saltare a quel punto.`;
+  $("stato-video").textContent = stato;
+  if (vista3d) vista3d.orologio(sincronizzato() ? istanteVideo : null);
+}
+function cambiatoGioco() { percorsiVideo = null; difVideo = null; ultimaFaseVideo = -1; }
+$("apri-video").addEventListener("click", () => {
+  videoAperto = !videoAperto;
+  if (!videoAperto) { video.pause(); if (vista3d) vista3d.orologio(null); }
+  aggiornaVideo(); altezza();
+});
+$("file-video").addEventListener("change", (e) => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  if (videoUrl) URL.revokeObjectURL(videoUrl);
+  videoUrl = URL.createObjectURL(f); video.src = videoUrl;
+  const prima = gioco.video && gioco.video.nome;
+  if (prima && prima !== f.name) avvisa(`Attenzione: i tempi erano stati segnati su «${prima}».`);
+  gioco.video = { nome: f.name, tempi: tempi() };
+  e.target.value = "";
+  aggiornaVideo();
+});
+video.addEventListener("loadedmetadata", () => { aggiornaVideo(); disegnaDalVideo(); altezza(); });
+video.addEventListener("play", () => { avviaCicloVideo(); aggiornaVideo(); });
+video.addEventListener("seeked", () => { tVideoPrima = null; disegnaDalVideo(); });
+video.addEventListener("pause", () => { disegnaDalVideo(); aggiornaVideo(); });
+document.querySelectorAll("[data-rate]").forEach(b => b.addEventListener("click", () => {
+  video.playbackRate = Number(b.dataset.rate);
+  document.querySelectorAll("[data-rate]").forEach(x => x.setAttribute("aria-pressed", x === b));
+}));
+$("segna").addEventListener("click", () => {
+  if (!videoPronto()) return;
+  ricorda();
+  const T = tempi().slice(0, gioco.fasi.length), n = gioco.fasi.length, t = video.currentTime;
+  const i = T.length < n ? T.length : faseIdx;
+  if ((i > 0 && T[i - 1] != null && t <= T[i - 1]) || (T[i + 1] != null && t >= T[i + 1])) {
+    storia.pop();
+    avvisa(`La fase ${i + 1} deve stare tra la fase prima e quella dopo: sposta il video.`); return;
+  }
+  T[i] = Math.round(t * 100) / 100;
+  gioco.video = { nome: (gioco.video && gioco.video.nome) || "clip", tempi: T };
+  faseIdx = Math.min(n - 1, T.length < n ? T.length : i);
+  cambiatoGioco(); tutto(); salvaBozzaLocale();
+  avvisa(`Fase ${i + 1} segnata a ${orario(t)}.` + (T.length === n ? " Tutte le fasi sono segnate: premi play." : ""));
+});
+$("ricomincia-tempi").addEventListener("click", () => {
+  ricorda(); if (gioco.video) gioco.video.tempi = []; faseIdx = 0; cambiatoGioco(); tutto(); salvaBozzaLocale();
+});
+$("scollega").addEventListener("click", () => {
+  ricorda(); video.pause();
+  if (videoUrl) URL.revokeObjectURL(videoUrl);
+  videoUrl = null; video.removeAttribute("src"); video.load();
+  delete gioco.video; cambiatoGioco(); tutto(); salvaBozzaLocale();
 });
 
 // ------------------------------------------------------------------ biblioteca
@@ -1298,6 +1463,7 @@ function tutto() {
   aggiornaDifesa();
   aggiornaFasi(); aggiornaElenco(); aggiornaSchemi(); disegna(); suggerisci();
   if (in3d && vista3d) vista3d.ricostruisci();
+  cambiatoGioco(); aggiornaVideo(); disegnaDalVideo();
 }
 tutto();
 })();
