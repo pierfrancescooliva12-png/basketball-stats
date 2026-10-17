@@ -101,7 +101,8 @@ def home():
                      "automaticamente)", opts, key="w_mia",
                      on_change=lambda: st.session_state.update(
                          mia_demo=st.session_state["w_mia"]),
-                     format_func=lambda s: "Scegli…" if s is None else nomi[s])
+                     format_func=lambda s: "Scegli…" if s is None else nomi[s],
+                     placeholder="Scegli la tua squadra…")
     if mia is None:
         note_html("Scegli la tua squadra per vedere la prossima avversaria, l'ultima partita e "
                   "gli avvisi della settimana.")
