@@ -102,7 +102,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .fase3d { position: absolute; left: 20px; top: 20px; padding: 4px 10px; border-radius: 6px;
   background: rgba(10, 14, 21, .72); color: #e9edf4; font-family: var(--display); font-weight: 700;
   letter-spacing: .06em; font-size: .95rem; pointer-events: none; }
-.nota3d { position: absolute; left: 20px; right: 20px; bottom: 74px; padding: 6px 10px;
+.nota3d { position: absolute; left: 20px; right: 20px; top: 52px; padding: 6px 10px;
   border-radius: 6px; background: rgba(10, 14, 21, .72); color: #e9edf4; font-size: .88rem;
   pointer-events: none; }
 .nota3d:empty { display: none; }
@@ -1285,6 +1285,7 @@ function aggiornaVideo() {
   if (!videoUrl && gioco.video && gioco.video.nome)
     stato = `Questo gioco è sincronizzato con «${gioco.video.nome}»: riapri la clip per rivederlo insieme alla lavagna.`;
   else if (!videoUrl) stato = "";
+  else if (!videoPronto()) stato = "Caricamento della clip…";
   else if (n < 2) stato = "Disegna almeno due fasi, poi segna nel video il momento di ognuna.";
   else if (segnate < n) stato = `Porta il video al momento della fase ${segnate + 1} (pausa o rallentatore) e premi “Segna”. Fasi segnate: ${segnate} di ${n}.`;
   else stato = `Sincronizzato: premi play sul video, la lavagna lo segue (anche in 3D). Tocca una fase per saltare a quel punto.`;
