@@ -16,6 +16,7 @@ from .stato import App
 from .ui import esc, kpis, note_html, num, section, show
 
 AGGIORNA = 30
+CAMPIONATI = {"ita2": "Serie A2", "ita3_a": "B Nazionale · girone A", "ita3_b": "B Nazionale · girone B"}
 COLORI = {3: "#ff6b5a", 2: "#ff9d2e", 1: "#9aa6b8"}
 ETICHETTA = {3: "ADESSO", 2: "PRESTO", 1: "DA TENERE D'OCCHIO"}
 
@@ -102,7 +103,8 @@ def _quando(delta: pd.Timedelta) -> str:
     m = int(delta.total_seconds() // 60)
     if m < 60: return f"tra {m} minuti"
     h, m = divmod(m, 60)
-    if h < 24: return f"tra {h} ore e {m} minuti" if m else f"tra {h} ore"
+    ore = "1 ora" if h == 1 else f"{h} ore"
+    if h < 24: return f"tra {ore} e {m} minuti" if m else f"tra {ore}"
     g, h = divmod(h, 24)
     return (f"tra 1 giorno" if g == 1 else f"tra {g} giorni") + (f" e {h} ore" if h and g < 3 else "")
 
@@ -119,7 +121,7 @@ def diretta(a: App, noi, nomi: dict):
     in_corso = cal[cal["fase"] == "in corso"]
     scelte = {}
     for r in pd.concat([mie[mie["fase"] == "in corso"], in_corso]).drop_duplicates("partita_id").itertuples():
-        scelte[r.partita_id] = f"{r.casa} – {r.ospite} · {r.ora} · {r.campionato_id.replace('ita2', 'A2').replace('ita3_a', 'B girone A').replace('ita3_b', 'B girone B')}"
+        scelte[r.partita_id] = f"{r.casa} – {r.ospite} · {r.ora} · {CAMPIONATI.get(r.campionato_id, r.campionato_id)}"
     if scelte:
         pid = st.selectbox("Partita in corso", list(scelte), format_func=scelte.get, key="live_pid",
                            help="Prima la vostra; si possono seguire anche le altre partite in corso, per esempio la prossima avversaria.")
@@ -147,11 +149,15 @@ def diretta(a: App, noi, nomi: dict):
             st.info(f"Prossima partita: {r.casa} – {r.ospite}, {r.giorno} alle {r.ora}. La diretta si apre da sola "
                     f"{live.PRIMA} minuti prima della palla a due ({_quando(r.apre - ora)}): basta tenere aperta questa pagina.")
 
-            @st.fragment(run_every=60)
-            def attesa():                                         # alla palla a due si ricarica la pagina
-                if live.adesso() >= r.apre:
-                    st.rerun(scope="app")
-            attesa()
+        # la pagina si ricarica quando si apre la prossima diretta (la vostra o un'altra di oggi)
+        aperture = cal.loc[cal["fase"].isin(["oggi", "in programma"]), "apre"]
+        prima_apertura = aperture.min() if not aperture.empty else None
+
+        @st.fragment(run_every=60)
+        def attesa():
+            if prima_apertura is not None and live.adesso() >= prima_apertura:
+                st.rerun(scope="app")
+        attesa()
     # calendario dei prossimi giorni
     section("Prossime partite", "dal calendario della lega: anche anticipi e turni infrasettimanali")
     vis = mie[mie["fase"] != "finita"].head(6)
@@ -164,9 +170,12 @@ def diretta(a: App, noi, nomi: dict):
                                        for x in vis.itertuples()]}), voci=[])
     oggi = cal[cal["inizio"].dt.date == ora.date()]
     if not oggi.empty:
-        with st.expander(f"Tutte le partite di oggi ({len(oggi)})"):
-            show(pd.DataFrame({"Ora": oggi["ora"], "Campionato": oggi["campionato_id"],
-                               "Partita": oggi["casa"] + " – " + oggi["ospite"], "Stato": oggi["fase"]}), voci=[])
+        section(f"Oggi si gioca · {len(oggi)} partite", "ogni diretta si apre da sola 20' prima della palla a due "
+                "e si può seguire dal menu Partita in corso", key="live_oggi")
+        show(pd.DataFrame({"Ora": oggi["ora"], "Campionato": oggi["campionato_id"].map(CAMPIONATI).fillna(oggi["campionato_id"]),
+                           "Partita": oggi["casa"] + " – " + oggi["ospite"],
+                           "Diretta": [{"in corso": "in corso", "finita": "finita"}.get(x.fase, "si apre " + _quando(x.apre - ora))
+                                       for x in oggi.itertuples()]}), voci=[])
 
 
 def render(a: App):
