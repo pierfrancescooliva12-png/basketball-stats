@@ -110,9 +110,43 @@ def indice_rosa(bg: pd.DataFrame, valori: pd.DataFrame) -> pd.Series:
     return j.groupby("squadra_id")["v"].sum()
 
 
+# Correzione per la fortuna nei tiri (validazione 2.215 partite: Brier da 0,2125 a 0,2110,
+# errore sul margine da 9,71 a 9,62). Le percentuali da 3 e ai liberi cambiano molto da partita a
+# partita per caso: nei punti fatti la percentuale da 3 della squadra conta per il 70% e quella del
+# campionato per il 30%; nei punti subiti la percentuale da 3 concessa conta solo per il 20% (la
+# difesa la controlla poco) e i liberi degli avversari valgono la media del campionato.
+FORTUNA_ATTACCO_3, FORTUNA_DIFESA_3, FORTUNA_ATTACCO_TL = 0.7, 0.2, 0.8
+
+
+def correggi_fortuna(bs: pd.DataFrame) -> pd.DataFrame:
+    """Punti fatti e subiti di ogni partita come se le percentuali da 3 e ai liberi fossero quelle
+    attese (della squadra, riportate verso la media del campionato), non quelle della serata."""
+    b = bs.copy()
+    if b.empty or not {"t3a", "opp_t3a", "tla", "opp_tla"} <= set(b.columns):
+        return b
+    l3 = b["t3m"].sum() / max(1, b["t3a"].sum())
+    lf = b["tlm"].sum() / max(1, b["tla"].sum())
+    g = b.groupby("squadra_id")
+    quota = lambda m, a: g[m].transform("sum") / g[a].transform("sum").clip(lower=1)  # noqa: E731
+    e3o = FORTUNA_ATTACCO_3 * quota("t3m", "t3a") + (1 - FORTUNA_ATTACCO_3) * l3
+    e3d = FORTUNA_DIFESA_3 * quota("opp_t3m", "opp_t3a") + (1 - FORTUNA_DIFESA_3) * l3
+    efo = FORTUNA_ATTACCO_TL * quota("tlm", "tla") + (1 - FORTUNA_ATTACCO_TL) * lf
+    d_att = 3 * (b["t3m"] - b["t3a"] * e3o) + (b["tlm"] - b["tla"] * efo)
+    d_dif = 3 * (b["opp_t3m"] - b["opp_t3a"] * e3d) + (b["opp_tlm"] - b["opp_tla"] * lf)
+    b["punti"] = b["punti"] - d_att.fillna(0)
+    b["punti_subiti"] = b["punti_subiti"] - d_dif.fillna(0)
+    if "opp_punti" in b:
+        b["opp_punti"] = b["opp_punti"] - d_dif.fillna(0)
+    return b
+
+
 def strengths(bs: pd.DataFrame, prior: dict | None = None) -> pd.DataFrame:
-    """Forza per squadra: media bayesiana tra punto di partenza e Net rating attuale."""
-    t = A.team_summary(bs)
+    """Forza per squadra: media bayesiana tra punto di partenza e Net rating attuale, corretto
+    per la fortuna nei tiri. Net rating, ORtg e DRtg restano quelli reali (per la lettura)."""
+    reale = A.team_summary(bs)
+    t = A.team_summary(correggi_fortuna(bs))
+    t = t.merge(reale[["squadra_id", "net_rtg", "ortg", "drtg"]].rename(
+        columns={"net_rtg": "net_reale", "ortg": "ortg_reale", "drtg": "drtg_reale"}), on="squadra_id", how="left")
     g = t["partite_avanzate"].astype(float)
     m0 = t["squadra_id"].map(prior or {}).fillna(0.0)
     t["forza"] = (m0 * K_RESTRINGIMENTO + t["net_rtg"].fillna(0) * g) / (g + K_RESTRINGIMENTO)
@@ -124,9 +158,11 @@ def strengths(bs: pd.DataFrame, prior: dict | None = None) -> pd.DataFrame:
     t["parte_precedente"] = m0 * K_RESTRINGIMENTO / (g + K_RESTRINGIMENTO)
     t["parte_attacco"] = ((t["ortg"] - lega) * w).fillna(0)
     t["parte_difesa"] = ((lega - t["drtg"]) * w).fillna(0)
+    t["ortg_corr"], t["drtg_corr"] = t["ortg"], t["drtg"]
+    t["net_rtg"], t["ortg"], t["drtg"] = t["net_reale"], t["ortg_reale"], t["drtg_reale"]
     return t[["campionato_id", "squadra_id", "squadra", "partite", "vinte", "perse_partite",
               "net_rtg", "forza", "incertezza", "ortg", "drtg", "pace_stima",
-              "parte_precedente", "parte_attacco", "parte_difesa"]]
+              "parte_precedente", "parte_attacco", "parte_difesa", "ortg_corr", "drtg_corr"]]
 
 
 def predict(forze: pd.DataFrame, casa_id: int, ospite_id: int, hca: float,
@@ -303,19 +339,33 @@ def head_to_head(conn, a: int, b: int) -> pd.DataFrame:
 
 # ------------------------------------------------------------------ punti totali e intervalli
 # Validazione retrospettiva 2024/25–2026/27 (2.002 partite, solo dati precedenti a ogni partita):
-# errore medio sui punti totali 12,6 contro 13,1 della media di campionato; il modello
+# errore medio sui punti totali 12,5 (efficienze corrette per la fortuna) contro 13,1 della media; il modello
 # sottostimava di 1,5 punti (correzione). Dispersione dei totali 16 punti, del margine 12,5.
 RESTRINGI_TOTALI = 6.0       # partite di "media di campionato" aggiunte a ogni squadra
 CORREZIONE_TOTALI = 1.5
 SIGMA_TOTALI = 16.0
 Z80 = 1.2816                 # intervallo che contiene 8 risultati su 10
+Z50 = 0.6745                 # intervallo che contiene 1 risultato su 2
+# Scarto reale tra margine previsto e reale (validazione 2.215 partite, con la correzione per la
+# fortuna): più largo nelle prime giornate, quando le forze sono ancora poco note. Con questi valori
+# gli intervalli contengono il risultato l'80,7% e il 51,6% delle volte.
+SIGMA_MARGINE_FASI = ((3, 13.1), (7, 12.3), (999, 11.85))      # (partite giocate fino a, dispersione)
+SIGMA_TOTALI_CAMPIONATO = {"ita2": 15.0, "ita3_a": 16.7, "ita3_b": 15.9}
+
+
+def sigma_margine(partite_giocate: float) -> float:
+    for fino, s in SIGMA_MARGINE_FASI:
+        if partite_giocate <= fino:
+            return s
+    return SIGMA_MARGINE_FASI[-1][1]
 
 
 def totale(forze: pd.DataFrame, casa_id: int, ospite_id: int, partite: dict | None = None) -> dict:
     """Punti totali attesi: possessi (ritmo delle due squadre) × efficienza dell'attacco contro la
     difesa avversaria, ognuna ristretta verso la media con poche partite giocate."""
     f = forze.set_index("squadra_id")
-    lega_o, lega_p = f["ortg"].mean(), f["pace_stima"].mean()
+    o, d = ("ortg_corr", "drtg_corr") if "ortg_corr" in f else ("ortg", "drtg")   # corretti per la fortuna
+    lega_o, lega_p = f[o].mean(), f["pace_stima"].mean()
     partite = partite or {}
 
     def sh(sid, col, media):
@@ -324,20 +374,27 @@ def totale(forze: pd.DataFrame, casa_id: int, ospite_id: int, partite: dict | No
         v = media if pd.isna(v) else v
         return (v * g + media * RESTRINGI_TOTALI) / (g + RESTRINGI_TOTALI)
     poss = sh(casa_id, "pace_stima", lega_p) + sh(ospite_id, "pace_stima", lega_p) - lega_p
-    eff_c = sh(casa_id, "ortg", lega_o) + sh(ospite_id, "drtg", lega_o) - lega_o
-    eff_o = sh(ospite_id, "ortg", lega_o) + sh(casa_id, "drtg", lega_o) - lega_o
+    eff_c = sh(casa_id, o, lega_o) + sh(ospite_id, d, lega_o) - lega_o
+    eff_o = sh(ospite_id, o, lega_o) + sh(casa_id, d, lega_o) - lega_o
     tot = poss * (eff_c + eff_o) / 100 + CORREZIONE_TOTALI
     return {"totale": tot, "possessi": poss, "da": tot - Z80 * SIGMA_TOTALI, "a": tot + Z80 * SIGMA_TOTALI}
 
 
-def pronostico(forze: pd.DataFrame, casa_id: int, ospite_id: int, hca: float) -> dict:
+def pronostico(forze: pd.DataFrame, casa_id: int, ospite_id: int, hca: float,
+               campionato: str | None = None) -> dict:
     """Pronostico completo di una partita: vincente, margine con intervallo all'80%, punti
     totali con intervallo, punteggio indicativo, probabilità di uno scarto ampio."""
     p = predict(forze, casa_id, ospite_id, hca)
     t = totale(forze, casa_id, ospite_id)
     m = p["margine"]
     out = {**p, **{k: v for k, v in t.items() if k != "possessi"}}
-    out["margine_da"], out["margine_a"] = m - Z80 * SIGMA, m + Z80 * SIGMA
+    f0 = forze.set_index("squadra_id")
+    giocate = min(f0.loc[casa_id].get("partite", 99), f0.loc[ospite_id].get("partite", 99))
+    sm, stt = sigma_margine(giocate), SIGMA_TOTALI_CAMPIONATO.get(campionato, SIGMA_TOTALI)
+    out["margine_da"], out["margine_a"] = m - Z80 * sm, m + Z80 * sm
+    out["margine_da50"], out["margine_a50"] = m - Z50 * sm, m + Z50 * sm
+    out["da"], out["a"] = t["totale"] - Z80 * stt, t["totale"] + Z80 * stt
+    out["da50"], out["a50"] = t["totale"] - Z50 * stt, t["totale"] + Z50 * stt
     out["punti_casa"], out["punti_ospite"] = (t["totale"] + m) / 2, (t["totale"] - m) / 2
     out["scarto_10_casa"] = 1 - _phi((10 - m) / SIGMA)       # casa vince di più di 10
     out["scarto_10_ospite"] = _phi((-10 - m) / SIGMA)

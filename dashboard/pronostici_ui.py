@@ -35,7 +35,7 @@ def pronostici(a: App, giorni: int = 10) -> pd.DataFrame:
             continue
         for r in g.itertuples():
             try:
-                p = F.pronostico(forze, r.squadra_casa_id, r.squadra_ospite_id, hca)
+                p = F.pronostico(forze, r.squadra_casa_id, r.squadra_ospite_id, hca, camp)
             except KeyError:
                 continue
             righe.append({"partita_id": r.partita_id, "campionato_id": camp, "giornata": r.giornata, "inizio": r.inizio,
@@ -88,18 +88,23 @@ def render(a: App):
             riga.update({
                 "Partita": f"{r.casa} – {r.ospite}", "Favorita": fav, "Probabilità": round(100 * pf),
                 "Scarto atteso": f"+{num(abs(r.margine), 1)}",
-                "Margine casa (8 su 10)": f"{num(r.margine_da, 0, True)} / {num(r.margine_a, 0, True)}",
-                "Punti totali (8 su 10)": f"{round(r.totale)} ({num(r.da, 0)}–{num(r.a, 0)})",
+                "Margine casa · 1 su 2": f"{num(r.margine_da50, 0, True)} / {num(r.margine_a50, 0, True)}",
+                "8 su 10": f"{num(r.margine_da, 0, True)} / {num(r.margine_a, 0, True)}",
+                "Punti totali · 1 su 2": f"{round(r.totale)} ({num(r.da50, 0)}–{num(r.a50, 0)})",
+                "Totali 8 su 10": f"{num(r.da, 0)}–{num(r.a, 0)}",
                 "Affidabilità": r.affidabilita})
             righe.append(riga)
         show(pd.DataFrame(righe), progress={"Probabilità": (50, 100)}, voci=[])
     with st.expander("Come leggere i pronostici"):
         st.markdown(
             "- **Probabilità**: quante volte su 100 vince la favorita in partite come questa. È calibrata: quando il "
-            "modello dice 70-80%, la favorita ha vinto il 71% delle volte.\n"
-            "- **Scarto atteso** (punti di vantaggio della favorita) e **punti totali**: il risultato medio atteso. Gli intervalli \"8 su 10\" contengono il "
-            "risultato reale in 8 partite su 10: sono larghi perché il basket lo è (un margine si sposta in media di "
-            "quasi 10 punti rispetto al previsto, i totali di 12-13).\n"
+            "modello dice 70-80%, la favorita ha vinto il 75% delle volte.\n"
+            "- **Scarto atteso** (punti di vantaggio della favorita) e **punti totali**: il risultato medio atteso.\n"
+            "- **1 su 2**: la fascia in cui cade il risultato in metà delle partite, cioè il risultato più probabile. "
+            "**8 su 10**: la fascia che lo contiene 8 volte su 10. Sono larghe perché il basket lo è (un margine si "
+            "sposta in media di quasi 10 punti rispetto al previsto, i totali di 12-13), più strette da metà stagione, "
+            "quando le squadre sono note; verificate sulle partite passate (contengono il risultato il 52% e l'81% "
+            "delle volte).\n"
             "- **Margine (8 su 10)**: dal punto di vista della squadra di casa (positivo = vince la casa).\n"
             "- **Affidabilità**: bassa a inizio stagione o con squadre cambiate molto, alta con molte partite giocate.\n"
             "- Il modello non sa delle assenze dell'ultimo momento: un infortunio del miglior giocatore cambia il "
