@@ -299,3 +299,50 @@ def head_to_head(conn, a: int, b: int) -> pd.DataFrame:
                        df["punti_ospite"] > df["punti_casa"])
     df["vincente"] = np.where(vince_a, "A", "B")
     return df.drop(columns="squadra_casa_id")
+
+
+# ------------------------------------------------------------------ punti totali e intervalli
+# Validazione retrospettiva 2024/25–2026/27 (2.002 partite, solo dati precedenti a ogni partita):
+# errore medio sui punti totali 12,6 contro 13,1 della media di campionato; il modello
+# sottostimava di 1,5 punti (correzione). Dispersione dei totali 16 punti, del margine 12,5.
+RESTRINGI_TOTALI = 6.0       # partite di "media di campionato" aggiunte a ogni squadra
+CORREZIONE_TOTALI = 1.5
+SIGMA_TOTALI = 16.0
+Z80 = 1.2816                 # intervallo che contiene 8 risultati su 10
+
+
+def totale(forze: pd.DataFrame, casa_id: int, ospite_id: int, partite: dict | None = None) -> dict:
+    """Punti totali attesi: possessi (ritmo delle due squadre) × efficienza dell'attacco contro la
+    difesa avversaria, ognuna ristretta verso la media con poche partite giocate."""
+    f = forze.set_index("squadra_id")
+    lega_o, lega_p = f["ortg"].mean(), f["pace_stima"].mean()
+    partite = partite or {}
+
+    def sh(sid, col, media):
+        g = partite.get(sid, f.loc[sid, "partite"] if "partite" in f else 0) or 0
+        v = f.loc[sid, col]
+        v = media if pd.isna(v) else v
+        return (v * g + media * RESTRINGI_TOTALI) / (g + RESTRINGI_TOTALI)
+    poss = sh(casa_id, "pace_stima", lega_p) + sh(ospite_id, "pace_stima", lega_p) - lega_p
+    eff_c = sh(casa_id, "ortg", lega_o) + sh(ospite_id, "drtg", lega_o) - lega_o
+    eff_o = sh(ospite_id, "ortg", lega_o) + sh(casa_id, "drtg", lega_o) - lega_o
+    tot = poss * (eff_c + eff_o) / 100 + CORREZIONE_TOTALI
+    return {"totale": tot, "possessi": poss, "da": tot - Z80 * SIGMA_TOTALI, "a": tot + Z80 * SIGMA_TOTALI}
+
+
+def pronostico(forze: pd.DataFrame, casa_id: int, ospite_id: int, hca: float) -> dict:
+    """Pronostico completo di una partita: vincente, margine con intervallo all'80%, punti
+    totali con intervallo, punteggio indicativo, probabilità di uno scarto ampio."""
+    p = predict(forze, casa_id, ospite_id, hca)
+    t = totale(forze, casa_id, ospite_id)
+    m = p["margine"]
+    out = {**p, **{k: v for k, v in t.items() if k != "possessi"}}
+    out["margine_da"], out["margine_a"] = m - Z80 * SIGMA, m + Z80 * SIGMA
+    out["punti_casa"], out["punti_ospite"] = (t["totale"] + m) / 2, (t["totale"] - m) / 2
+    out["scarto_10_casa"] = 1 - _phi((10 - m) / SIGMA)       # casa vince di più di 10
+    out["scarto_10_ospite"] = _phi((-10 - m) / SIGMA)
+    f = forze.set_index("squadra_id")
+    inc = math.sqrt(f.loc[casa_id, "incertezza"] ** 2 + f.loc[ospite_id, "incertezza"] ** 2)
+    out["incertezza"] = inc
+    out["affidabilita"] = "alta" if inc < 4.5 else ("media" if inc < 6.5 else "bassa")
+    return out

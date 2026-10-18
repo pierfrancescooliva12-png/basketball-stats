@@ -245,6 +245,12 @@ def p_anteprima():
     nuove.render_anteprima(APP)
 
 
+def p_pronostici():
+    titolo_pagina("Pronostici della giornata", "tutte le partite in programma: probabilità, margine e punti attesi")
+    from . import pronostici_ui
+    pronostici_ui.render(APP)
+
+
 def p_proiezione():
     titolo_pagina("Proiezione della classifica", "dove può arrivare ogni squadra")
     previsioni_ui.render_proiezione(APP)
@@ -345,6 +351,7 @@ def mappa() -> dict:
                          "lavagna_avv"),
                        P(p_squadre, "Squadre", "squadre", "squadre")],
         "Previsioni": [P(p_anteprima, "Anteprima e scenari", "anteprima", "anteprima"),
+                       P(p_pronostici, "Pronostici della giornata", "pronostici", "pronostici"),
                        P(p_proiezione, "Proiezione della classifica", "proiezione",
                          "proiezione"),
                        P(p_affidabilita, "Affidabilità delle previsioni", "affidabilita",

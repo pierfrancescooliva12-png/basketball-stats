@@ -68,7 +68,17 @@ prima (`python -m basket.validazione --salva`):
 
 Sono state provate anche altre migliorie (forza corretta per gli avversari affrontati, più peso
 alle partite recenti, assenze nell'ultima partita, giorni di riposo): nessuna migliorava la
-validazione, quindi non sono state adottate. Il punto di partenza dalla rosa invece sì: Brier
+validazione, quindi non sono state adottate. Nell'ottobre 2026 sono stati provati anche un rating Elo con margine (Brier 0,2155), la
+combinazione Elo + modello attuale (0,2124, differenza trascurabile), il fattore campo per squadra
+e, come limite superiore, la conoscenza esatta degli assenti di ogni partita (Brier da 0,2125 a
+0,2120): sul vincente il modello è vicino a quanto permettono questi dati. È stata aggiunta la stima
+dei **punti totali** (ritmo × efficienza di attacco contro difesa): errore medio 12,6 punti contro
+13,1 della media di campionato.
+
+**Pronostici della giornata** (Previsioni): tutte le partite in programma nei prossimi giorni, in A2 e
+B Nazionale, con favorita e probabilità, scarto atteso, margine e punti totali con l'intervallo che
+contiene il risultato in 8 partite su 10, affidabilità (bassa a inizio stagione) e quante ne ha prese
+il modello nella stagione in corso. Analisi statistica, non consigli di scommessa. Il punto di partenza dalla rosa invece sì: Brier
 score da 0,214 a 0,213, accuratezza dal 65,9% al 66,2%.
 
 Le probabilità sono calibrate: quando il modello dà la favorita tra il 70% e l'80%, la
@@ -249,7 +259,7 @@ fonte dati** salva le pagine in `discovery/output` per adeguare il parser.
 | `assets/logo/` | Logo ASSIST (SVG e PNG; `build_logo.py` lo rigenera) |
 | `video/` | Analisi delle clip (`analisi.py`: rilevamento YOLOX, movimento della telecamera, calibrazione con 4 tocchi o aggancio al palazzetto, tracciamento guidato, palla e passaggi, bozza del gioco), servizio su Modal con GPU T4 (`servizio_modal.py`, pubblicato dal sito con `MODAL_TOKEN_ID` e `MODAL_TOKEN_SECRET` nei Secrets) e servizio locale per lo sviluppo (`servizio_locale.py`, con `ASSIST_VIDEO_LOCALE=1` e `ASSIST_YOLOX`); interfaccia in `dashboard/video_ui.py` e `dashboard/tocchi/` |
 | `basket/leverage.py`, `basket/live.py` | **Leverage** (adattamento della statistica NBA): probabilità di vittoria in partita tarata sulla cronaca 2025/26, swing di ogni azione contro l'esito opposto, merito ai giocatori in campo a somma zero; stato della partita in diretta e regole dei suggerimenti. In dashboard: probabilità e momenti decisivi nella pagina della partita, classifica Leverage nell'elenco giocatori, pagina Live |
-| `tests/` | 80 test automatici (parser, formule, quintetti, nuove analisi, previsioni e validazione, chiavi per vincere, lavagna, PDF, accessi) |
+| `tests/` | 81 test automatici (parser, formule, quintetti, nuove analisi, previsioni e validazione, chiavi per vincere, lavagna, PDF, accessi) |
 
 ```bash
 pip install -r requirements-update.txt
