@@ -60,19 +60,41 @@ ne ricava margine atteso e probabilità di vittoria. È validato su tutte le par
 stagioni 2024/25 e 2025/26 e delle prime giornate del 2026/27, in A2 e B Nazionale, usando ogni volta solo le partite giocate
 prima (`python -m basket.validazione --salva`):
 
-| Metrica (2.179 partite) | ASSIST | Vince sempre la squadra di casa | Vince chi ha il record migliore |
+| Metrica (2.215 partite) | ASSIST | Vince sempre la squadra di casa | Vince chi ha il record migliore |
 |---|---|---|---|
-| Partite in cui vince la favorita | 66,2% | 60,2% | 62,3% |
-| Brier score (più basso è meglio) | 0,213 | 0,240 | – |
-| Errore medio sul margine | 9,7 punti | – | – |
+| Partite in cui vince la favorita | 66,7% | 60,2% | 62,4% |
+| Brier score (più basso è meglio) | 0,211 | 0,240 | – |
+| Errore medio sul margine | 9,6 punti | – | – |
 
 Sono state provate anche altre migliorie (forza corretta per gli avversari affrontati, più peso
 alle partite recenti, assenze nell'ultima partita, giorni di riposo): nessuna migliorava la
-validazione, quindi non sono state adottate. Il punto di partenza dalla rosa invece sì: Brier
+validazione, quindi non sono state adottate. Nell'ottobre 2026 sono stati provati anche un rating Elo con margine (Brier 0,2155), la
+combinazione Elo + modello attuale (0,2124, differenza trascurabile), il fattore campo per squadra
+e, come limite superiore, la conoscenza esatta degli assenti di ogni partita (Brier da 0,2125 a
+0,2120): sul vincente il modello è vicino a quanto permettono questi dati. È stata aggiunta la stima
+dei **punti totali** (ritmo × efficienza di attacco contro difesa): errore medio 12,5 punti contro
+13,1 della media di campionato.
+
+**Correzione per la fortuna nei tiri** (adottata): la forza delle squadre si calcola sui punti che
+avrebbero fatto e subito con le percentuali da 3 e ai liberi attese invece di quelle della serata
+(nell'attacco la percentuale della squadra pesa il 70%, nella difesa quella concessa solo il 20%, i
+liberi degli avversari valgono la media). Brier da 0,2125 a 0,2110, favorita vincente dal 66,4% al
+66,7%, errore sul margine da 9,71 a 9,62, migliore in entrambe le stagioni complete. Ridurre il peso
+delle vittorie larghe (punti a partita decisa) invece non migliorava.
+
+**Intervalli su misura**: la dispersione del margine dipende da quanto sono note le squadre (13,1
+punti nelle prime 3 giornate, 11,85 da metà stagione) e quella dei totali dal campionato (15,0 in A2,
+16,7 nel girone A di B). Gli intervalli "1 su 2" e "8 su 10" contengono il risultato reale il 51,6%
+e l'80,7% delle volte.
+
+**Pronostici della giornata** (Previsioni): tutte le partite in programma nei prossimi giorni, in A2 e
+B Nazionale, con favorita e probabilità, scarto atteso, margine e punti totali con le fasce che
+contengono il risultato in 1 partita su 2 e in 8 su 10, affidabilità (bassa a inizio stagione) e quante ne ha prese
+il modello nella stagione in corso. Analisi statistica, non consigli di scommessa. Il punto di partenza dalla rosa invece sì: Brier
 score da 0,214 a 0,213, accuratezza dal 65,9% al 66,2%.
 
 Le probabilità sono calibrate: quando il modello dà la favorita tra il 70% e l'80%, la
-favorita vince il 71,1% delle volte. A ogni aggiornamento le previsioni delle partite ancora da
+favorita vince il 74,8% delle volte (prevista 74,6%). A ogni aggiornamento le previsioni delle partite ancora da
 giocare vengono registrate nella tabella `previsioni`, così il rendimento sulla stagione in
 corso è verificabile. Le previsioni sono uno strumento di analisi per lo staff tecnico, non
 destinato alle scommesse.
@@ -249,7 +271,7 @@ fonte dati** salva le pagine in `discovery/output` per adeguare il parser.
 | `assets/logo/` | Logo ASSIST (SVG e PNG; `build_logo.py` lo rigenera) |
 | `video/` | Analisi delle clip (`analisi.py`: rilevamento YOLOX, movimento della telecamera, calibrazione con 4 tocchi o aggancio al palazzetto, tracciamento guidato, palla e passaggi, bozza del gioco), servizio su Modal con GPU T4 (`servizio_modal.py`, pubblicato dal sito con `MODAL_TOKEN_ID` e `MODAL_TOKEN_SECRET` nei Secrets) e servizio locale per lo sviluppo (`servizio_locale.py`, con `ASSIST_VIDEO_LOCALE=1` e `ASSIST_YOLOX`); interfaccia in `dashboard/video_ui.py` e `dashboard/tocchi/` |
 | `basket/leverage.py`, `basket/live.py` | **Leverage** (adattamento della statistica NBA): probabilità di vittoria in partita tarata sulla cronaca 2025/26, swing di ogni azione contro l'esito opposto, merito ai giocatori in campo a somma zero; stato della partita in diretta e regole dei suggerimenti. In dashboard: probabilità e momenti decisivi nella pagina della partita, classifica Leverage nell'elenco giocatori, pagina Live |
-| `tests/` | 80 test automatici (parser, formule, quintetti, nuove analisi, previsioni e validazione, chiavi per vincere, lavagna, PDF, accessi) |
+| `tests/` | 82 test automatici (parser, formule, quintetti, nuove analisi, previsioni e validazione, chiavi per vincere, lavagna, PDF, accessi) |
 
 ```bash
 pip install -r requirements-update.txt
