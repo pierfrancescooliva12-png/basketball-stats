@@ -104,6 +104,10 @@ def backtest(conn, stagioni: list[str] | None = None) -> pd.DataFrame:
                     h = hca.get((camp, data), F.VANTAGGIO_CAMPO_DEFAULT)
                     margine = (fc - fo) * poss / 100 + h
                     p = F._phi(margine / F.SIGMA)
+                    tot = np.nan          # punti totali previsti, quando le due squadre hanno già giocato
+                    if isinstance(f, pd.DataFrame) and not f.empty and \
+                            {r.squadra_casa_id, r.squadra_ospite_id} <= set(f.index):
+                        tot = F.totale(forze, r.squadra_casa_id, r.squadra_ospite_id)["totale"]
                     righe.append({
                         "partita_id": r.partita_id, "stagione": stag, "campionato_id": camp,
                         "giornata": r.giornata, "data": data, "casa_id": r.squadra_casa_id,
@@ -111,6 +115,7 @@ def backtest(conn, stagioni: list[str] | None = None) -> pd.DataFrame:
                         "margine_previsto": margine,
                         "margine_reale": r.punti_casa - r.punti_ospite,
                         "vince_casa": r.punti_casa > r.punti_ospite,
+                        "totale_previsto": tot, "totale_reale": r.punti_casa + r.punti_ospite,
                         "partite_note": int(len(prima) / max(1, prima["squadra_id"].nunique()))
                         if not prima.empty else 0})
     return pd.DataFrame(righe)

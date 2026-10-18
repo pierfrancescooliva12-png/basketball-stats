@@ -43,3 +43,19 @@ def test_correzione_fortuna():
     c = F.correggi_fortuna(b)
     assert (c["punti"].iloc[0] - c["punti"].iloc[1]) < (b["punti"].iloc[0] - b["punti"].iloc[1])
     assert abs(c["punti"].sum() - b["punti"].sum()) < 1e-9      # con la sola squadra in archivio il totale resta uguale
+
+
+def test_piu_previsioni_insieme():
+    forze = pd.DataFrame({"squadra_id": [1, 2], "forza": [6.0, -6.0], "pace_stima": [72.0, 72.0],
+                          "ortg": [110.0, 102.0], "drtg": [102.0, 110.0], "partite": [10, 10], "incertezza": [3.0, 3.0]})
+    p = F.pronostico(forze, 1, 2, 3.0, "ita2")
+    assert F.probabilita_evento(p, "casa") == pytest.approx(p["prob_casa"])
+    assert p["rischio"] == pytest.approx(1 - p["prob_casa"])
+    assert F.probabilita_evento(p, "casa_scarto", 0) == pytest.approx(0.5 + 0.5 * (2 * p["prob_casa"] - 1), abs=0.05)
+    assert F.probabilita_evento(p, "over", p["totale"]) == pytest.approx(0.5)
+    assert F.probabilita_evento(p, "over", 150) + F.probabilita_evento(p, "under", 150) == pytest.approx(1)
+    assert F.probabilita_evento(p, "casa_scarto", 5) > F.probabilita_evento(p, "casa_scarto", 10)
+    e = F.errori([0.8, 0.7, 0.6])
+    assert e["tutte"] == pytest.approx(0.8 * 0.7 * 0.6)
+    assert e["attesi"] == pytest.approx(0.9) and e["distribuzione"].sum() == pytest.approx(1)
+    assert e["al_piu_uno"] == pytest.approx(0.336 + 0.8 * 0.7 * 0.4 + 0.8 * 0.3 * 0.6 + 0.2 * 0.7 * 0.6)
