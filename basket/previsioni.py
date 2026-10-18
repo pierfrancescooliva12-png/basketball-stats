@@ -402,4 +402,41 @@ def pronostico(forze: pd.DataFrame, casa_id: int, ospite_id: int, hca: float,
     inc = math.sqrt(f.loc[casa_id, "incertezza"] ** 2 + f.loc[ospite_id, "incertezza"] ** 2)
     out["incertezza"] = inc
     out["affidabilita"] = "alta" if inc < 4.5 else ("media" if inc < 6.5 else "bassa")
+    out["sigma_margine"], out["sigma_totali"] = sm, stt
+    out["rischio"] = min(out["prob_casa"], 1 - out["prob_casa"])     # probabilità che la favorita perda
     return out
+
+
+# ------------------------------------------------------------------ più previsioni insieme
+# Correggere le probabilità con l'andamento della stagione in corso (fattore campo, fiducia, totali
+# per campionato) è stato provato giorno per giorno sulle stagioni 2024/25–2026/27: nessun
+# miglioramento (Brier 0,2110 contro 0,2109-0,2115). Le deviazioni di inizio stagione sono in gran
+# parte caso e rientrano: si usano le probabilità del modello, calibrate sullo storico.
+
+
+def probabilita_evento(p: dict, evento: str, soglia: float = 0.0) -> float:
+    """Probabilità di un esito della partita dal pronostico: "casa", "ospite" (vincente),
+    "casa_scarto"/"ospite_scarto" (vince di più di soglia), "over"/"under" (punti totali)."""
+    m, sm, st = p["margine"], p.get("sigma_margine", SIGMA), p.get("sigma_totali", SIGMA_TOTALI)
+    if evento == "casa":
+        return p["prob_casa"]
+    if evento == "ospite":
+        return 1 - p["prob_casa"]
+    if evento == "casa_scarto":
+        return 1 - _phi((soglia - m) / sm)
+    if evento == "ospite_scarto":
+        return _phi((-soglia - m) / sm)
+    if evento == "over":
+        return 1 - _phi((soglia - p["totale"]) / st)
+    if evento == "under":
+        return _phi((soglia - p["totale"]) / st)
+    raise ValueError(evento)
+
+
+def errori(probabilita: list[float]) -> dict:
+    """Su più previsioni indipendenti: probabilità di prenderle tutte, al più 1 errore, errori attesi."""
+    dist = np.array([1.0])                       # dist[j] = probabilità di j errori
+    for q in probabilita:
+        dist = np.convolve(dist, [q, 1 - q])
+    return {"tutte": float(dist[0]), "al_piu_uno": float(dist[:2].sum()),
+            "attesi": float(sum(1 - q for q in probabilita)), "distribuzione": dist}
