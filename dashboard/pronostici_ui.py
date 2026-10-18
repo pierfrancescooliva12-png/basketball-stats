@@ -43,6 +43,11 @@ def pronostici(a: App, giorni: int = 10) -> pd.DataFrame:
     return pd.DataFrame(righe).sort_values("inizio") if righe else pd.DataFrame()
 
 
+def _s(x) -> str:
+    v = int(round(x))
+    return f"{v:+d}" if v else "0"
+
+
 def _fav(r) -> tuple[str, float]:
     return (r.casa, r.prob_casa) if r.prob_casa >= 0.5 else (r.ospite, 1 - r.prob_casa)
 
@@ -88,8 +93,8 @@ def render(a: App):
             riga.update({
                 "Partita": f"{r.casa} – {r.ospite}", "Favorita": fav, "Probabilità": round(100 * pf),
                 "Scarto atteso": f"+{num(abs(r.margine), 1)}",
-                "Margine casa · 1 su 2": f"{num(r.margine_da50, 0, True)} / {num(r.margine_a50, 0, True)}",
-                "8 su 10": f"{num(r.margine_da, 0, True)} / {num(r.margine_a, 0, True)}",
+                "Margine casa · 1 su 2": f"{_s(r.margine_da50)} / {_s(r.margine_a50)}",
+                "8 su 10": f"{_s(r.margine_da)} / {_s(r.margine_a)}",
                 "Punti totali · 1 su 2": f"{round(r.totale)} ({num(r.da50, 0)}–{num(r.a50, 0)})",
                 "Totali 8 su 10": f"{num(r.da, 0)}–{num(r.a, 0)}",
                 "Affidabilità": r.affidabilita})
