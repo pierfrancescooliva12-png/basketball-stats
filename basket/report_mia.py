@@ -25,10 +25,10 @@ from .report_pdf import (_approfondimenti, _fmt, _fonts, _kpis, _styles, _table,
                          unisci_titoli)
 
 # stesse voci e nomi del pannello obiettivi della dashboard
-OBIETTIVI = {"efg_pct": "eFG% in attacco", "tov_pct": "Palle perse %",
-             "orb_pct": "Rimbalzi offensivi %", "ft_rate": "FT rate",
-             "opp_efg_pct": "eFG% concessa", "opp_tov_pct": "Palle perse forzate %",
-             "drb_pct": "Rimbalzi difensivi %", "opp_ft_rate": "FT rate concesso"}
+OBIETTIVI = {"efg_pct": "Tiro dal campo (triple pesate)", "tov_pct": "Palle perse (% delle azioni)",
+             "orb_pct": "Rimbalzi offensivi (% presi)", "ft_rate": "Liberi segnati per tiro",
+             "opp_efg_pct": "Tiro concesso agli avversari", "opp_tov_pct": "Palle perse forzate (% delle azioni)",
+             "drb_pct": "Rimbalzi difensivi (% presi)", "opp_ft_rate": "Liberi concessi per tiro"}
 
 
 def _virgola(testo: str) -> str:
@@ -120,7 +120,7 @@ def build_mia_squadra(ctx: Contesto, sid: int, obiettivi: dict | None = None,
                      M.leggibile(x, "obiettivo"), f"+{_fmt(x['vittorie'], 1)}"])
     el += [_titolo("Priorità di lavoro · Four Factors", S),
            _table(rows, [44 * mm, 18 * mm] + [(W - 62 * mm) / 6] * 6, align_left=(1,)),
-           Paragraph("Palle perse e rimbalzi: numero a partita con la percentuale tra parentesi; "
+           Paragraph("Palle perse e rimbalzi: numero a partita; tiro dal campo: percentuale con le triple che valgono 1,5; "
                      "tiri liberi: liberi segnati a partita. "
                      "Vittorie in più su 30 partite raggiungendo l'obiettivo: la media del "
                      "campionato per le voci sotto la media, il livello del miglior quarto per "

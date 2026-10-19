@@ -21,13 +21,13 @@ PARTITE_STAGIONE = 30
 
 # voce: (nome, colonna, più alto è meglio, peso sul Net rating per unità, scala)
 VOCI = [
-    ("Tiro (eFG%)", "efg_pct", True, C.PESI["efg"], "In attacco"),
-    ("Palle perse %", "tov_pct", False, -C.PESI["tov"], "In attacco"),
-    ("Rimbalzi offensivi %", "orb_pct", True, C.PESI["orb"], "In attacco"),
-    ("Tiri liberi (segnati per tiro)", "ft_rate", True, C.PESI["ftr"], "In attacco"),
-    ("Tiro concesso (eFG%)", "opp_efg_pct", False, C.PESI["efg"], "In difesa"),
-    ("Palle perse forzate %", "opp_tov_pct", True, -C.PESI["tov"], "In difesa"),
-    ("Rimbalzi difensivi %", "drb_pct", True, C.PESI["orb"], "In difesa"),
+    ("Tiro dal campo (triple pesate)", "efg_pct", True, C.PESI["efg"], "In attacco"),
+    ("Palle perse", "tov_pct", False, -C.PESI["tov"], "In attacco"),
+    ("Rimbalzi offensivi", "orb_pct", True, C.PESI["orb"], "In attacco"),
+    ("Liberi segnati", "ft_rate", True, C.PESI["ftr"], "In attacco"),
+    ("Tiro concesso agli avversari", "opp_efg_pct", False, C.PESI["efg"], "In difesa"),
+    ("Palle perse forzate", "opp_tov_pct", True, -C.PESI["tov"], "In difesa"),
+    ("Rimbalzi difensivi", "drb_pct", True, C.PESI["orb"], "In difesa"),
     ("Tiri liberi concessi", "opp_ft_rate", False, C.PESI["ftr"], "In difesa"),
 ]
 
@@ -80,8 +80,8 @@ def a_partita(col: str, valore: float, base: float) -> float:
 
 
 def leggibile(r, quale: str) -> str:
-    """Valore di una voce per tabelle e frasi: numero a partita con la percentuale tra
-    parentesi; il tiro resta in eFG%."""
+    """Valore di una voce per tabelle e frasi: numero a partita (palle perse, rimbalzi,
+    liberi); il tiro resta in percentuale."""
     v = r[quale]
     pct = f"{v:.2f}" if "ft" in r["colonna"] else f"{v:.1f}%"
     n = r.get(f"{quale}_n", np.nan)
@@ -89,7 +89,7 @@ def leggibile(r, quale: str) -> str:
         return pct.replace(".", ",")
     if "ft" in r["colonna"]:
         return f"{n:.1f}".replace(".", ",")
-    return f"{n:.1f} ({pct})".replace(".", ",")
+    return f"{n:.1f}".replace(".", ",")
 
 
 def priorita(profile: pd.DataFrame, sid: int) -> pd.DataFrame:
@@ -216,14 +216,13 @@ def dettagli_giocatori(players: pd.DataFrame, sid: int, minuti_min: float = 10.0
         usg = getattr(r, "usg_pct", np.nan)
         tov = getattr(r, "tov_pct", np.nan)
         if pd.notna(tov) and pd.notna(tov75) and tov > tov75 and r.perse_pg >= 1.5:
-            add("Palle perse", f"{tov:.0f}% dei possessi usati finisce in palla persa "
-                f"({r.perse_pg:.1f} a partita)", (tov - lega["tov_pct"].median()) / 100 *
+            add("Palle perse", f"{r.perse_pg:.1f} a partita: perde 1 pallone ogni {100 / tov:.1f} azioni", (tov - lega["tov_pct"].median()) / 100 *
                 (r.fga_pg + 0.44 * r.tla_pg + r.perse_pg) * 1.05)
         ts = getattr(r, "ts_pct", np.nan)
         if pd.notna(ts) and pd.notna(usg) and usg >= 22 and ts < ts_med - 4:
             tiri = r.fga_pg + 0.44 * r.tla_pg
-            add("Scelta di tiro", f"usa il {usg:.0f}% dei possessi con il {ts:.0f}% di tiro "
-                f"reale (mediana {ts_med:.0f}%)", 2 * (ts_med - ts) / 100 * tiri)
+            add("Scelta di tiro", f"conclude molte azioni ({tiri + r.perse_pg:.1f} a partita) con "
+                f"{2 * ts / 100:.2f} punti per tiro (normale {2 * ts_med / 100:.2f})", 2 * (ts_med - ts) / 100 * tiri)
         if r.falli_commessi_p40 >= 5.5 and r.minuti_pg >= 15:
             add("Falli", f"{r.falli_commessi_p40:.1f} falli ogni 40 minuti: rischia di uscire "
                 "presto o di mandare in bonus gli avversari", np.nan)

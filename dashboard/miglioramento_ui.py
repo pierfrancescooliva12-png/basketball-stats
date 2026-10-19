@@ -65,9 +65,9 @@ def render(a: App, sid: int):
         "Obiettivo": [M.leggibile(r, "obiettivo") for _, r in pri.iterrows()],
         "Vittorie in più": [f"+{num(v, 1)}" for v in pri["vittorie"]]}),
         voci=[G["aree_migliorare"]])
-    note_html("Palle perse e rimbalzi: numero a partita con la percentuale tra parentesi "
-              "(la percentuale non dipende dal ritmo, il numero è quello da dare in panchina); "
-              "tiri liberi: liberi segnati a partita.")
+    note_html("Palle perse e rimbalzi: numero a partita, quello da dare in panchina (la posizione "
+              "in campionato tiene conto del ritmo di gioco); tiri liberi: liberi segnati a partita; "
+              "tiro dal campo: percentuale con le triple che valgono 1,5.")
     note_html("Arancio: sotto la media del campionato (obiettivo: la media). Blu: già sopra "
               "(obiettivo: il livello del miglior quarto delle squadre). Le vittorie sono una "
               "stima contro un avversario medio.")

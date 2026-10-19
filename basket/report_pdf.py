@@ -123,9 +123,9 @@ def _kpis(items, S, width):
 
 
 def _box(content):
-    t = Table([[content[0]], [content[1]], [content[2]]])
-    t.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.6, BORDO),
-                           ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#fafbfd")),
+    t = Table([[content[0]], [content[1]], [content[2]]], cornerRadii=[6, 6, 6, 6])
+    t.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.white),
+                           ("LINEABOVE", (0, 0), (-1, 0), 2.5, ARANCIO),
                            ("TOPPADDING", (0, 0), (-1, -1), 1.5),
                            ("BOTTOMPADDING", (0, 0), (-1, -1), 1.5),
                            ("LEFTPADDING", (0, 0), (-1, -1), 6)]))
@@ -606,8 +606,6 @@ def build_sviluppo(ctx: Contesto, squadra_id: int, foto: bool = True) -> bytes:
     W = A4[0] - 24 * mm
     doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=12 * mm, rightMargin=12 * mm, topMargin=12 * mm,
                             bottomMargin=14 * mm, title=f"Sviluppo dei giocatori · {nome}", author=config.BRAND)
-    sez = ParagraphStyle("svs", parent=S["h2"], fontSize=13, leading=15, textColor=NAVY, spaceBefore=6,
-                         spaceAfter=4)
     el = [ST.Intestazione(W, 12 * mm, 12 * mm,
                           f"Sviluppo dei giocatori · {config.STAGIONI.get(ctx.stagione, ctx.stagione)}", nome,
                           meta=f"report del {date.today().strftime('%d/%m/%Y')}", marchio=config.BRAND),
@@ -862,8 +860,8 @@ def _piano(ctx: Contesto, avv: int, mia: int | None, S, W) -> tuple[list, list]:
     det.append(_table(rows, [42 * mm, 16 * mm] + [21 * mm] * 3 + [25 * mm] + [(W - 146 * mm) / 2]
                       * 2, align_left=(1, 5)))
     det.append(Paragraph("Palle perse, rimbalzi offensivi e liberi: numero a partita sui possessi "
-                         "e sui tiri attesi nella partita, con la percentuale tra parentesi. Il "
-                         "tiro resta in eFG%.", S["small"]))
+                         "e sui tiri attesi nella partita. Il tiro è la percentuale dal campo con "
+                         "le triple che valgono 1,5.", S["small"]))
     for _, x in lv.iterrows():
         det.append(Paragraph(f"• {_virgole(C.frase_leva(x, nome_avv.split()[-1]))}", S["small"]))
     det.append(Paragraph(f"Ritmo: con {_fmt(lento['possessi'], 0)} possessi "
