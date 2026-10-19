@@ -258,7 +258,7 @@ def build_giocatore(ctx: Contesto, giocatore_id: str, squadra_id: int,
             meta.append(f"{int(bio['eta'])} anni")
         if pd.notna(bio.get("altezza_cm")):
             meta.append(f"{int(bio['altezza_cm'])} cm")
-        if bio.get("ruolo"):
+        if pd.notna(bio.get("ruolo")) and str(bio.get("ruolo") or "").strip():
             meta.append(str(bio["ruolo"]).lower())
     buf, doc = _documento(f"Report {me['giocatore']}")
     el = [_testata(f"Report individuale · {config.STAGIONI.get(ctx.stagione, ctx.stagione)}",

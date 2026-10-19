@@ -565,7 +565,7 @@ def _scheda(g: dict, S, w):
                      for _, v in g["numeri"]]], colWidths=[wd / len(g["numeri"])] * len(g["numeri"]))
     numeri.setStyle(TableStyle([("LEFTPADDING", (0, 0), (-1, -1), 0), ("TOPPADDING", (0, 0), (-1, -1), 0),
                                 ("BOTTOMPADDING", (0, 0), (-1, -1), 0)]))
-    destra = [Paragraph(_esc(g["nome"]), nome), Paragraph(_esc(" · ".join(meta)) or "&nbsp;", S["small"]),
+    destra = [Paragraph(_esc(g["nome"]), nome), Paragraph(_esc(" · ".join(map(str, meta))) or "&nbsp;", S["small"]),
               Spacer(1, 3), numeri, Paragraph(_esc(g["tiro"]), S["small"]), Spacer(1, 3)]
     destra += [Paragraph(f'<font color="#2a78d6"><b>+</b></font>&nbsp;&nbsp;{_esc(c)}', voce) for c in g["forza"]]
     destra += [Paragraph(f'<font color="#d95926"><b>−</b></font>&nbsp;&nbsp;{_esc(c)}', voce) for c in g["deboli"]]
@@ -682,7 +682,7 @@ def _scheda_sviluppo(g: dict, S, W, sfondo=colors.white):
         (pu, pm), (mi, mm_) = an["punti"], an["minuti"]
         trend = (f"Ultime {an['ultime']} partite: {_fmt(pu)} punti in {_fmt(mi)} minuti (stagione {_fmt(pm)} in "
                  f"{_fmt(mm_)}) · <b>{an['tendenza']}</b>")
-    testa = [Paragraph(_esc(g["nome"]), nome), Paragraph(_esc(" · ".join(meta)), S["small"]), Spacer(1, 3),
+    testa = [Paragraph(_esc(g["nome"]), nome), Paragraph(_esc(" · ".join(map(str, meta))), S["small"]), Spacer(1, 3),
              numeri, Paragraph(_esc(g["tiro"]), S["small"])] + ([Paragraph(trend, S["small"])] if trend else [])
     cw = (W - 16) / 3
     bene = [tit("COSA FA BENE", BLU)] + [Paragraph(f'<font color="#2a78d6"><b>+</b></font>&nbsp;&nbsp;{_esc(x)}', voce)

@@ -112,7 +112,7 @@ def render(a: App):
                     trend = (f"<br>Ultime {an['ultime']} partite: {pu:.1f} punti (stagione {pm:.1f}) · "
                              f"<b>{an['tendenza']}</b>").replace(".", ",")
                 st.markdown(f'<div style="font-size:1.25rem;font-weight:700">{esc(g["nome"])}</div>'
-                            f'<div style="opacity:.7;font-size:.85rem">{esc(" · ".join(meta))}</div>'
+                            f'<div style="opacity:.7;font-size:.85rem">{esc(" · ".join(map(str, meta)))}</div>'
                             f'<div style="margin-top:6px">{numeri}</div>'
                             f'<div style="opacity:.7;font-size:.85rem">{esc(g["tiro"])}{trend}</div>',
                             unsafe_allow_html=True)

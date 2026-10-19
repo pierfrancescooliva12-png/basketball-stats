@@ -219,7 +219,7 @@ def _giocatore(doc, g: dict):
                         f"{g['altezza']} cm" if g.get("altezza") else None,
                         f"{g['eta']} anni" if g.get("eta") else None, g.get("nazionalita")) if x]
     if meta:
-        _testo(dx.add_paragraph(), " · ".join(meta), size=8.5, colore=GRIGIO)
+        _testo(dx.add_paragraph(), " · ".join(map(str, meta)), size=8.5, colore=GRIGIO)
     _testo(dx.add_paragraph(), "   ".join(f"{k} {v}" for k, v in g["numeri"]), bold=True, size=10)
     _testo(dx.add_paragraph(), g["tiro"], size=8.5, colore=GRIGIO)
     for segno, voci, colore in (("+", g["forza"], BLU), ("−", g["deboli"], ROSSO)):

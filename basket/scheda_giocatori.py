@@ -40,6 +40,30 @@ def anagrafica(conn) -> pd.DataFrame:
     return pd.read_sql_query(f"SELECT {', '.join(voci)} FROM giocatori_info", conn).set_index("giocatore_id")
 
 
+def pulisci(info: dict) -> dict:
+    """Anagrafica senza valori mancanti (NaN) e con i testi come stringhe: dal database arrivano
+    anche NaN per i giocatori non ancora riscaricati."""
+    out = {}
+    for k, v in info.items():
+        if v is None or (isinstance(v, float) and pd.isna(v)):
+            continue
+        if k in ("ruolo", "maglia", "nazionalita", "foto_url"):
+            v = str(v).strip()
+            if k == "maglia" and v.endswith(".0"):
+                v = v[:-2]
+            if not v:
+                continue
+        out[k] = v
+    return out
+
+
+def meta(g: dict, extra=()) -> str:
+    """Riga sotto il nome: ruolo · altezza · età · nazionalità (solo i dati presenti)."""
+    voci = [g.get("ruolo"), f"{g['altezza']} cm" if g.get("altezza") else None,
+            f"{g['eta']} anni" if g.get("eta") else None, g.get("nazionalita"), *extra]
+    return " · ".join(str(x) for x in voci if x is not None and not (isinstance(x, float) and pd.isna(x)) and str(x))
+
+
 def foto_url(gid: str, info: dict, stagione: str) -> str:
     """Indirizzo della foto: quello letto dalla pagina del giocatore o lo schema del sito."""
     return info.get("foto_url") or f"http://lnp.webpont.com/team/images/player/{stagione}/{gid}.jpg"
@@ -221,7 +245,7 @@ def schede(ctx, sid: int, foto: bool = True, minuti: float = MINUTI_ROTAZIONE,
         return x.iloc[0].to_dict() if not x.empty else None
     out = []
     for p in mine.itertuples():
-        info = ana.loc[p.giocatore_id].to_dict() if not ana.empty and p.giocatore_id in ana.index else {}
+        info = pulisci(ana.loc[p.giocatore_id].to_dict()) if not ana.empty and p.giocatore_id in ana.index else {}
         alt = int(info["altezza_cm"]) if pd.notna(info.get("altezza_cm")) else None
         forza, deboli = caratteristiche(p, rif, riga(ctx.shots, p.giocatore_id), riga(ctx.fouls, p.giocatore_id),
                                         riga(ctx.clutch_players, p.giocatore_id), alt)
