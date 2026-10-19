@@ -1,7 +1,7 @@
 """Scouting breve dei singoli giocatori per il report prepartita: anagrafica e foto dal sito,
-numeri chiave, caratteristiche e come difenderlo. Le caratteristiche nascono dal confronto con
-i giocatori di rotazione dello stesso campionato (percentili), ognuna con il dato che la
-giustifica.
+numeri chiave, cosa fa meglio e cosa fa peggio (solo se evidente). Tutto nasce dal confronto
+con i giocatori di rotazione dello stesso campionato (percentili), ogni frase con il dato che
+la giustifica. Niente indicazioni su come difendere: quelle sono dello staff.
 
 Le foto restano sul sito LNP: si scaricano quando si prepara il PDF e si tengono solo nella
 cache locale (non vanno nel repository)."""
@@ -83,54 +83,88 @@ def _pct(serie: pd.Series, v) -> float:
     return 100.0 * (s < v).mean() + 50.0 * (s == v).mean()
 
 
-def caratteristiche(p, rif: pd.DataFrame, tiro=None, falli=None, finali=None) -> tuple[list, list]:
-    """(caratteristiche, come difenderlo): frasi brevi, ognuna con il suo dato."""
-    car, dif = [], []    # (priorità, testo)
+# Voci per completare i punti di forza quando nessuna regola scatta: (colonna, testo)
+VOCI_CHIAVE = [("punti_pg", "{v} punti a partita"), ("rimb_tot_pg", "{v} rimbalzi a partita"),
+               ("assist_pg", "{v} assist a partita"), ("t3m_pg", "{v} triple a partita"),
+               ("recuperate_pg", "{v} palloni recuperati a partita"),
+               ("stoppate_pg", "{v} stoppate a partita"), ("falli_subiti_pg", "{v} falli subiti a partita"),
+               ("ts_pct", "{v}% di tiro reale")]
+
+
+def _meglio(pct: float) -> str:
+    n = int(round(pct / 5) * 5)
+    art = "dell'" if str(n).startswith("8") or n == 11 else "del "
+    return f"meglio {art}{n}% dei giocatori di rotazione"
+
+
+def caratteristiche(p, rif: pd.DataFrame, tiro=None, falli=None, finali=None,
+                    altezza=None) -> tuple[list, list]:
+    """(cosa fa meglio, cosa fa peggio): frasi brevi, ognuna con il suo dato. Le cose che fa
+    meglio sono sempre almeno due; quelle che fa peggio compaiono solo se evidenti."""
+    forza, deboli = [], []    # (priorità, testo)
     t3a, t3p = p.t3a_pg or 0, p.t3_pct
-    if p.usg_pct is not None and pd.notna(p.usg_pct) and _pct(rif["usg_pct"], p.usg_pct) >= 85:
-        car.append((1, f"Prima opzione dell'attacco ({_it(p.usg_pct)}% dei possessi finiti da lui)"))
+    usg = _pct(rif["usg_pct"], p.usg_pct)
+    if pd.notna(p.usg_pct) and usg >= 85:
+        forza.append((1, f"Prima opzione dell'attacco ({_it(p.usg_pct)}% dei possessi finiti da lui)"))
     if t3a >= 3 and pd.notna(t3p) and t3p >= 36:
-        car.append((2, f"Tiratore da 3 ({_it(p.t3m_pg)}/{_it(t3a)} a partita, {_it(t3p, 0)}%)"))
-        dif.append((1, "Mai libero sugli scarichi: chiusura forte e mano alta"))
+        forza.append((2, f"Tiratore da 3 ({_it(p.t3m_pg)}/{_it(t3a)} a partita, {_it(t3p, 0)}%)"))
     elif t3a >= 2.5 and pd.notna(t3p) and t3p < 30:
-        car.append((5, f"Tira da 3 ma con poca precisione ({_it(t3p, 0)}% su {_it(t3a)} tentativi)"))
-        dif.append((3, "Si può concedere il tiro da 3: passare sotto i blocchi"))
+        deboli.append((2, f"Poco preciso da 3 ({_it(t3p, 0)}% su {_it(t3a)} tentativi a partita)"))
     elif t3a < 0.7 and (p.minuti_pg or 0) >= 15:
-        car.append((6, "Quasi mai da 3"))
-        dif.append((4, "Difesa più staccata, proteggere l'area"))
-    if tiro is not None and pd.notna(tiro.get("quota_area")) and tiro.get("tiri", 0) >= 10:
+        deboli.append((4, f"Quasi mai al tiro da 3 ({_it(t3a)} tentativi a partita)"))
+    if tiro is not None and (tiro.get("tiri") or 0) >= 10 and pd.notna(tiro.get("quota_area")):
         if tiro["quota_area"] >= 55:
-            car.append((3, f"Attacca il ferro ({_it(tiro['quota_area'], 0)}% dei tiri in area, "
-                           f"{_it(tiro.get('area_pct'), 0)}% realizzati)"))
-            dif.append((2, "Contenere la penetrazione, aiuto pronto dal lato debole"))
+            forza.append((3, f"Attacca il ferro ({_it(tiro['quota_area'], 0)}% dei tiri in area, "
+                             f"{_it(tiro.get('area_pct'), 0)}% realizzati)"))
+        if (tiro.get("area_t") or 0) >= 10 and pd.notna(tiro.get("area_pct")) and tiro["area_pct"] < 45:
+            deboli.append((3, f"Fatica a concludere in area ({_it(tiro['area_pct'], 0)}% su "
+                              f"{int(tiro['area_t'])} tiri)"))
     if (p.tla_pg or 0) >= 3 and _pct(rif["ft_rate"], p.ft_rate) >= 80:
-        car.append((4, f"Va spesso in lunetta ({_it(p.tla_pg)} liberi a partita)"))
-        dif.append((3, "Mani dietro, niente falli facili sulle penetrazioni"))
-    if pd.notna(p.tl_pct) and (p.tla or 0) >= 6 and p.tl_pct < 62:
-        car.append((5, f"Debole ai liberi ({_it(p.tl_pct, 0)}%)"))
-        dif.append((4, "Nel finale si può mandarlo in lunetta"))
+        forza.append((4, f"Va spesso in lunetta ({_it(p.tla_pg)} liberi a partita)"))
+    if pd.notna(p.tl_pct) and (p.tla or 0) >= 6:
+        if p.tl_pct < 62:
+            deboli.append((2, f"Debole ai liberi ({_it(p.tl_pct, 0)}% su {int(p.tla)})"))
+        elif p.tl_pct >= 85 and (p.tla or 0) >= 10:
+            forza.append((5, f"Sicuro ai liberi ({_it(p.tl_pct, 0)}%)"))
     if (p.assist_pg or 0) >= 3 and _pct(rif["ast_pct"], p.ast_pct) >= 80:
-        car.append((2, f"Crea per i compagni ({_it(p.assist_pg)} assist a partita)"))
-        dif.append((2, "Pressione sulla palla e anticipo sulle linee di passaggio"))
-    if (p.perse_pg or 0) >= 2 and _pct(rif["tov_pct"], p.tov_pct) >= 80:
-        car.append((4, f"Perde palloni ({_it(p.perse_pg)} a partita)"))
-        dif.append((2, "Raddoppio sul palleggio, costringerlo a decidere in fretta"))
+        forza.append((2, f"Crea per i compagni ({_it(p.assist_pg)} assist a partita)"))
+    if (p.perse_pg or 0) >= 2 and _pct(rif["tov_pct"], p.tov_pct) >= 85:
+        deboli.append((2, f"Perde molti palloni ({_it(p.perse_pg)} a partita)"))
     if _pct(rif["orb_pct"], p.orb_pct) >= 85 and (p.rimb_off_pg or 0) >= 1.5:
-        car.append((3, f"Rimbalzista offensivo ({_it(p.rimb_off_pg)} a partita)"))
-        dif.append((2, "Tagliafuori sempre su di lui"))
-    if pd.notna(p.ts_pct) and p.ts_pct >= 60 and _pct(rif["usg_pct"], p.usg_pct) >= 50:
-        car.append((3, f"Molto efficiente al tiro ({_it(p.ts_pct)}% di tiro reale)"))
-    if pd.notna(getattr(p, "on_off", None)) and p.on_off >= 10 and (p.minuti_pg or 0) >= 15:
-        car.append((3, f"Con lui in campo rendono molto meglio ({_it(p.on_off, 0)} di Net rating)"))
-    if falli is not None and falli.get("partite_problemi", 0) >= 2:
-        car.append((5, f"Problemi di falli ({int(falli['partite_problemi'])} partite)"))
-        dif.append((2, "Attaccarlo subito per caricarlo di falli"))
-    if finali is not None and finali.get("fga", 0) >= 3 and (finali.get("quota_tiri") or 0) >= 30:
-        car.append((2, f"Uomo dei finali ({_it(finali['quota_tiri'], 0)}% dei tiri negli ultimi 5')"))
-        dif.append((3, "Nei finali togliergli la palla: anticipo e cambi sui blocchi"))
-    car = [t for _, t in sorted(car)][:4]
-    dif = [t for _, t in sorted(dif)][:2]
-    return car, dif
+        forza.append((3, f"Rimbalzista offensivo ({_it(p.rimb_off_pg)} a partita)"))
+    if pd.notna(p.ts_pct) and usg >= 50:
+        if p.ts_pct >= 60:
+            forza.append((3, f"Molto efficiente al tiro ({_it(p.ts_pct)}% di tiro reale)"))
+        elif p.ts_pct < 47:
+            deboli.append((3, f"Poco efficiente per quanto tira ({_it(p.ts_pct)}% di tiro reale)"))
+    if altezza and altezza >= 203 and "trb_pct" in rif and \
+            _pct(rif["trb_pct"], getattr(p, "trb_pct", None)) <= 25:
+        deboli.append((4, f"Pochi rimbalzi per la sua taglia ({_it(p.rimb_tot_pg)} a partita, {altezza} cm)"))
+    if pd.notna(getattr(p, "on_off", None)) and (p.minuti_pg or 0) >= 15:
+        if p.on_off >= 10:
+            forza.append((3, f"Con lui in campo rendono molto meglio (+{_it(p.on_off, 0)} di Net rating)"))
+        elif p.on_off <= -10:
+            deboli.append((4, f"Con lui in campo rendono peggio ({_it(p.on_off, 0)} di Net rating)"))
+    if falli is not None and (falli.get("partite_problemi") or 0) >= 2:
+        deboli.append((3, f"Problemi di falli ({int(falli['partite_problemi'])} partite con 2 falli nel "
+                          f"1° quarto o 3 all'intervallo)"))
+    if finali is not None and (finali.get("fga") or 0) >= 3 and (finali.get("quota_tiri") or 0) >= 30:
+        forza.append((2, f"Uomo dei finali ({_it(finali['quota_tiri'], 0)}% dei tiri negli ultimi 5')"))
+    forza = [t for _, t in sorted(forza)][:4]
+    if len(forza) < 2:                 # sempre almeno due informazioni chiave
+        cand = []
+        for col, testo in VOCI_CHIAVE:
+            v = getattr(p, col, None)
+            if col in rif and v is not None and pd.notna(v) and v > 0:
+                cand.append((_pct(rif[col], v), col, testo.format(v=_it(v))))
+        for pct, col, testo in sorted(cand, reverse=True):
+            if len(forza) >= 2:
+                break
+            if not any(testo.split(" ", 1)[1] in f for f in forza):
+                forza.append(f"{testo[:1].upper()}{testo[1:]} ({_meglio(pct)})" if pct >= 50 else
+                             f"{testo[:1].upper()}{testo[1:]}")
+    deboli = [t for _, t in sorted(deboli)][:3]
+    return forza, deboli
 
 
 def schede(ctx, sid: int, foto: bool = True) -> list[dict]:
@@ -153,19 +187,20 @@ def schede(ctx, sid: int, foto: bool = True) -> list[dict]:
     out = []
     for p in mine.itertuples():
         info = ana.loc[p.giocatore_id].to_dict() if not ana.empty and p.giocatore_id in ana.index else {}
-        car, dif = caratteristiche(p, rif, riga(ctx.shots, p.giocatore_id), riga(ctx.fouls, p.giocatore_id),
-                                   riga(ctx.clutch_players, p.giocatore_id))
+        alt = int(info["altezza_cm"]) if pd.notna(info.get("altezza_cm")) else None
+        forza, deboli = caratteristiche(p, rif, riga(ctx.shots, p.giocatore_id), riga(ctx.fouls, p.giocatore_id),
+                                        riga(ctx.clutch_players, p.giocatore_id), alt)
         out.append({
             "giocatore_id": p.giocatore_id, "nome": p.giocatore,
             "maglia": info.get("maglia"), "ruolo": info.get("ruolo"),
-            "altezza": int(info["altezza_cm"]) if pd.notna(info.get("altezza_cm")) else None, "eta": _eta(info.get("data_nascita")),
+            "altezza": alt, "eta": _eta(info.get("data_nascita")),
             "nazionalita": info.get("nazionalita"),
             "foto_url": foto_url(p.giocatore_id, info, ctx.stagione),
             "numeri": [("MIN", _it(p.minuti_pg)), ("PT", _it(p.punti_pg)), ("RIM", _it(p.rimb_tot_pg)),
                        ("AS", _it(p.assist_pg)), ("PP", _it(p.perse_pg))],
             "tiro": f"Da 3: {_it(p.t3m_pg)}/{_it(p.t3a_pg)} ({_it(p.t3_pct, 0)}%) · Liberi {_it(p.tl_pct, 0)}% · "
                     f"Tiro reale {_it(p.ts_pct)}%",
-            "caratteristiche": car, "difesa": dif, "foto": None})
+            "forza": forza, "deboli": deboli, "foto": None})
     if foto and out:
         with ThreadPoolExecutor(max_workers=6) as ex:
             for s, dati in zip(out, ex.map(lambda s: scarica_foto(s["giocatore_id"], s["foto_url"]), out)):

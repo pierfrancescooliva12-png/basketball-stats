@@ -10,3 +10,4 @@ psycopg2-binary>=2.9
 modal>=1.6           # analisi delle clip (servizio su Modal, token nei Secrets)
 beautifulsoup4>=4.12  # cronaca delle partite in diretta
 lxml>=5.0
+python-docx>=1.1    # report prepartita in Word

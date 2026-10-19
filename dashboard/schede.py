@@ -345,7 +345,7 @@ def render_scouting(a: App):
             unsafe_allow_html=True)
         frase("In una frase", X.frase_squadra(profile, sq))
         from . import lavagna_ui
-        from .nuove import _pdf, note_json
+        from .nuove import DOCX, _docx, _pdf, note_json
         from basket.report_pdf import slug
         st.download_button("⬇ Report PDF per la riunione tecnica",
                            _pdf(a.ctx, a.mtime, a.stagione, sq,
@@ -353,6 +353,10 @@ def render_scouting(a: App):
                                 lavagna_ui.giochi_json(a, sq), note_json(a, sq)),
                            file_name=f"scouting_{slug(r.squadra)}.pdf", mime="application/pdf",
                            type="primary")
+        st.download_button("⬇ Report in Word, da completare con le note dello staff",
+                           _docx(a.ctx, a.mtime, a.stagione, sq,
+                                 a.utente.get("squadra_id") or st.session_state.get(f"ch_mia_{sq}")),
+                           file_name=f"scouting_{slug(r.squadra)}.docx", mime=DOCX)
         pr = profile.set_index("squadra_id")
         kpis([
             ("Net rating", f"{pf['net_rtg']:+.1f}", badge_pos(X.posizione(pr["net_rtg"], sq))),

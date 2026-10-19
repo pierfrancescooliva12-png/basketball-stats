@@ -44,3 +44,40 @@ def squadra(ctx, sid: int, mia: int | None = None, report=None) -> dict:
     return {"sintesi": chi + ".", "in_difesa": difesa, "in_attacco": attacco, "ritmo": ritmo,
             "da_ricordare": [a for a in (azione(x) for x in difesa[:2] + attacco[:1]) if a],
             "attenzione": "Inizio stagione: valori su poche partite, da confermare." if partite < 6 else ""}
+
+
+VOCI_SEMAFORO = [("Attacco", "Rating offensivo (ORtg)", "punti ogni 100 possessi"),
+                 ("Difesa", "Rating difensivo (DRtg)", "punti subiti ogni 100 possessi"),
+                 ("Tiro", "eFG% in attacco", "efficienza al tiro"),
+                 ("Tiro da 3", "% da 3", "percentuale da 3"),
+                 ("Palle perse", "Palle perse % in attacco", "% dei possessi"),
+                 ("Rimbalzi in attacco", "Rimbalzi offensivi %", "% dei loro errori"),
+                 ("Rimbalzi in difesa", "Rimbalzi difensivi %", "% degli errori avversari"),
+                 ("Ritmo", "Ritmo (possessi/40')", "possessi per 40'")]
+
+
+def semaforo(profilo) -> list[dict]:
+    """Otto voci chiave con la posizione in campionato e il giudizio: punto di forza (primo
+    terzo), nella media, punto debole (ultimo terzo); per il ritmo veloce / lento."""
+    pr = profilo.set_index("Metrica")
+    out = []
+    for etichetta, metrica, spiega in VOCI_SEMAFORO:
+        if metrica not in pr.index:
+            continue
+        x = pr.loc[metrica]
+        try:
+            pos, n = (int(v) for v in str(x["Posizione"]).split("/"))
+        except ValueError:
+            continue
+        if metrica.startswith("Ritmo"):
+            giudizio = "veloce" if pos <= n / 3 else ("lento" if pos > 2 * n / 3 else "nella media")
+            tipo = "neutro"
+        elif pos <= n / 3:
+            giudizio, tipo = "punto di forza", "forza"
+        elif pos > 2 * n / 3:
+            giudizio, tipo = "punto debole", "debole"
+        else:
+            giudizio, tipo = "nella media", "media"
+        out.append({"etichetta": etichetta, "valore": x["Valore"], "posizione": pos, "squadre": n,
+                    "giudizio": giudizio, "tipo": tipo, "spiega": spiega})
+    return out

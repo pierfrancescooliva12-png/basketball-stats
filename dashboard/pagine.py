@@ -184,6 +184,10 @@ def home():
                                                                 nuove.note_json(a, avv)),
                                file_name=f"scouting_{analisi.slug(pr.loc[avv, 'squadra'])}.pdf",
                                mime="application/pdf", width="stretch")
+            st.download_button("⬇ Word avversaria (con spazio per le note)",
+                               nuove._docx(a.ctx, a.mtime, a.stagione, avv, mia),
+                               file_name=f"scouting_{analisi.slug(pr.loc[avv, 'squadra'])}.docx",
+                               mime=nuove.DOCX, width="stretch")
     if ultima:
         with c[3]:
             st.download_button("⬇ PDF post-partita",

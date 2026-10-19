@@ -479,38 +479,17 @@ DEBOLE = colors.HexColor("#d95926")
 
 def _semaforo(profilo: pd.DataFrame, S, W):
     """Otto voci chiave con la posizione in campionato: forte, nella media, debole."""
-    voci = [("Attacco", "Rating offensivo (ORtg)", "punti ogni 100 possessi"),
-            ("Difesa", "Rating difensivo (DRtg)", "punti subiti ogni 100 possessi"),
-            ("Tiro", "eFG% in attacco", "efficienza al tiro"),
-            ("Tiro da 3", "% da 3", "percentuale da 3"),
-            ("Palle perse", "Palle perse % in attacco", "% dei possessi"),
-            ("Rimbalzi in attacco", "Rimbalzi offensivi %", "% dei loro errori"),
-            ("Rimbalzi in difesa", "Rimbalzi difensivi %", "% degli errori avversari"),
-            ("Ritmo", "Ritmo (possessi/40')", "possessi per 40'")]
-    pr = profilo.set_index("Metrica")
+    from . import sintesi as SI
+    tinta = {"forza": VERDE_FORTE, "debole": DEBOLE, "media": GRIGIO, "neutro": INK}
     celle = []
-    for etichetta, metrica, spiega in voci:
-        if metrica not in pr.index:
-            continue
-        x = pr.loc[metrica]
-        try:
-            pos, n = (int(v) for v in str(x["Posizione"]).split("/"))
-        except ValueError:
-            continue
-        if metrica.startswith("Ritmo"):
-            giudizio, colore = ("veloce", INK) if pos <= n / 3 else (("lento", INK) if pos > 2 * n / 3
-                                                                     else ("nella media", GRIGIO))
-        elif pos <= n / 3:
-            giudizio, colore = "punto di forza", VERDE_FORTE
-        elif pos > 2 * n / 3:
-            giudizio, colore = "punto debole", DEBOLE
-        else:
-            giudizio, colore = "nella media", GRIGIO
+    for v in SI.semaforo(profilo):
+        colore = tinta[v["tipo"]]
         hexc = colore.hexval()[2:]
-        corpo = [Paragraph(etichetta.upper(), S["kpi_l"]),
-                 Paragraph(f"{_fmt(x['Valore'])}", S["kpi_v"]),
-                 Paragraph(f'<font color="#{hexc}"><b>{giudizio}</b></font> · {pos}° su {n}', S["kpi_s"]),
-                 Paragraph(spiega, S["kpi_s"])]
+        corpo = [Paragraph(v["etichetta"].upper(), S["kpi_l"]),
+                 Paragraph(_fmt(v["valore"]), S["kpi_v"]),
+                 Paragraph(f'<font color="#{hexc}"><b>{v["giudizio"]}</b></font> · '
+                           f'{v["posizione"]}° su {v["squadre"]}', S["kpi_s"]),
+                 Paragraph(v["spiega"], S["kpi_s"])]
         t = Table([[c] for c in corpo], colWidths=[W / 4 - 6])
         t.setStyle(TableStyle([("LINEBEFORE", (0, 0), (0, -1), 3, colore),
                                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#fafbfd")),
@@ -588,7 +567,7 @@ def _foto(dati: bytes | None, nome: str, w, h):
 
 
 def _scheda(g: dict, S, w):
-    """Scheda di un giocatore: foto, anagrafica, numeri, caratteristiche, come difenderlo."""
+    """Scheda di un giocatore: foto, anagrafica, numeri, cosa fa meglio e cosa fa peggio."""
     nome = ParagraphStyle("gn", parent=S["h3"], fontSize=12, leading=14, spaceBefore=0, spaceAfter=1)
     voce = ParagraphStyle("gv", parent=S["body"], fontSize=8.2, leading=10.5)
     meta = [x for x in (f"#{g['maglia']}" if g.get("maglia") else None, g.get("ruolo"),
@@ -601,11 +580,8 @@ def _scheda(g: dict, S, w):
                                 ("BOTTOMPADDING", (0, 0), (-1, -1), 0)]))
     destra = [Paragraph(_esc(g["nome"]), nome), Paragraph(_esc(" · ".join(meta)) or "&nbsp;", S["small"]),
               Spacer(1, 2), numeri, Paragraph(_esc(g["tiro"]), S["small"]), Spacer(1, 2)]
-    destra += [Paragraph(f'<font color="#2a78d6"><b>›</b></font> {_esc(c)}', voce) for c in g["caratteristiche"]] \
-        or [Paragraph("Nessuna caratteristica marcata rispetto al campionato.", S["small"])]
-    if g["difesa"]:
-        destra.append(Paragraph('<font color="#d95926"><b>COME DIFENDERLO</b></font> · ' +
-                                _esc(" · ".join(g["difesa"])), voce))
+    destra += [Paragraph(f'<font color="#2a78d6"><b>+</b></font> {_esc(c)}', voce) for c in g["forza"]]
+    destra += [Paragraph(f'<font color="#d95926"><b>−</b></font> {_esc(c)}', voce) for c in g["deboli"]]
     t = Table([[_foto(g.get("foto"), g["nome"], 24 * mm, 30 * mm), destra]],
               colWidths=[27 * mm, w - 27 * mm])
     t.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 4),
@@ -619,8 +595,9 @@ def _scheda(g: dict, S, w):
 def _schede(giocatori: list[dict], squadra: str, S, W) -> list:
     el = [Paragraph(f"SCOUTING DEI GIOCATORI · {squadra.upper()}", S["h2"]),
           Paragraph("Giocatori di rotazione (almeno 10 minuti a partita), in ordine di minuti. "
-                    "Le caratteristiche sono quelle che li distinguono dai giocatori di rotazione "
-                    "del campionato.", S["small"]), Spacer(1, 4)]
+                    "<font color='#2a78d6'><b>+</b></font> cosa fa meglio, "
+                    "<font color='#d95926'><b>−</b></font> cosa fa peggio in modo evidente, sempre "
+                    "rispetto ai giocatori di rotazione del campionato.", S["small"]), Spacer(1, 4)]
     w = W / 2 - 3
     for i in range(0, len(giocatori), 2):
         coppia = [_scheda(g, S, w) for g in giocatori[i:i + 2]] + [""] * (2 - len(giocatori[i:i + 2]))
