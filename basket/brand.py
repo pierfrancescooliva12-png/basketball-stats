@@ -187,7 +187,7 @@ def css(t: Tema) -> str:
     a = _rgb(t.accento)
     logo_css = ""
     if t.logo:
-        logo_css = (f'header[data-testid="stHeader"]::after {{content: ""; position: absolute; right: 18px; '
+        logo_css = (f'header[data-testid="stHeader"]::after {{content: ""; position: absolute; right: 150px; '
                     f'top: 50%; transform: translateY(-50%); height: 40px; width: 150px; '
                     f'background: url("{t.logo}") right center / contain no-repeat; pointer-events: none;}}')
     return f"""
