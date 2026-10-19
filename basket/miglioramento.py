@@ -80,8 +80,8 @@ def a_partita(col: str, valore: float, base: float) -> float:
 
 
 def leggibile(r, quale: str) -> str:
-    """Valore di una voce per tabelle e frasi: numero a partita (palle perse, rimbalzi,
-    liberi); il tiro resta in percentuale."""
+    """Valore di una voce per tabelle e frasi: percentuale con il numero a partita tra
+    parentesi (palle perse, rimbalzi); liberi segnati a partita; il tiro in percentuale."""
     v = r[quale]
     pct = f"{v:.2f}" if "ft" in r["colonna"] else f"{v:.1f}%"
     n = r.get(f"{quale}_n", np.nan)
@@ -89,7 +89,7 @@ def leggibile(r, quale: str) -> str:
         return pct.replace(".", ",")
     if "ft" in r["colonna"]:
         return f"{n:.1f}".replace(".", ",")
-    return f"{n:.1f}".replace(".", ",")
+    return f"{pct} ({n:.1f})".replace(".", ",")
 
 
 def priorita(profile: pd.DataFrame, sid: int) -> pd.DataFrame:

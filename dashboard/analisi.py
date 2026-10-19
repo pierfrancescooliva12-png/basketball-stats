@@ -231,8 +231,7 @@ def ultima_partita(a: App):
                     "<br>".join(esc(it(f)) for f in r["frasi"]) + "</div>",
                     unsafe_allow_html=True)
     if r["affidabile"]:
-        rows = [{"Fattore": f["voce"], "Partita": num(f["partita"], f["decimali"]),
-                 "Media stagione": num(f["media"], f["decimali"]),
+        rows = [{"Fattore": f["voce"], "Partita": f["partita_txt"], "Media stagione": f["media_txt"],
                  "Obiettivo": num(f["obiettivo"], f["decimali"]),
                  "Esito": "" if f["raggiunto"] is None else ("✅ raggiunto" if f["raggiunto"]
                                                              else "❌ mancato")}

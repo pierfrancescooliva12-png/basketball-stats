@@ -413,13 +413,14 @@ def render_scouting(a: App):
             ff = r.profilo[r.profilo["Metrica"].isin([
                 "eFG% in attacco", "Palle perse % in attacco", "Rimbalzi offensivi %",
                 "eFG% concessa", "Palle perse forzate %", "Rimbalzi difensivi %"])]
+            testi = scouting.profilo_leggibile(ff)
             fig = go.Figure()
             fig.add_bar(y=ff["Metrica"], x=ff["Valore"], name=short(r.squadra), orientation="h",
-                        marker=dict(color=BLU, cornerradius=4),
-                        hovertemplate="%{y}: %{x:.1f}<extra></extra>")
+                        marker=dict(color=BLU, cornerradius=4), customdata=testi["Squadra"],
+                        hovertemplate="%{y}: %{customdata}<extra></extra>")
             fig.add_bar(y=ff["Metrica"], x=ff["Media campionato"], name="Media", orientation="h",
-                        marker=dict(color=GRIGIO, cornerradius=4),
-                        hovertemplate="%{y}: %{x:.1f}<extra>media</extra>")
+                        marker=dict(color=GRIGIO, cornerradius=4), customdata=testi["Media campionato"],
+                        hovertemplate="%{y}: %{customdata}<extra>media</extra>")
             fig.update_yaxes(autorange="reversed", showgrid=False)
             plot(fig, 400, barmode="group", bargap=0.3, bargroupgap=0.08)
         with c2:
@@ -449,7 +450,7 @@ def render_scouting(a: App):
             section("Casa / trasferta")
             show(r.casa_trasferta)
         section("Profilo completo", "posizione nel campionato per ogni metrica")
-        show(r.profilo, voci=[G[k] for k in ("ortg", "drtg", "net_rtg", "pace", "four_factors",
+        show(scouting.profilo_leggibile(r.profilo), voci=[G[k] for k in ("ortg", "drtg", "net_rtg", "pace", "four_factors",
                                              "efg", "tov", "orb", "drb", "ft_rate", "ast_ratio")])
         st.download_button("⬇ Scarica report (Markdown)", scouting.to_markdown(r),
                            file_name=f"scouting_{r.squadra}.md", mime="text/markdown")
@@ -492,8 +493,10 @@ def render_partite(a: App):
                 ("Possessi", f"{h['possessi']:.0f}", "stima per squadra"),
                 ("ORtg", f"{h['ortg']:.0f} / {o['ortg']:.0f}", "casa / ospite"),
                 ("eFG%", f"{h['efg_pct']:.0f} / {o['efg_pct']:.0f}", "casa / ospite"),
-                ("Palle perse %", f"{h['tov_pct']:.0f} / {o['tov_pct']:.0f}", "casa / ospite"),
-                ("Rimb. offensivi %", f"{h['orb_pct']:.0f} / {o['orb_pct']:.0f}", "casa / ospite"),
+                ("Palle perse", f"{h['tov_pct']:.0f}% ({h['perse']:.0f}) / {o['tov_pct']:.0f}% ({o['perse']:.0f})",
+                 "casa / ospite · % delle azioni (numero)"),
+                ("Rimb. offensivi", f"{h['orb_pct']:.0f}% ({h['rimb_off']:.0f}) / "
+                 f"{o['orb_pct']:.0f}% ({o['rimb_off']:.0f})", "casa / ospite · % presi (numero)"),
             ])
         cols = {"numero": "#", "giocatore": "Giocatore", "quintetto": "Q", "minuti": "Min",
                 "punti": "Pt", "t2m": "2PM", "t2a": "2PA", "t3m": "3PM", "t3a": "3PA",

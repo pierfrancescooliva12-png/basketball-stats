@@ -5,6 +5,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
+from basket import numeri as N
 from basket import avvisi as AV
 from basket import miglioramento as M
 from basket import config, mercato
@@ -400,8 +401,8 @@ def render_anteprima(a: App):
     A_, B_ = pa.loc[casa], pa.loc[ospite]
     metriche = [("Record", "record"), ("Net rating", "net_rtg"), ("ORtg", "ortg"),
                 ("DRtg", "drtg"), ("Ritmo", "pace"), ("eFG%", "efg_pct"),
-                ("Palle perse %", "tov_pct"), ("Rimb. offensivi %", "orb_pct"),
-                ("Rimb. difensivi %", "drb_pct"), ("% punti da 3", "quota_punti_3"),
+                ("Palle perse % (a partita)", "tov_pct"), ("Rimb. offensivi % (a partita)", "orb_pct"),
+                ("Rimb. difensivi % (a partita)", "drb_pct"), ("% punti da 3", "quota_punti_3"),
                 ("% punti panchina", "quota_punti_panchina"), ("Punto a punto", "record_pp")]
     meglio_basso = {"drtg", "tov_pct"}
     rows = []
@@ -420,21 +421,30 @@ def render_anteprima(a: App):
                                                            "quota_punti_panchina"):
             better_a = va < vb if col in meglio_basso else va > vb
             vantaggio = short(nomi[casa]) if better_a else short(nomi[ospite])
+        if col in N.CONTE:             # percentuale con il numero a partita tra parentesi
+            rows.append((lab, N.con_numero(A_, col), N.con_numero(B_, col), vantaggio))
+            continue
         rows.append((lab, _f(va), _f(vb), vantaggio))
     section("Confronto", "chi è meglio, voce per voce")
     show(pd.DataFrame(rows, columns=["Voce", short(nomi[casa]), short(nomi[ospite]), "Vantaggio"]),
          voci=[])
 
     section("Four Factors incrociati", "attacco di una contro difesa dell'altra")
-    ff = [("eFG%", "efg_pct", "opp_efg_pct"), ("Palle perse %", "tov_pct", "opp_tov_pct"),
-          ("Rimb. offensivi %", "orb_pct", None), ("FT rate", "ft_rate", "opp_ft_rate")]
+    ff = [("eFG%", "efg_pct", "opp_efg_pct"), ("Palle perse % (a partita)", "tov_pct", "opp_tov_pct"),
+          ("Rimb. offensivi % (a partita)", "orb_pct", None), ("FT rate", "ft_rate", "opp_ft_rate")]
     rows = []
+
+    def concede(t, att, dif):
+        if att == "orb_pct":
+            return N.con_numero(t, "orb_concessi", 100 - t["drb_pct"])
+        if att == "tov_pct":
+            return N.con_numero(t, dif)
+        return _f(t.get(dif), 2 if att == "ft_rate" else 1)
+
+    def fa(t, att):
+        return N.con_numero(t, att) if att in N.CONTE else _f(t.get(att), 2 if att == "ft_rate" else 1)
     for lab, att, dif in ff:
-        dif_b = (100 - B_["drb_pct"]) if att == "orb_pct" else B_.get(dif)
-        dif_a = (100 - A_["drb_pct"]) if att == "orb_pct" else A_.get(dif)
-        rows.append((lab, _f(A_.get(att), 2 if "FT" in lab else 1),
-                     _f(dif_b, 2 if "FT" in lab else 1), _f(B_.get(att), 2 if "FT" in lab else 1),
-                     _f(dif_a, 2 if "FT" in lab else 1)))
+        rows.append((lab, fa(A_, att), concede(B_, att, dif), fa(B_, att), concede(A_, att, dif)))
     show(pd.DataFrame(rows, columns=["Fattore", f"Attacco {short(nomi[casa])}",
                                      f"Difesa {short(nomi[ospite])} (concede)",
                                      f"Attacco {short(nomi[ospite])}",
@@ -692,7 +702,8 @@ def render_mia_squadra(a: App):
         d = 2 if "ft" in k else 1
         n = M.a_partita(k, goals[k], M._base(me, k))
         rows.append((lab, _f(goals[k], d), "–" if pd.isna(n) else f"{_f(n)} {M.UNITA[k]}",
-                     _f(val, d), _f(ult, d), "✅" if ok else "❌"))
+                     N.con_numero(me, k, val, d) if k in N.CONTE else _f(val, d), _f(ult, d),
+                     "✅" if ok else "❌"))
     show(pd.DataFrame(rows, columns=["Voce", "Obiettivo", "Obiettivo a partita", "Stagione",
                                      "Ultime 5", "Raggiunto"]), voci=[])
 

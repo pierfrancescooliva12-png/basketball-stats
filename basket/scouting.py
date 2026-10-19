@@ -13,6 +13,7 @@ import pandas as pd
 
 from . import analysis as A
 from . import config, db
+from . import numeri as N
 
 # metrica -> (etichetta, True se "più alto è meglio")
 FACTORS = {
@@ -70,11 +71,19 @@ def build_report(conn, squadra_id: int, stagione: str = config.STAGIONE) -> Scou
         asc = False if higher_better is None else not higher_better
         r = tot[col].rank(ascending=asc, method="min")[me.name]
         rank = int(r) if pd.notna(r) else None
+        conta = N.a_partita(me, col)
+        media_conta = (tot.apply(lambda x: N.a_partita(x, col), axis=1).astype(float).mean()
+                       if conta is not None else None)
         rows.append({"Metrica": label, "Valore": val, "Media campionato": media,
-                     "Posizione": f"{rank}/{n}" if rank else "-"})
+                     "Posizione": f"{rank}/{n}" if rank else "-",
+                     "A partita": conta, "Media a partita": media_conta, "Colonna": col})
         if higher_better is not None and n >= 4 and rank:
             fmt = ".2f" if col.endswith("ft_rate") else ".1f"
-            testo = f"{label}: {val:{fmt}} ({rank}° su {n}, media {media:{fmt}})"
+            if conta is not None:     # percentuale con il numero a partita tra parentesi
+                testo = (f"{label}: {N.it(val)}% ({N.it(conta)} a partita) · {rank}° su {n}, "
+                         f"media {N.it(media)}% ({N.it(media_conta)})")
+            else:
+                testo = f"{label}: {val:{fmt}} ({rank}° su {n}, media {media:{fmt}})"
             if rank <= max(1, round(n * 0.25)):
                 forza.append(testo)
             elif rank > n - max(1, round(n * 0.25)):
@@ -158,6 +167,22 @@ def _next_game(conn, squadra_id: int) -> str | None:
     return f"{giornata}ª giornata, {data} {ora or ''}: {casa} - {ospite}".strip()
 
 
+def profilo_leggibile(profilo: pd.DataFrame) -> pd.DataFrame:
+    """Profilo con i valori in testo: per palle perse e rimbalzi la percentuale con il numero
+    a partita tra parentesi ("18,3% (13,2)")."""
+    def testo(v, n, d):
+        if n is not None and pd.notna(n):
+            return f"{N.it(v, d)}% ({N.it(n)})"
+        return N.it(v, d)
+    righe = []
+    for _, x in profilo.iterrows():
+        d = 2 if "Liberi" in x["Metrica"] else 1
+        righe.append({"Metrica": x["Metrica"], "Squadra": testo(x["Valore"], x.get("A partita"), d),
+                      "Media campionato": testo(x["Media campionato"], x.get("Media a partita"), d),
+                      "Posizione": str(x["Posizione"])})
+    return pd.DataFrame(righe)
+
+
 def to_markdown(r: ScoutingReport) -> str:
     def table(df):
         return df.to_markdown(index=False, floatfmt=".1f")
@@ -170,7 +195,7 @@ def to_markdown(r: ScoutingReport) -> str:
         lines.append(f"Prossima partita: {r.prossima}")
     lines += ["", "## Punti di forza"] + [f"- {x}" for x in r.punti_forza or ["(nessuno marcato)"]]
     lines += ["", "## Punti deboli"] + [f"- {x}" for x in r.punti_deboli or ["(nessuno marcato)"]]
-    lines += ["", "## Profilo di squadra", table(r.profilo),
+    lines += ["", "## Profilo di squadra", table(profilo_leggibile(r.profilo)),
               "", "## Giocatori (per minuti giocati)", table(r.giocatori),
               "", "## Ultime 5 partite", table(r.ultime),
               "", "## Casa / trasferta", table(r.casa_trasferta),

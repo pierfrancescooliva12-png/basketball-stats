@@ -48,7 +48,7 @@ def squadra(ctx, sid: int, mia: int | None = None, report=None) -> dict:
 
 VOCI_SEMAFORO = [("Attacco", "Rating offensivo (ORtg)", "punti ogni 100 possessi"),
                  ("Difesa", "Rating difensivo (DRtg)", "punti subiti ogni 100 possessi"),
-                 ("Tiro", "eFG% in attacco", "% al tiro dal campo"),
+                 ("Tiro", "eFG% in attacco", "% al tiro, triple pesate"),
                  ("Tiro da 3", "% da 3", "percentuale da 3"),
                  ("Palle perse", "Palle perse % in attacco", "a partita"),
                  ("Rimbalzi in attacco", "Rimbalzi offensivi %", "a partita"),
@@ -67,7 +67,7 @@ A_PARTITA = {"Palle perse % in attacco": lambda f: f.get("perse_pg"),
 def semaforo(profilo, squadra=None) -> list[dict]:
     """Otto voci chiave con la posizione in campionato e il giudizio: punto di forza (primo
     terzo), nella media, punto debole (ultimo terzo); per il ritmo veloce / lento. Con squadra
-    (riga del profilo) palle perse e rimbalzi sono a partita e il tiro è la % dal campo."""
+    (riga del profilo) per palle perse e rimbalzi c'è anche il numero a partita."""
     pr = profilo.set_index("Metrica")
     out = []
     for etichetta, metrica, spiega in VOCI_SEMAFORO:
@@ -88,10 +88,11 @@ def semaforo(profilo, squadra=None) -> list[dict]:
         else:
             giudizio, tipo = "nella media", "media"
         valore = x["Valore"]
-        if squadra is not None and metrica in A_PARTITA:
+        if squadra is not None and metrica in A_PARTITA and metrica != "eFG% in attacco":
             try:
                 v = A_PARTITA[metrica](squadra)
-                valore = v if v is not None and v == v else valore
+                if v is not None and v == v:
+                    spiega = f"% · {v:.1f} a partita".replace(".", ",")
             except (KeyError, ZeroDivisionError, TypeError):
                 pass
         out.append({"etichetta": etichetta, "valore": valore, "posizione": pos, "squadre": n,

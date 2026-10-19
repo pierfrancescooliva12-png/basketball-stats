@@ -125,13 +125,16 @@ def numero(v: float, altro: float | None = None) -> str:
 
 
 def leggibile(r, quale: str) -> str:
-    """Valore di una leva per tabelle e frasi: numero a partita per palle perse, rimbalzi e
-    liberi; la percentuale per il tiro."""
+    """Valore di una leva per tabelle e frasi: percentuale con il numero a partita tra
+    parentesi per palle perse e rimbalzi; liberi segnati a partita; percentuale per il tiro."""
     v = r[quale]
     if r["chiave"] not in UNITA or pd.isna(r.get(f"{quale}_n")):
         return _f(r["chiave"], v) + ("" if r["chiave"] == "ftr" else "%")
     altro = r["obiettivo_n"] if quale != "obiettivo" else r["atteso_n"]
-    return numero(r[f"{quale}_n"], altro)
+    n = numero(r[f"{quale}_n"], altro)
+    if r["chiave"] == "ftr":
+        return n
+    return f"{_f(r['chiave'], v)}% ({n})"
 
 
 def leve(profile: pd.DataFrame, forze: pd.DataFrame, mia: int, avv: int, casa_mia: bool,
