@@ -10,8 +10,8 @@ import streamlit as st
 
 from basket import config, scouting
 from dashboard import pagine
-from dashboard.stato import (App, archivio, archivio_url, contesto, secrets,
-                             stagioni_disponibili)
+from dashboard.stato import (App, archivio, archivio_url, brand_club, contesto, secrets,
+                             stagioni_disponibili, tema_club)
 from dashboard.ui import esc, inject_css, tip, topbar
 
 st.set_page_config(page_title=config.BRAND, page_icon=str(config.LOGO_DIR / "assist-mark-128.png"),
@@ -150,10 +150,22 @@ for k, v in nuovi.items():
     if qp.get(k) != v:
         qp[k] = v
 
+# brand del club: logo e colori della squadra (anche per demo e admin che la seguono)
+tema = None
+if mia_ok:
+    import json
+    try:
+        tema = tema_club(int(mia_id), sq_names[mia_id], json.dumps(brand_club(mia_id), sort_keys=True))
+    except Exception:                     # il brand non deve mai bloccare la piattaforma
+        tema = None
+if tema is not None:
+    from basket import brand
+    st.markdown(brand.css(tema), unsafe_allow_html=True)
+
 a = App(ctx=ctx, mtime=mtime, stagione=stagione, camp=camp, sq=sq, gsel=gsel, utente=utente,
         archivio=archivio(archivio_url()), players=players, profile=profile,
         bs_c=bs[bs["campionato_id"] == camp], bg_c=ctx.bg[ctx.bg["campionato_id"] == camp],
-        esperto=esperto)
+        esperto=esperto, tema=tema)
 
 agg = ctx.conn.execute("SELECT MAX(scaricata_il) FROM partite").fetchone()[0]
 chi = (" · modalità demo" if utente.get("demo") else

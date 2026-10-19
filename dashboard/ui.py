@@ -540,9 +540,19 @@ def note_html(text: str, key: str | None = None):
     st.markdown(f'<div class="note">{esc(text)}{tip(key)}</div>', unsafe_allow_html=True)
 
 
-def brand_hero(eyebrow: str, meta: str = ""):
-    """Testata con il marchio ASSIST."""
+def brand_hero(eyebrow: str, meta: str = "", tema=None):
+    """Testata con il marchio ASSIST, o con il logo e il nome del club se c'è il suo brand."""
     from basket import config
+    if tema is not None:
+        logo = (f'<img class="club-logo" src="{tema.logo}" alt="">' if tema.logo else "")
+        st.markdown(
+            f'<div class="hero"><div class="eyebrow">{esc(eyebrow)}</div>'
+            f'<div class="brand">{logo}<div><div class="title" style="margin:0">'
+            f'{esc(tema.nome)}</div><div class="tagline">con {esc(config.BRAND)} · '
+            f'{esc(config.BRAND_TAGLINE)}</div></div></div>'
+            f'<div class="meta" style="margin-top:10px">{meta}</div></div>',
+            unsafe_allow_html=True)
+        return
     mark = (config.LOGO_DIR / "assist-mark.svg").read_text(encoding="utf-8")
     mark = mark.replace('width="128" height="128"', 'width="64" height="64"', 1)
     st.markdown(

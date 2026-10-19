@@ -22,7 +22,8 @@ header[data-testid="stHeader"] {display: none;}
 .accesso-hero::after {left: calc(84% + 16px); right: -40%; background: var(--navy-2);}
 .accesso-hero > * {position: relative; z-index: 1;}
 .accesso-hero svg {width: 64px; height: 64px; border-radius: 14px;}
-.accesso-hero .marchio {font: italic 700 3.4rem/1 var(--cond); letter-spacing: .06em; margin-top: 18px;}
+.accesso-hero .marchio {font: italic 700 3.4rem/1 var(--cond); letter-spacing: .06em; margin-top: 18px;
+  text-transform: uppercase;}
 .accesso-hero .slogan {font: 600 .74rem 'Barlow', sans-serif; letter-spacing: .16em;
   text-transform: uppercase; color: var(--accent); margin-top: 8px;}
 .accesso-hero ul {list-style: none; padding: 0; margin: 28px 0 0; max-width: 80%;}
@@ -49,21 +50,60 @@ PUNTI = ["Scouting dell'avversaria e report pre-partita in PDF e Word",
          "Previsioni e dati di Serie A2 e B Nazionale aggiornati ogni giorno"]
 
 
-def _hero():
-    mark = (config.LOGO_DIR / "assist-mark.svg").read_text(encoding="utf-8")
+def _hero(tema=None):
     punti = "".join(f"<li>{esc(p)}</li>" for p in PUNTI)
+    if tema is not None:
+        logo = f'<img class="club-logo" src="{tema.logo}" alt="">' if tema.logo else ""
+        st.markdown(f'<div class="accesso-hero">{logo}<div class="marchio">{esc(tema.nome)}</div>'
+                    f'<div class="slogan">Area staff · con {esc(config.BRAND)}</div><ul>{punti}</ul></div>',
+                    unsafe_allow_html=True)
+        return
+    mark = (config.LOGO_DIR / "assist-mark.svg").read_text(encoding="utf-8")
     st.markdown(f'<div class="accesso-hero">{mark}<div class="marchio">{esc(config.BRAND)}</div>'
                 f'<div class="slogan">{esc(config.BRAND_TAGLINE)}</div><ul>{punti}</ul></div>',
                 unsafe_allow_html=True)
 
 
+def club_da_link() -> tuple[int, str] | None:
+    """La squadra del link di accesso del club (?club=luiss-roma), se esiste."""
+    voluto = (st.query_params.get("club") or "").strip().lower()
+    if not voluto:
+        return None
+    from basket import brand, db
+    try:
+        conn = db.connect(config.DB_PATH, readonly=True)
+        righe = conn.execute("SELECT squadra_id, nome FROM squadre ORDER BY stagione DESC").fetchall()
+    except Exception:
+        return None
+    for sid, nome in righe:
+        if brand.slug(nome) == voluto or str(sid) == voluto:
+            return int(sid), nome
+    return None
+
+
+def _tema_link():
+    club = club_da_link()
+    if club is None:
+        return None
+    import json
+    from basket import brand
+    from .stato import brand_club, tema_club
+    try:
+        tema = tema_club(club[0], club[1], json.dumps(brand_club(club[0]), sort_keys=True))
+    except Exception:
+        return None
+    st.markdown(brand.css(tema), unsafe_allow_html=True)
+    return tema
+
+
 def login(utenti: dict) -> None:
     """Mostra la schermata di accesso e ferma la pagina finché le credenziali non sono giuste."""
     st.markdown(CSS, unsafe_allow_html=True)
+    tema = _tema_link()                   # pagina di accesso con il brand del club
     stato = st.session_state.setdefault("_accesso", {})
     c1, _, c2 = st.columns([1.25, 0.08, 1], vertical_alignment="center")
     with c1:
-        _hero()
+        _hero(tema)
     with c2:
         st.markdown('<div class="accesso-titolo">Accedi</div><div class="accesso-sotto">'
                     'Area riservata agli staff tecnici.</div>', unsafe_allow_html=True)

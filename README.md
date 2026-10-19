@@ -190,6 +190,23 @@ sbagliati di fila l'accesso si blocca per un minuto, poi per tempi doppi). La sc
 si imposta sulla squadra del club e note, liste di osservati e obiettivi restano **privati per
 club**. Senza utenti la dashboard è in *modalità demo* (aperta a tutti).
 
+### Brand dei club
+
+Chi entra con l'utenza di un club vede la piattaforma con il **logo e i colori della sua
+squadra** (fascia in alto, testate, pulsanti, sfondo). Il logo si scarica dal sito della Lega
+(`static.legapallacanestro.com/.../team_logo/<id squadra>.png`) e resta in cache, mai nel
+repository; i colori si ricavano dal logo. Il link `https://<sito>/?club=<nome-squadra>`
+(es. `?club=luiss-roma`) apre la **pagina di accesso con il brand del club**. Dall'area
+**Admin › Amministrazione › Brand dei club** si vedono anteprima e link e si correggono i colori,
+con il blocco da incollare nei Secrets:
+
+```toml
+[brand.9583]            # id della squadra
+primario = "#0b2a5b"
+secondario = "#4fb3e8"
+# logo_url = "https://..."   (facoltativo, un altro indirizzo per il logo)
+```
+
 ### Archivio permanente di note e osservati
 
 Di default note e liste sono salvate in un file locale che su Streamlit Cloud si perde a ogni

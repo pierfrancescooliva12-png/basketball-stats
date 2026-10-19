@@ -100,8 +100,10 @@ def _home():
     if mia not in set(a.profile["squadra_id"]):
         mia = None
     nome_mia = a.profile.set_index("squadra_id")["squadra"].get(mia) if mia is not None else None
-    brand_hero(f"{nome_mia} · la settimana dello staff" if nome_mia else "La settimana dello staff",
-               "Prossima avversaria, ultima partita, avvisi e report pronti da scaricare.")
+    tema = a.tema if nome_mia else None
+    brand_hero("La settimana dello staff" if tema or not nome_mia
+               else f"{nome_mia} · la settimana dello staff",
+               "Prossima avversaria, ultima partita, avvisi e report pronti da scaricare.", tema=tema)
     if a.utente.get("demo") or not a.utente.get("club"):
         teams = a.profile.sort_values("squadra")
         nomi = dict(zip(teams["squadra_id"], teams["squadra"]))
