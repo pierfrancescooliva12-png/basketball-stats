@@ -97,3 +97,11 @@ def test_report_sviluppo(tmp_path, monkeypatch):
     conn = db.connect(tmp_path / "t.sqlite")
     update.update_league(conn, Client(), "ita2", "x2627", {2})
     assert build_sviluppo(Contesto(conn, "x2627"), 10050, foto=False)[:4] == b"%PDF"
+
+
+def test_anagrafica_con_valori_mancanti():
+    import math
+    info = SG.pulisci({"ruolo": math.nan, "maglia": 7.0, "nazionalita": "ITA", "altezza_cm": math.nan,
+                       "foto_url": None})
+    assert info == {"maglia": "7", "nazionalita": "ITA"}
+    assert SG.meta({"ruolo": math.nan, "altezza": None, "eta": 24, "nazionalita": "ITA"}) == "24 anni · ITA"

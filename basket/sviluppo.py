@@ -20,7 +20,7 @@ GRUPPI = {"esterni": "esterni", "ali": "ali", "lunghi": "lunghi"}
 
 
 def gruppo(ruolo, altezza) -> str | None:
-    r = (ruolo or "").lower()
+    r = ruolo.lower() if isinstance(ruolo, str) else ""
     if any(k in r for k in ("play", "guardia", "playmaker")):
         return "esterni"
     if any(k in r for k in ("centro", "pivot", "ala grande", "ala/centro", "ala-centro")):
