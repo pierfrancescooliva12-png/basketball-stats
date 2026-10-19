@@ -160,8 +160,28 @@ def build_docx(ctx, squadra_id: int, mia: int | None = None, foto: bool = True) 
         _testo(p, "Giocatori di rotazione (almeno 10 minuti a partita), in ordine di minuti. "
                   "+ cosa fa meglio, − cosa fa peggio in modo evidente, rispetto ai giocatori di "
                   "rotazione del campionato.", size=8, colore=GRIGIO, italic=True)
+        from . import impatto as I
+        try:
+            obiettivi = I.obiettivi(ctx, squadra_id)
+        except Exception:
+            obiettivi = []
+        if obiettivi:
+            _titolo(doc, "Obiettivi sui singoli · per limitarne l'impatto", 2)
+            tab = doc.add_table(rows=1, cols=4)
+            tab.style = "Light Grid Accent 1"
+            for c, h in zip(tab.rows[0].cells, ("Giocatore", "Obiettivo", "Vale", "Perché")):
+                c.text = h
+            for o in obiettivi:
+                for c, v in zip(tab.add_row().cells, (o["giocatore"], o["obiettivo"], I.testo_vale(o), o["perche"])):
+                    c.text = v
+            for row in tab.rows:
+                for c in row.cells:
+                    for par in c.paragraphs:
+                        for run in par.runs:
+                            run.font.size = Pt(8.5)
+        per_g = {o["giocatore_id"]: o for o in obiettivi}
         for g in giocatori:
-            _giocatore(doc, g)
+            _giocatore(doc, dict(g, obiettivo=per_g.get(g["giocatore_id"])))
 
         # statistiche
         doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
@@ -228,4 +248,8 @@ def _giocatore(doc, g: dict):
             q.paragraph_format.space_after = Pt(0)
             _testo(q, f"{segno} ", bold=True, colore=colore)
             _testo(q, v, size=9.5)
+    if g.get("obiettivo"):
+        q = dx.add_paragraph()
+        _testo(q, "OBIETTIVO · ", bold=True, size=9, colore=NAVY)
+        _testo(q, g["obiettivo"]["obiettivo"], size=9.5)
     _spazio_note(doc, 2)

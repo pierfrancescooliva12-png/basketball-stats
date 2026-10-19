@@ -245,9 +245,46 @@ def ultima_partita(a: App):
                 "rimb_tot": "Rimbalzi", "assist": "Assist", "perse": "Perse",
                 "game_score": "Game Score", "gs_medio": "Media stagione",
                 "delta_gs": "Differenza"}), colori={"Differenza": True})
+    verifica_chiavi(a, sid, pid)
     st.download_button("⬇ Report post-partita (PDF)", pdf_post_partita(a, sid, pid),
                        file_name=f"post_partita_{slug(r['squadra'])}_{pid}.pdf",
                        mime="application/pdf", type="primary")
+
+
+@st.cache_data(show_spinner="Confronto le chiavi della vigilia con la partita…")
+def _verifica(_ctx, mtime: float, stagione: str, sid: int, pid: str):
+    from basket import verifica_chiavi as VK
+    v = VK.verifica(_ctx, sid, pid)
+    return v, (VK.stagione(_ctx, sid)[1] if v is not None else pd.DataFrame())
+
+
+def verifica_chiavi(a: App, sid: int, pid: str):
+    """Le chiavi della vigilia contro la partita giocata, e come vanno in stagione."""
+    from basket import verifica_chiavi as VK
+    v, riass = _verifica(a.ctx, a.mtime, a.stagione, sid, pid)
+    section("Le chiavi della vigilia: com'è andata", "suggerimenti prima della partita e riscontro in gara",
+            key=None)
+    if v is None:
+        note_html("Per questa partita non ci sono abbastanza partite precedenti per ricostruire le chiavi.")
+        return
+    st.markdown('<div class="frase">' + "<br>".join(esc(f) for f in VK.frasi(v)) + "</div>",
+                unsafe_allow_html=True)
+    righe = VK.tabella(v)
+    show(pd.DataFrame([{k: (("✅ " if x["raggiunta"] else "❌ ") + x[k]) if k == "Esito" else x[k]
+                        for k in x if k != "raggiunta"} for x in righe]), voci=[])
+    note_html("Le chiavi sono ricostruite con le sole partite giocate fino al giorno prima, come le avrebbe date "
+              "ASSIST alla vigilia. Tiro: percentuale dal campo con le triple che valgono 1,5; palle perse, "
+              "rimbalzi e liberi: numero nella partita. Punti rispetto al previsto: quanto quella chiave ha "
+              "spostato il margine, con i possessi della partita.")
+    if v.get("giocatori"):
+        show(pd.DataFrame([{"Giocatore": g["giocatore"], "Squadra": "avversaria" if g["avversario"] else "vostra",
+                            "Chiave": g["obiettivo"],
+                            "In partita": "non ha giocato" if g["fatto"] is None else f"{g['fatto']:.0f}",
+                            "Esito": "✅ rispettata" if g["rispettato"] else "❌ mancata"} for g in v["giocatori"]]),
+             voci=[])
+    if riass is not None and not riass.empty:
+        st.markdown("**In stagione · quando le chiavi sono state raggiunte**")
+        show(riass, voci=[])
 
 
 # ------------------------------------------------------------------ mercato e giocatore

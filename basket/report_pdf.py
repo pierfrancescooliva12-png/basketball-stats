@@ -201,8 +201,13 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
     libera = A4[1] - 26 * mm - el[0].wrap(W, A4[1])[1] - el[1].height - 2
     el.append(KeepInFrame(W, libera, _sintesi(SI.squadra(ctx, squadra_id, mia, r), r, S, W), mode="shrink"))
     giocatori = SG.schede(ctx, squadra_id, foto=foto)
+    from . import impatto as I
+    try:
+        obiettivi = I.obiettivi(ctx, squadra_id)
+    except Exception:
+        obiettivi = []
     if giocatori:
-        el += [PageBreak()] + _schede(giocatori, r.squadra, S, W)
+        el += [PageBreak()] + _schede(giocatori, r.squadra, S, W, obiettivi)
     el.append(PageBreak())
 
     el.append(_kpis([
@@ -569,6 +574,9 @@ def _scheda(g: dict, S, w):
               Spacer(1, 3), numeri, Paragraph(_esc(g["tiro"]), S["small"]), Spacer(1, 3)]
     destra += [Paragraph(f'<font color="#2a78d6"><b>+</b></font>&nbsp;&nbsp;{_esc(c)}', voce) for c in g["forza"]]
     destra += [Paragraph(f'<font color="#d95926"><b>−</b></font>&nbsp;&nbsp;{_esc(c)}', voce) for c in g["deboli"]]
+    if g.get("obiettivo"):
+        destra.append(Paragraph(f'<font color="#0b1220"><b>OBIETTIVO</b></font> · {_esc(g["obiettivo"]["obiettivo"])}',
+                                voce))
     interno = Table([[ST.FotoMaglia(g.get("foto"), g["nome"], g.get("maglia")), destra]],
                     colWidths=[27 * mm, wd])
     interno.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
@@ -577,13 +585,32 @@ def _scheda(g: dict, S, w):
     return _carta(interno, w, bordo=ARANCIO, pad=8)
 
 
-def _schede(giocatori: list[dict], squadra: str, S, W) -> list:
+def _obiettivi_singoli(obiettivi: list[dict], S, W, titolo="OBIETTIVI SUI SINGOLI · per limitarne l'impatto") -> list:
+    """Tabella degli obiettivi sui giocatori, con quanto valgono e perché."""
+    from . import impatto as I
+    if not obiettivi:
+        return []
+    rows = [["Giocatore", "Obiettivo", "Vale", "Perché"]]
+    for o in obiettivi:
+        rows.append([Paragraph(f"<b>{_esc(o['giocatore'])}</b>", S["cell"]), Paragraph(_esc(o["obiettivo"]), S["cell"]),
+                     Paragraph(_esc(I.testo_vale(o)), S["cell"]), Paragraph(_esc(o["perche"]), S["cell"])])
+    t = _table(rows, [32 * mm, 36 * mm, 28 * mm, W - 4 - 16 - 96 * mm], align_left=(1, 2, 3))
+    return [_carta([Paragraph(titolo, ParagraphStyle("ost", parent=S["h3"], textColor=NAVY, spaceBefore=0)), t,
+                    Paragraph("Margine: punti di differenza nel risultato. Dai dati delle sue partite (questa stagione e "
+                              "la precedente) rispetto a quanto la sua squadra rende di solito; con poche partite si usa la "
+                              "stima generale del campionato.", S["small"])], W - 4, bordo=NAVY, pad=8), Spacer(1, 6)]
+
+
+def _schede(giocatori: list[dict], squadra: str, S, W, obiettivi: list[dict] | None = None) -> list:
     el = [ST.Intestazione(W, 12 * mm, 12 * mm, "Scouting dei giocatori", squadra, marchio=config.BRAND,
                           grande=False),
           Paragraph("Giocatori di rotazione (almeno 10 minuti a partita), in ordine di minuti. "
                     "<font color='#2a78d6'><b>+</b></font> cosa fa meglio, "
                     "<font color='#d95926'><b>−</b></font> cosa fa peggio in modo evidente, sempre "
                     "rispetto ai giocatori di rotazione del campionato.", S["small"]), Spacer(1, 5)]
+    el += _obiettivi_singoli(obiettivi or [], S, W)
+    per_g = {o["giocatore_id"]: o for o in obiettivi or []}
+    giocatori = [dict(g, obiettivo=per_g.get(g["giocatore_id"])) for g in giocatori]
     w = W / 2 - 4
     for i in range(0, len(giocatori), 2):
         coppia = [_scheda(g, S, w) for g in giocatori[i:i + 2]] + [""] * (2 - len(giocatori[i:i + 2]))
@@ -615,7 +642,12 @@ def build_sviluppo(ctx: Contesto, squadra_id: int, foto: bool = True) -> bytes:
                     "quando si può stimare, quanti punti a partita vale raggiungerlo. Rimbalzi, assist, recuperi e falli "
                     "sono a partita con i minuti del giocatore; <b>azione</b> = un tiro, una coppia di liberi o una "
                     "palla persa; <b>punti per tiro</b> = punti segnati per ogni tiro tentato, liberi compresi.", S["small"])]
-    el += sviluppo_flowables(giocatori, S, W)
+    from . import impatto as I
+    try:
+        prest = I.obiettivi(ctx, squadra_id, n=6, avversaria=False)
+    except Exception:
+        prest = []
+    el += sviluppo_flowables(giocatori, S, W, prestazioni=prest)
 
     def pagina(canvas, doc_):
         ST.sfondo(canvas, doc_)
@@ -630,7 +662,8 @@ def build_sviluppo(ctx: Contesto, squadra_id: int, foto: bool = True) -> bytes:
     return buf.getvalue()
 
 
-def sviluppo_flowables(giocatori: list[dict], S, W, titolo: bool = False, sfondo=colors.white) -> list:
+def sviluppo_flowables(giocatori: list[dict], S, W, titolo: bool = False, sfondo=colors.white,
+                       prestazioni: list[dict] | None = None) -> list:
     """Tabella delle priorità di lavoro e schede di sviluppo (tre per pagina)."""
     sez = ParagraphStyle("svs2", parent=S["h2"], fontSize=13, leading=15, textColor=NAVY, spaceBefore=6,
                          spaceAfter=4)
@@ -651,7 +684,8 @@ def sviluppo_flowables(giocatori: list[dict], S, W, titolo: bool = False, sfondo
                       _fmt(a["punti_pg"]) if a and pd.notna(a["punti_pg"]) else "–"])
     el += [Paragraph("PRIORITÀ DI LAVORO", sez),
            _table(righe, [42 * mm, 12 * mm, W - 42 * mm - 12 * mm - 52 * mm - 20 * mm, 52 * mm, 20 * mm],
-                  align_left=(2, 3))]
+                  align_left=(2, 3)), Spacer(1, 6)]
+    el += _obiettivi_singoli(prestazioni or [], S, W, "LE PRESTAZIONI CHE SPOSTANO IL RISULTATO")
     for i, g in enumerate(giocatori):
         if i % 3 == 0:
             el.append(PageBreak())

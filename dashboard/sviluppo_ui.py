@@ -90,6 +90,9 @@ def render(a: App):
                       "Altre aree": len(g["aree"]) - 1 if x else 0})
     show(pd.DataFrame(righe), voci=[])
 
+    from .schede import obiettivi_singoli
+    obiettivi_singoli(a, sid, avversaria=False)
+
     section("I giocatori", "cosa fanno bene, cosa fanno male, dove migliorare", key=None)
     nomi = ["Tutti"] + [g["nome"] for g in giocatori]
     scelta = st.selectbox("Giocatore", nomi, key="sviluppo_giocatore")

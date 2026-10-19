@@ -160,7 +160,7 @@ def _giocatori(a: App, sid: int, m0: float | None, nomi: dict, avversario: bool)
         section(f"I vostri giocatori chiave ({short(nomi[sid])})", "quando vanno sopra la loro "
                 "soglia", key="giocatori_chiave")
     if gc.empty:
-        note_html("Servono più partite: almeno 4 sotto e 4 sopra la soglia per ogni giocatore.")
+        note_html("Servono più partite di questa stagione (almeno 4 sotto e 4 sopra la soglia). Gli obiettivi sui singoli qui sopra usano anche la stagione precedente.")
         return
     gc = gc[gc["effetto"] >= 0.5]
     if m0 is not None:
