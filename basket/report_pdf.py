@@ -617,23 +617,7 @@ def build_sviluppo(ctx: Contesto, squadra_id: int, foto: bool = True) -> bytes:
                     "quando si può stimare, quanti punti a partita vale raggiungerlo. Rimbalzi, assist, recuperi e falli "
                     "sono a partita con i minuti del giocatore; <b>azione</b> = un tiro, una coppia di liberi o una "
                     "palla persa; <b>punti per tiro</b> = punti segnati per ogni tiro tentato, liberi compresi.", S["small"])]
-    if not giocatori:
-        el.append(Paragraph("Nessun giocatore con almeno 5 minuti a partita.", S["body"]))
-    else:
-        righe = [["Giocatore", "Min", "Priorità di lavoro", "Ora › obiettivo", "Punti in gioco"]]
-        for g in giocatori:
-            a = g["aree"][0] if g["aree"] else None
-            righe.append([g["nome"], g["numeri"][0][1], Paragraph(_esc(a["voce"]) if a else "–", S["cell"]),
-                          f"{a['valore']} › {a['obiettivo']}" if a else "–",
-                          _fmt(a["punti_pg"]) if a and pd.notna(a["punti_pg"]) else "–"])
-        el += [Paragraph("PRIORITÀ DI LAVORO", sez),
-               _table(righe, [46 * mm, 14 * mm, W - 46 * mm - 14 * mm - 34 * mm - 24 * mm, 34 * mm, 24 * mm],
-                      align_left=(2,))]
-        for i, g in enumerate(giocatori):
-            if i % 3 == 0:
-                el.append(PageBreak())
-                el.append(Paragraph("GIOCATORI" + (" (continua)" if i else ""), sez))
-            el += [_scheda_sviluppo(g, S, W), Spacer(1, 6)]
+    el += sviluppo_flowables(giocatori, S, W)
 
     def pagina(canvas, doc_):
         ST.sfondo(canvas, doc_)
@@ -648,7 +632,37 @@ def build_sviluppo(ctx: Contesto, squadra_id: int, foto: bool = True) -> bytes:
     return buf.getvalue()
 
 
-def _scheda_sviluppo(g: dict, S, W):
+def sviluppo_flowables(giocatori: list[dict], S, W, titolo: bool = False, sfondo=colors.white) -> list:
+    """Tabella delle priorità di lavoro e schede di sviluppo (tre per pagina)."""
+    sez = ParagraphStyle("svs2", parent=S["h2"], fontSize=13, leading=15, textColor=NAVY, spaceBefore=6,
+                         spaceAfter=4)
+    el = []
+    if titolo:
+        el += [Paragraph("SVILUPPO DEI GIOCATORI", sez),
+               Paragraph("Ogni giocatore è confrontato con i giocatori di rotazione del campionato dello stesso "
+                         "ruolo (esterni, ali, lunghi); l'obiettivo è il valore normale del ruolo. Rimbalzi, "
+                         "assist, recuperi e falli sono a partita con i minuti del giocatore; azione = un tiro, "
+                         "una coppia di liberi o una palla persa.", S["small"])]
+    if not giocatori:
+        return el + [Paragraph("Nessun giocatore con almeno 5 minuti a partita.", S["body"])]
+    righe = [["Giocatore", "Min", "Priorità di lavoro", "Ora › obiettivo", "Punti in gioco"]]
+    for g in giocatori:
+        a = g["aree"][0] if g["aree"] else None
+        righe.append([g["nome"], g["numeri"][0][1], Paragraph(_esc(a["voce"]) if a else "–", S["cell"]),
+                      Paragraph(_esc(f"{a['valore']} › {a['obiettivo']}") if a else "–", S["cell"]),
+                      _fmt(a["punti_pg"]) if a and pd.notna(a["punti_pg"]) else "–"])
+    el += [Paragraph("PRIORITÀ DI LAVORO", sez),
+           _table(righe, [42 * mm, 12 * mm, W - 42 * mm - 12 * mm - 52 * mm - 20 * mm, 52 * mm, 20 * mm],
+                  align_left=(2, 3))]
+    for i, g in enumerate(giocatori):
+        if i % 3 == 0:
+            el.append(PageBreak())
+            el.append(Paragraph("GIOCATORI" + (" (continua)" if i else ""), sez))
+        el += [_scheda_sviluppo(g, S, W, sfondo), Spacer(1, 6)]
+    return el
+
+
+def _scheda_sviluppo(g: dict, S, W, sfondo=colors.white):
     """Scheda di sviluppo: foto e numeri, poi cosa fa bene, cosa fa male, aree di miglioramento."""
     nome = ParagraphStyle("sn", parent=S["h3"], fontSize=13, leading=15, spaceBefore=0, spaceAfter=0, textColor=NAVY)
     voce = ParagraphStyle("sv", parent=S["body"], fontSize=8, leading=10.3, leftIndent=8, firstLineIndent=-8)
@@ -694,7 +708,7 @@ def _scheda_sviluppo(g: dict, S, W):
     alto_.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
                                ("RIGHTPADDING", (0, 0), (-1, -1), 0), ("TOPPADDING", (0, 0), (-1, -1), 0),
                                ("BOTTOMPADDING", (0, 0), (-1, -1), 4)]))
-    return KeepTogether(_carta([alto_, tre], W - 4, bordo=ARANCIO, pad=9))
+    return KeepTogether(_carta([alto_, tre], W - 4, bordo=ARANCIO, sfondo=sfondo, pad=9))
 
 
 def unisci_titoli(el: list) -> list:

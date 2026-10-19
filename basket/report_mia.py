@@ -19,6 +19,7 @@ from . import config
 from . import lavagna as L
 from . import miglioramento as M
 from .contesto import Contesto, open_readonly
+from . import pdf_stile as ST
 from .report_extra import _data_it, _documento, _piede, _testata
 from .report_pdf import (_approfondimenti, _fmt, _fonts, _kpis, _styles, _table, slug,
                          unisci_titoli)
@@ -56,9 +57,10 @@ def _quintetti(df: pd.DataFrame, S, W) -> list:
 
 
 def build_mia_squadra(ctx: Contesto, sid: int, obiettivi: dict | None = None,
-                      giochi: list[dict] | None = None) -> bytes:
+                      giochi: list[dict] | None = None, foto: bool = True) -> bytes:
     """Tutte le voci della propria squadra: sintesi, aree da migliorare, quintetti, obiettivi,
-    andamento, giocatori, rotazioni e momenti, avvisi; con giochi aggiunge il playbook."""
+    andamento, giocatori con lo sviluppo di ognuno (foto se foto è True), rotazioni e momenti,
+    avvisi; con giochi aggiunge il playbook."""
     _fonts()
     S = _styles()
     W = 186 * mm
@@ -229,6 +231,12 @@ def build_mia_squadra(ctx: Contesto, sid: int, obiettivi: dict | None = None,
             rows.append(row)
         el += [_titolo("Giocatori · medie a partita", S),
                _table(rows, [40 * mm] + [(W - 40 * mm) / (len(head) - 1)] * (len(head) - 1))]
+        # sviluppo dei singoli giocatori: cosa fanno bene, cosa fanno male, dove migliorare
+        from . import sviluppo as SV
+        from .report_pdf import sviluppo_flowables
+        el += [PageBreak()] + sviluppo_flowables(SV.squadra(ctx, sid, foto=foto), S, W, titolo=True,
+                                                 sfondo=ST.SFONDO) \
+            + [PageBreak()]
 
     ct = ctx.clutch_teams
     if ct is not None and not ct.empty and sid in set(ct["squadra_id"]):
