@@ -91,11 +91,11 @@ def render(a: App, hist: pd.DataFrame):
             hovertemplate="%{theta}: %{r:.0f}° percentile<extra>" + n + "</extra>"))
     fig.update_layout(polar=dict(bgcolor="rgba(0,0,0,0)",
                                  radialaxis=dict(range=[0, 100], tickvals=[25, 50, 75],
-                                                 gridcolor="rgba(255,255,255,0.08)",
+                                                 gridcolor="rgba(11,18,32,0.08)",
                                                  linecolor="rgba(0,0,0,0)",
                                                  tickfont=dict(color="#7d889c", size=11)),
-                                 angularaxis=dict(gridcolor="rgba(255,255,255,0.08)",
-                                                  linecolor="rgba(255,255,255,0.10)",
+                                 angularaxis=dict(gridcolor="rgba(11,18,32,0.08)",
+                                                  linecolor="rgba(11,18,32,0.15)",
                                                   tickfont=dict(color=TESTO, size=12.5))),
                       legend=dict(orientation="h", y=-0.12, font=dict(color=TESTO)),
                       margin=dict(l=40, r=40, t=30, b=30))

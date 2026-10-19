@@ -113,7 +113,7 @@ def sezione_rotazioni(a: App, sid: int, nomi: dict):
     etich = [nomi.get(x, x) for x in z.index]
     fig = go.Figure(go.Heatmap(
         z=z.values, x=[f"{m + 1}'" for m in z.columns], y=etich, zmin=0, zmax=100,
-        colorscale=[[0, SUPERFICIE], [0.5, "#2b5d9e"], [1, BLU]], xgap=1, ygap=2,
+        colorscale=[[0, SUPERFICIE], [0.5, "#9cc0ec"], [1, BLU]], xgap=1, ygap=2,
         showscale=False,
         hovertemplate="%{y}<br>minuto %{x}: in campo nel %{z:.0f}% delle partite<extra></extra>"))
     for q in (10, 20, 30):

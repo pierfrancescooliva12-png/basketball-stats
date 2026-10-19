@@ -402,7 +402,8 @@ def render_anteprima(a: App):
     metriche = [("Record", "record"), ("Net rating", "net_rtg"), ("ORtg", "ortg"),
                 ("DRtg", "drtg"), ("Ritmo", "pace"), ("eFG%", "efg_pct"),
                 ("Palle perse % (a partita)", "tov_pct"), ("Rimb. offensivi % (a partita)", "orb_pct"),
-                ("Rimb. difensivi % (a partita)", "drb_pct"), ("% punti da 3", "quota_punti_3"),
+                ("Rimb. difensivi % (a partita)", "drb_pct"),
+                ("Assist per palla persa", "ast_to"), ("% punti da 3", "quota_punti_3"),
                 ("% punti panchina", "quota_punti_panchina"), ("Punto a punto", "record_pp")]
     meglio_basso = {"drtg", "tov_pct"}
     rows = []
@@ -510,6 +511,8 @@ def render_mercato(a: App):
         d = d[d["eta"].notna() & (d["eta"] <= eta_max)]
     if solo_ita:
         d = d[d["italiano"].fillna(False)]
+    from . import filtri_ui
+    d, filtri_m = filtri_ui.render(d, "mercato")
     if hist["eta"].isna().all():
         note_html("Anagrafica (età, altezza, nazionalità) in arrivo con il prossimo "
                   "aggiornamento: per ora i filtri anagrafici sono vuoti.", "eta")
@@ -519,6 +522,7 @@ def render_mercato(a: App):
             "minuti_pg": "Min", "punti_pg": "Punti", "rimb_tot_pg": "RT", "assist_pg": "Ass",
             "ts_pct": "TS%", "usg_pct": "USG%", "ast_pct": "AST%", "trb_pct": "REB%",
             "game_score_p40": "Game Score", "presenze_pct": "Presenze %"}
+    cols |= {k: v for k, v in filtri_ui.colonne(filtri_m).items() if k not in cols}
     cols = {k: v for k, v in cols.items() if k in d.columns}
     d = d.assign(dati=(d["partite"] < 3).map({True: "⚠ pochi dati", False: ""}))
     cols = {"giocatore": "Giocatore", "dati": "Dati", **cols}

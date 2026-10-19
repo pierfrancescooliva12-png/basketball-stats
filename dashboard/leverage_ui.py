@@ -33,7 +33,7 @@ def grafico_probabilita(e: pd.DataFrame, casa: str, ospite: str, momenti: pd.Dat
                     hovertemplate="%{x:.1f}' · %{customdata[0]}-%{customdata[1]} · casa %{y:.0f}%<extra></extra>")
     if momenti is not None and not momenti.empty:
         fig.add_scatter(x=momenti["secondi"] / 60, y=momenti["wp_casa"] * 100, mode="markers",
-                        marker=dict(size=9, color=TESTO, line=dict(color="#0a0e15", width=2)),
+                        marker=dict(size=9, color=TESTO, line=dict(color="#ffffff", width=2)),
                         text=momenti["etichetta"], hovertemplate="%{text}<extra></extra>", showlegend=False)
     fine = int(e["periodo"].max()) if not e.empty else 4
     for q in range(1, fine):
