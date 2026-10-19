@@ -8,11 +8,11 @@ sono nell'indirizzo). Accesso per club configurabile nei secrets di Streamlit.
 
 import streamlit as st
 
-from basket import accesso, config, scouting
+from basket import config, scouting
 from dashboard import pagine
 from dashboard.stato import (App, archivio, archivio_url, contesto, secrets,
                              stagioni_disponibili)
-from dashboard.ui import brand_hero, esc, inject_css, tip, topbar
+from dashboard.ui import esc, inject_css, tip, topbar
 
 st.set_page_config(page_title=config.BRAND, page_icon=str(config.LOGO_DIR / "assist-mark-128.png"),
                    layout="wide",
@@ -28,17 +28,8 @@ if not config.DB_PATH.exists():
 utenti = {k.lower(): dict(v) for k, v in (secrets().get("utenti") or {}).items()}
 if utenti:
     if "utente" not in st.session_state:
-        brand_hero("Piattaforma di scouting", "Accedi con le credenziali del tuo club")
-        with st.form("login"):
-            u = st.text_input("Utente")
-            p = st.text_input("Password", type="password")
-            if st.form_submit_button("Accedi", type="primary"):
-                ok = accesso.authenticate(utenti, u, p)
-                if ok:
-                    st.session_state["utente"] = ok
-                    st.rerun()
-                st.error("Credenziali non valide")
-        st.stop()
+        from dashboard import accesso_ui
+        accesso_ui.login(utenti)            # si ferma qui finché l'accesso non riesce
     utente = dict(st.session_state["utente"])
 else:
     utente = {"username": "demo", "club": None, "ruolo": "admin", "demo": True}
@@ -65,7 +56,8 @@ if bs.empty:
 if utente.get("club") and "squadra_id" not in utente:
     trovate = scouting.find_team(ctx.conn, utente["club"])
     utente["squadra_id"] = trovate[0][0] if len(trovate) == 1 else None
-if utente.get("demo") and st.session_state.get("mia_demo") is not None:
+# demo e amministratore senza club: la squadra si sceglie nella Home
+if (utente.get("demo") or not utente.get("club")) and st.session_state.get("mia_demo") is not None:
     utente["squadra_id"] = st.session_state["mia_demo"]
 
 camp_disp = [c for c in config.CAMPIONATI if c in set(bs["campionato_id"])]
@@ -135,8 +127,8 @@ a = App(ctx=ctx, mtime=mtime, stagione=stagione, camp=camp, sq=sq, gsel=gsel, ut
         esperto=esperto)
 
 agg = ctx.conn.execute("SELECT MAX(scaricata_il) FROM partite").fetchone()[0]
-chi = (f" · {esc(utente['username'])} ({esc(utente['club'] or '')})"
-       if not utente.get("demo") else " · modalità demo")
+chi = (" · modalità demo" if utente.get("demo") else
+       f" · {esc(utente['username'])} ({esc(utente['club'] or 'amministratore')})")
 n_incomplete = a.bs_c.loc[~a.bs_c["affidabile"], "partita_id"].nunique()
 with barra:
     c1, c2 = st.columns([6, 1], vertical_alignment="center")
@@ -149,7 +141,8 @@ with barra:
             meta += (f' · {n_incomplete} box score incompleti{tip("incompleto")}')
         topbar(meta)
     if not utente.get("demo") and c2.button("Esci", key="logout"):
-        st.session_state.pop("utente", None)
+        for k in ("utente", "mia_demo", "w_mia"):
+            st.session_state.pop(k, None)
         st.rerun()
 
 # ------------------------------------------------------------------ pagine

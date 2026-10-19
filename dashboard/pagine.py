@@ -82,13 +82,20 @@ def pulsante(col, etichetta: str, pagina: str, primary: bool = False, **stato):
 # ------------------------------------------------------------------ Home
 
 def home():
+    _home()
+    if APP.utente.get("demo"):
+        from . import accesso_ui
+        accesso_ui.primo_accesso()
+
+
+def _home():
     a = APP
     mia = a.utente.get("squadra_id")
     if mia not in set(a.profile["squadra_id"]):
         mia = None
     brand_hero("La settimana dello staff",
                "Prossima avversaria, ultima partita, avvisi e report pronti da scaricare.")
-    if a.utente.get("demo"):
+    if a.utente.get("demo") or not a.utente.get("club"):
         teams = a.profile.sort_values("squadra")
         nomi = dict(zip(teams["squadra_id"], teams["squadra"]))
         opts = [None] + list(nomi)
@@ -97,8 +104,9 @@ def home():
         if st.session_state.get("mia_demo") not in opts:
             st.session_state["mia_demo"] = None
         st.session_state["w_mia"] = st.session_state.get("mia_demo")
-        st.selectbox("La tua squadra (modalità demo: con gli accessi per club è impostata "
-                     "automaticamente)", opts, key="w_mia",
+        etichetta = ("La tua squadra (modalità demo: con gli accessi per club è impostata "
+                     "automaticamente)" if a.utente.get("demo") else "Squadra da seguire")
+        st.selectbox(etichetta, opts, key="w_mia",
                      on_change=lambda: st.session_state.update(
                          mia_demo=st.session_state["w_mia"]),
                      format_func=lambda s: "Scegli…" if s is None else nomi[s],

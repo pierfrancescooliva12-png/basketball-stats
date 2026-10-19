@@ -66,7 +66,10 @@ class App:
 
     @property
     def club(self) -> str:
-        return self.utente.get("club") or "demo"
+        if self.utente.get("demo"):
+            return "demo"
+        # l'amministratore senza club ha note e liste proprie
+        return self.utente.get("club") or f"admin:{self.utente.get('username')}"
 
     @property
     def autore(self) -> str:
