@@ -21,6 +21,7 @@ BLU = RGBColor(0x2A, 0x78, 0xD6)
 ROSSO = RGBColor(0xD9, 0x59, 0x26)
 GRIGIO = RGBColor(0x6B, 0x74, 0x89)
 INK = RGBColor(0x1A, 0x22, 0x33)
+NAVY = RGBColor(0x0B, 0x12, 0x20)
 TINTA = {"forza": BLU, "debole": ROSSO, "media": GRIGIO, "neutro": INK}
 
 
@@ -49,8 +50,31 @@ def _sfondo(cella, hex_colore: str):
 
 def _titolo(doc, testo, livello=1):
     h = doc.add_heading(level=livello)
-    _testo(h, testo, colore=INK)
+    r = _testo(h, testo.upper() if livello == 1 else testo, colore=ARANCIO if livello == 1 else NAVY)
+    r.italic = True
     return h
+
+
+def _fascia(doc, occhiello, titolo, sotto):
+    """Fascia scura a tutta larghezza in testa alla pagina."""
+    t = doc.add_table(rows=1, cols=1)
+    cella = t.rows[0].cells[0]
+    _sfondo(cella, "0B1220")
+    p = cella.paragraphs[0]
+    _testo(p, occhiello, bold=True, size=8, colore=ARANCIO)
+    p = cella.add_paragraph()
+    r = _testo(p, titolo.upper(), bold=True, size=26, colore=RGBColor(0xFF, 0xFF, 0xFF))
+    r.italic = True
+    if sotto:
+        _testo(cella.add_paragraph(), sotto, size=9, colore=RGBColor(0xC9, 0xD1, 0xE0))
+    riga = doc.add_paragraph()
+    _testo(riga, " ", size=2)
+    bordo = OxmlElement("w:pBdr")
+    sotto_b = OxmlElement("w:bottom")
+    for k, v in (("w:val", "single"), ("w:sz", "24"), ("w:space", "1"), ("w:color", "FF7A1A")):
+        sotto_b.set(qn(k), v)
+    bordo.append(sotto_b)
+    riga._p.get_or_add_pPr().append(bordo)
 
 
 def _elenco(doc, voci, segno="•", colore=ARANCIO, vuoto="Nessuna indicazione marcata."):
@@ -86,21 +110,15 @@ def build_docx(ctx, squadra_id: int, mia: int | None = None, foto: bool = True) 
     stile = doc.styles["Normal"]
     stile.font.name, stile.font.size = "Calibri", Pt(10)
 
-    # intestazione
-    p = doc.add_paragraph()
-    _testo(p, f"SCOUTING REPORT · {r.campionato.upper()} {config.STAGIONI.get(ctx.stagione, ctx.stagione)}",
-           bold=True, size=8, colore=ARANCIO)
-    t = doc.add_heading(level=0)
-    _testo(t, r.squadra.upper(), colore=INK)
-    p = doc.add_paragraph()
-    _testo(p, f"Record {r.record} · {r.posizione}° posto · report del {date.today().strftime('%d/%m/%Y')}",
-           size=9, colore=GRIGIO)
+    # intestazione "Match day": fascia scura con occhiello arancione e nome in corsivo
     ng = ctx.next_game(squadra_id)
+    meta = ""
     if ng:
         nomi = ctx.nomi_squadre
-        p = doc.add_paragraph()
-        _testo(p, f"Prossima partita: {ng['giornata']}ª giornata, {ng['data']} {ng.get('ora') or ''} · "
-                  f"{nomi.get(ng['casa_id'], '')} – {nomi.get(ng['ospite_id'], '')}", size=9, colore=GRIGIO)
+        meta = (f"{ng['giornata']}ª giornata · {ng['data'][8:10]}/{ng['data'][5:7]} {ng.get('ora') or ''} · "
+                f"{nomi.get(ng['casa_id'], '')} – {nomi.get(ng['ospite_id'], '')}")
+    _fascia(doc, f"SCOUTING REPORT · {r.campionato.upper()} {config.STAGIONI.get(ctx.stagione, ctx.stagione)}",
+            r.squadra, f"{r.record}  ·  {r.posizione}° posto" + (f"  ·  {meta}" if meta else ""))
 
     # visione di squadra
     _titolo(doc, "La squadra in 30 secondi")
@@ -137,7 +155,7 @@ def build_docx(ctx, squadra_id: int, mia: int | None = None, foto: bool = True) 
     # giocatori
     if giocatori:
         doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
-        _titolo(doc, f"Scouting dei giocatori · {r.squadra}")
+        _fascia(doc, "SCOUTING DEI GIOCATORI", r.squadra, "")
         p = doc.add_paragraph()
         _testo(p, "Giocatori di rotazione (almeno 10 minuti a partita), in ordine di minuti. "
                   "+ cosa fa meglio, − cosa fa peggio in modo evidente, rispetto ai giocatori di "
@@ -181,19 +199,23 @@ def _giocatore(doc, g: dict):
     sx, dx = tab.rows[0].cells
     for col, cella, w in ((tab.columns[0], sx, Cm(3.2)), (tab.columns[1], dx, Cm(14.6))):
         col.width = cella.width = w
-    _sfondo(sx, "F3F5F9")
+    _sfondo(sx, "0B1220")
     _sfondo(dx, "FAFBFD")
     p = sx.paragraphs[0]
+    if g.get("maglia"):
+        _testo(p, f"#{g['maglia']}  ", bold=True, size=12, colore=ARANCIO)
+        p = sx.add_paragraph()
     if g.get("foto"):
         try:
             p.add_run().add_picture(io.BytesIO(g["foto"]), width=Cm(2.8))
         except Exception:
-            _testo(p, "".join(x[0] for x in g["nome"].split()[:2]).upper(), bold=True, size=20, colore=GRIGIO)
+            _testo(p, "".join(x[0] for x in g["nome"].split()[:2]).upper(), bold=True, size=20, colore=RGBColor(0x5F, 0x73, 0x97))
     else:
-        _testo(p, "".join(x[0] for x in g["nome"].split()[:2]).upper(), bold=True, size=20, colore=GRIGIO)
+        _testo(p, "".join(x[0] for x in g["nome"].split()[:2]).upper(), bold=True, size=20, colore=RGBColor(0x5F, 0x73, 0x97))
     p = dx.paragraphs[0]
-    _testo(p, g["nome"], bold=True, size=13, colore=INK)
-    meta = [x for x in (f"#{g['maglia']}" if g.get("maglia") else None, g.get("ruolo"),
+    r_nome = _testo(p, g["nome"], bold=True, size=13, colore=NAVY)
+    r_nome.italic = True
+    meta = [x for x in (g.get("ruolo"),
                         f"{g['altezza']} cm" if g.get("altezza") else None,
                         f"{g['eta']} anni" if g.get("eta") else None, g.get("nazionalita")) if x]
     if meta:

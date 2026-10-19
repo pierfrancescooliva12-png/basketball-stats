@@ -82,6 +82,12 @@ jobs:
         run: |
           if [ -f data/lnp.sqlite ]; then python -m basket.validazione --salva --registra; fi
 
+      # Le foto dei giocatori restano sul sito LNP: qui si verifica solo che siano raggiungibili
+      - name: Verifica foto dei giocatori
+        continue-on-error: true
+        run: |
+          if [ -f data/lnp.sqlite ]; then python -m basket.scheda_giocatori --verifica 12; fi
+
       - name: Genera Excel di riepilogo
         run: |
           if [ -f data/lnp.sqlite ]; then python -m basket.export_excel; fi

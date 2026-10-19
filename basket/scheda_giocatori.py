@@ -8,6 +8,7 @@ cache locale (non vanno nel repository)."""
 
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 import pandas as pd
@@ -44,6 +45,27 @@ def foto_url(gid: str, info: dict, stagione: str) -> str:
     return info.get("foto_url") or f"http://lnp.webpont.com/team/images/player/{stagione}/{gid}.jpg"
 
 
+def _scarica(url: str, timeout: float) -> bytes:
+    """Byte dell'immagine; b"" se all'indirizzo non c'è un'immagine; eccezione se la rete non
+    risponde. Prova anche https quando l'indirizzo è http."""
+    ultimo = None
+    for u in dict.fromkeys([url, url.replace("http://", "https://", 1)]):
+        try:
+            with urlopen(Request(u, headers={"User-Agent": "Mozilla/5.0 (ASSIST scouting)"}),
+                         timeout=timeout) as r:
+                dati = r.read(2_000_000)
+            if dati[:3] == b"\xff\xd8\xff" or dati[:8] == b"\x89PNG\r\n\x1a\n":
+                return dati
+            return b""
+        except HTTPError as exc:
+            if exc.code == 404:
+                return b""
+            ultimo = exc
+        except Exception as exc:          # rete
+            ultimo = exc
+    raise ultimo or OSError("foto non raggiungibile")
+
+
 def scarica_foto(gid: str, url: str, timeout: float = 4.0) -> bytes | None:
     """Foto dal sito (in cache locale); None se non c'è o non risponde."""
     path = CACHE_FOTO / f"{gid}.jpg"
@@ -51,11 +73,7 @@ def scarica_foto(gid: str, url: str, timeout: float = 4.0) -> bytes | None:
         dati = path.read_bytes()
         return dati or None
     try:
-        with urlopen(Request(url, headers={"User-Agent": "ASSIST scouting"}), timeout=timeout) as r:
-            dati = r.read(2_000_000)
-            tipo = r.headers.get("Content-Type", "")
-        ok = dati[:3] == b"\xff\xd8\xff" or dati[:8] == b"\x89PNG\r\n\x1a\n" or tipo.startswith("image/")
-        dati = dati if ok else b""
+        dati = _scarica(url, timeout)
     except Exception:
         return None                      # errore di rete: si riprova la prossima volta
     try:
@@ -206,3 +224,35 @@ def schede(ctx, sid: int, foto: bool = True) -> list[dict]:
             for s, dati in zip(out, ex.map(lambda s: scarica_foto(s["giocatore_id"], s["foto_url"]), out)):
                 s["foto"] = dati
     return out
+
+
+def main(argv=None) -> int:
+    """Verifica che le foto del sito siano raggiungibili (non salva nulla nel repository).
+
+        python -m basket.scheda_giocatori --verifica 12
+    """
+    import argparse
+    from .contesto import open_readonly
+    ap = argparse.ArgumentParser(description="Verifica delle foto dei giocatori")
+    ap.add_argument("--verifica", type=int, default=12, help="quanti giocatori provare")
+    args = ap.parse_args(argv)
+    ctx = open_readonly()
+    ana = anagrafica(ctx.conn)
+    pl = ctx.players.sort_values("minuti", ascending=False).head(args.verifica)
+    trovate = 0
+    for p in pl.itertuples():
+        info = ana.loc[p.giocatore_id].to_dict() if not ana.empty and p.giocatore_id in ana.index else {}
+        url = foto_url(p.giocatore_id, info, ctx.stagione)
+        try:
+            dati = _scarica(url, 8.0)
+            esito = f"foto ({len(dati) // 1024} kB)" if dati else "nessuna foto"
+            trovate += bool(dati)
+        except Exception as exc:
+            esito = f"non raggiungibile: {exc}"
+        print(f"{p.giocatore:30s} {esito:28s} {url}")
+    print(f"Foto trovate: {trovate} su {len(pl)}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
