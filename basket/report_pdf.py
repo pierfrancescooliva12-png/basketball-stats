@@ -187,11 +187,15 @@ def _header(r, prossima, S, width, stagione_label=config.STAGIONE_LABEL):
 
 
 def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
-              giochi: list[dict] | None = None, note: list[dict] | None = None) -> bytes:
+              giochi: list[dict] | None = None, note: list[dict] | None = None,
+              ai: bool = True) -> bytes:
     """Report di scouting su squadra_id, con tutte le sezioni della pagina Scouting.
-    Si apre con il piano partita: con mia (la squadra dello staff) probabilità, chiavi per
-    vincere e consigli; senza, i consigli ricavati dai dati. Con giochi (disegnati sulla
-    lavagna) aggiunge i suoi giochi fase per fase; con note quelle dello staff."""
+    Si apre con una pagina di sintesi da spogliatoio (scritta con l'AI se disponibile e ai è
+    True, altrimenti dai consigli automatici), poi il piano partita: con mia (la squadra dello
+    staff) probabilità, chiavi per vincere e consigli; senza, i consigli ricavati dai dati. Con
+    giochi (disegnati sulla lavagna) aggiunge i suoi giochi fase per fase; con note quelle dello
+    staff."""
+    from . import assistente as AI
     _fonts()
     S = _styles()
     r = scouting.build_report(ctx.conn, squadra_id, ctx.stagione)
@@ -207,6 +211,12 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
     prossima = ctx.next_game(squadra_id)
     el = [_header(r, prossima, S, W, config.STAGIONI.get(ctx.stagione, ctx.stagione)),
           Spacer(1, 6)]
+
+    # ---- 0. in sintesi: una pagina da spogliatoio
+    f = AI.fatti(ctx, squadra_id, mia)
+    sintesi = AI.scrivi(f) if ai else AI.automatica(f)
+    el += _sintesi(sintesi, r, S, W)
+    el.append(PageBreak())
 
     el.append(_kpis([
         ("Net rating", _fmt(pf["net_rtg"], signed=True), f"ORtg {_fmt(pf['ortg'])} · "
@@ -459,6 +469,112 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
 
     doc.build(unisci_titoli(el), onFirstPage=footer, onLaterPages=footer)
     return buf.getvalue()
+
+
+VERDE_FORTE = colors.HexColor("#2a78d6")      # punto di forza (stesso blu dei punti di forza)
+DEBOLE = colors.HexColor("#d95926")
+
+
+def _semaforo(profilo: pd.DataFrame, S, W):
+    """Otto voci chiave con la posizione in campionato: forte, nella media, debole."""
+    voci = [("Attacco", "Rating offensivo (ORtg)", "punti ogni 100 possessi"),
+            ("Difesa", "Rating difensivo (DRtg)", "punti subiti ogni 100 possessi"),
+            ("Tiro", "eFG% in attacco", "efficienza al tiro"),
+            ("Tiro da 3", "% da 3", "percentuale da 3"),
+            ("Palle perse", "Palle perse % in attacco", "% dei possessi"),
+            ("Rimbalzi in attacco", "Rimbalzi offensivi %", "% dei loro errori"),
+            ("Rimbalzi in difesa", "Rimbalzi difensivi %", "% degli errori avversari"),
+            ("Ritmo", "Ritmo (possessi/40')", "possessi per 40'")]
+    pr = profilo.set_index("Metrica")
+    celle = []
+    for etichetta, metrica, spiega in voci:
+        if metrica not in pr.index:
+            continue
+        x = pr.loc[metrica]
+        try:
+            pos, n = (int(v) for v in str(x["Posizione"]).split("/"))
+        except ValueError:
+            continue
+        if metrica.startswith("Ritmo"):
+            giudizio, colore = ("veloce", INK) if pos <= n / 3 else (("lento", INK) if pos > 2 * n / 3
+                                                                     else ("nella media", GRIGIO))
+        elif pos <= n / 3:
+            giudizio, colore = "punto di forza", VERDE_FORTE
+        elif pos > 2 * n / 3:
+            giudizio, colore = "punto debole", DEBOLE
+        else:
+            giudizio, colore = "nella media", GRIGIO
+        hexc = colore.hexval()[2:]
+        corpo = [Paragraph(etichetta.upper(), S["kpi_l"]),
+                 Paragraph(f"{_fmt(x['Valore'])}", S["kpi_v"]),
+                 Paragraph(f'<font color="#{hexc}"><b>{giudizio}</b></font> · {pos}° su {n}', S["kpi_s"]),
+                 Paragraph(spiega, S["kpi_s"])]
+        t = Table([[c] for c in corpo], colWidths=[W / 4 - 6])
+        t.setStyle(TableStyle([("LINEBEFORE", (0, 0), (0, -1), 3, colore),
+                               ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#fafbfd")),
+                               ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                               ("TOPPADDING", (0, 0), (-1, -1), 1),
+                               ("BOTTOMPADDING", (0, 0), (-1, -1), 1)]))
+        celle.append(t)
+    righe = [celle[i:i + 4] + [""] * (4 - len(celle[i:i + 4])) for i in range(0, len(celle), 4)]
+    if not righe:
+        return Spacer(1, 1)
+    g = Table(righe, colWidths=[W / 4] * 4)
+    g.setStyle(TableStyle([("LEFTPADDING", (0, 0), (-1, -1), 2), ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+                           ("BOTTOMPADDING", (0, 0), (-1, -1), 4), ("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    return g
+
+
+def _sintesi(s: dict, r, S, W) -> list:
+    """Prima pagina: in 30 secondi, il semaforo, come difendere e attaccare, chi fermare,
+    le tre cose da ricordare."""
+    grande = ParagraphStyle("grande", parent=S["body"], fontSize=11, leading=15)
+    voce = ParagraphStyle("voce", parent=S["body"], fontSize=9, leading=12, spaceAfter=3)
+    el = [Paragraph("IN 30 SECONDI", S["h2"]), Paragraph(_esc(s.get("sintesi", "")), grande)]
+    if s.get("identita"):
+        pill = " ".join(f'<font backColor="#fff1e6" color="#b4510e">&nbsp;{_esc(x)}&nbsp;</font>'
+                        for x in s["identita"][:4])
+        el += [Spacer(1, 3), Paragraph(pill, S["body"])]
+    el += [Spacer(1, 6), Paragraph("COME STANNO IN CAMPIONATO", S["h3"]), _semaforo(r.profilo, S, W)]
+
+    def colonna(titolo, voci, colore):
+        corpo = [Paragraph(titolo, S["h3"])]
+        corpo += [Paragraph(f'<font color="{colore}"><b>›</b></font> {_esc(v)}', voce) for v in voci] or \
+            [Paragraph("Nessuna indicazione marcata.", S["small"])]
+        return corpo
+    gio = [Paragraph("DA FERMARE", S["h3"])]
+    for g in s.get("giocatori", [])[:3]:
+        gio += [Paragraph(f"<b>{_esc(g['nome'])}</b>", voce),
+                Paragraph(_esc(g.get("chi_e", "")), S["small"]),
+                Paragraph(f'<font color="#d95926"><b>›</b></font> {_esc(g.get("come_fermarlo", ""))}', voce)]
+    tre = Table([[colonna("IN DIFESA · contro il loro attacco", s.get("in_difesa", []), "#2a78d6"),
+                  colonna("IN ATTACCO · contro la loro difesa", s.get("in_attacco", []), "#ff7a1a"),
+                  gio]], colWidths=[W * 0.36, W * 0.36, W * 0.28])
+    tre.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 3),
+                             ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+                             ("LINEBEFORE", (1, 0), (-1, 0), 0.5, BORDO)]))
+    el += [Spacer(1, 4), tre]
+    if s.get("da_ricordare"):
+        num = ParagraphStyle("num", parent=S["h1"], fontSize=20, leading=22, textColor=ARANCIO)
+        testo = ParagraphStyle("ric", parent=S["body"], fontName="Barlow-SemiBold", fontSize=11,
+                               leading=14, textColor=colors.white)
+        righe = [[Paragraph(str(i), num), Paragraph(_esc(x), testo)]
+                 for i, x in enumerate(s["da_ricordare"][:3], start=1)]
+        box = Table([[Paragraph("DA RICORDARE", S["eyebrow"])],
+                     [Table(righe, colWidths=[12 * mm, W - 28 * mm])]], colWidths=[W - 4 * mm])
+        box.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), NAVY),
+                                 ("LEFTPADDING", (0, 0), (-1, -1), 10), ("TOPPADDING", (0, 0), (-1, -1), 4),
+                                 ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                                 ("LINEBELOW", (0, -1), (-1, -1), 3, ARANCIO)]))
+        el += [Spacer(1, 8), box]
+    if s.get("attenzione"):
+        el += [Spacer(1, 4), Paragraph(f"⚠ {_esc(s['attenzione'])}", S["small"])]
+    fonte = ("Sintesi scritta con l'AI di ASSIST a partire dai soli dati di questo report: ogni "
+             "numero è controllato sui dati. Il dettaglio è nelle pagine seguenti."
+             if s.get("fonte") == "ai" else
+             "Sintesi automatica dai dati del report. Il dettaglio è nelle pagine seguenti.")
+    el += [Spacer(1, 4), Paragraph(fonte, S["small"])]
+    return el
 
 
 def unisci_titoli(el: list) -> list:

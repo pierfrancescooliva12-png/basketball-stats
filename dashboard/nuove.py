@@ -30,10 +30,21 @@ def _team(df: pd.DataFrame, sid) -> pd.DataFrame:
     return df[df["squadra_id"] == sid]
 
 
-@st.cache_data(show_spinner="Preparo il PDF…")
+def _chiave_ai():
+    """Chiave per la sintesi con l'AI dai Secrets dell'app (ANTHROPIC_API_KEY)."""
+    import os
+    try:
+        if "ANTHROPIC_API_KEY" in st.secrets and not os.environ.get("ANTHROPIC_API_KEY"):
+            os.environ["ANTHROPIC_API_KEY"] = str(st.secrets["ANTHROPIC_API_KEY"])
+    except Exception:
+        pass
+
+
+@st.cache_data(show_spinner="Preparo il PDF (la sintesi con l'AI richiede fino a un minuto)…")
 def _pdf(_ctx, mtime: float, stagione: str, sid: int, mia: int | None = None,
          giochi_json: str = "[]", note_json: str = "[]") -> bytes:
     import json
+    _chiave_ai()
     return build_pdf(_ctx, sid, mia, json.loads(giochi_json), json.loads(note_json))
 
 
