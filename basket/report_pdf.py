@@ -594,6 +594,107 @@ def _schede(giocatori: list[dict], squadra: str, S, W) -> list:
     return el
 
 
+def build_sviluppo(ctx: Contesto, squadra_id: int, foto: bool = True) -> bytes:
+    """Report sullo sviluppo dei giocatori della propria squadra: priorità di lavoro, poi per
+    ogni giocatore cosa fa bene, cosa fa male e le aree di miglioramento con l'obiettivo."""
+    from . import sviluppo as SV
+    _fonts()
+    S = _styles()
+    nome = ctx.nomi_squadre.get(squadra_id, str(squadra_id))
+    giocatori = SV.squadra(ctx, squadra_id, foto=foto)
+    buf = io.BytesIO()
+    W = A4[0] - 24 * mm
+    doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=12 * mm, rightMargin=12 * mm, topMargin=12 * mm,
+                            bottomMargin=14 * mm, title=f"Sviluppo dei giocatori · {nome}", author=config.BRAND)
+    sez = ParagraphStyle("svs", parent=S["h2"], fontSize=13, leading=15, textColor=NAVY, spaceBefore=6,
+                         spaceAfter=4)
+    el = [ST.Intestazione(W, 12 * mm, 12 * mm,
+                          f"Sviluppo dei giocatori · {config.STAGIONI.get(ctx.stagione, ctx.stagione)}", nome,
+                          meta=f"report del {date.today().strftime('%d/%m/%Y')}", marchio=config.BRAND),
+          Paragraph("Ogni giocatore è confrontato con i giocatori di rotazione del campionato dello stesso "
+                    "ruolo (esterni, ali, lunghi). <b>Area di miglioramento</b>: una voce in cui è tra i "
+                    "più bassi del ruolo; l'<b>obiettivo</b> è il valore normale del ruolo (la mediana) e, "
+                    "quando si può stimare, quanti punti a partita vale raggiungerlo.", S["small"])]
+    if not giocatori:
+        el.append(Paragraph("Nessun giocatore con almeno 5 minuti a partita.", S["body"]))
+    else:
+        righe = [["Giocatore", "Min", "Priorità di lavoro", "Ora › obiettivo", "Punti in gioco"]]
+        for g in giocatori:
+            a = g["aree"][0] if g["aree"] else None
+            righe.append([g["nome"], g["numeri"][0][1], Paragraph(_esc(a["voce"]) if a else "–", S["cell"]),
+                          f"{a['valore']} › {a['obiettivo']}" if a else "–",
+                          _fmt(a["punti_pg"]) if a and pd.notna(a["punti_pg"]) else "–"])
+        el += [Paragraph("PRIORITÀ DI LAVORO", sez),
+               _table(righe, [46 * mm, 14 * mm, W - 46 * mm - 14 * mm - 34 * mm - 24 * mm, 34 * mm, 24 * mm],
+                      align_left=(2,))]
+        for i, g in enumerate(giocatori):
+            if i % 3 == 0:
+                el.append(PageBreak())
+                el.append(Paragraph("GIOCATORI" + (" (continua)" if i else ""), sez))
+            el += [_scheda_sviluppo(g, S, W), Spacer(1, 6)]
+
+    def pagina(canvas, doc_):
+        ST.sfondo(canvas, doc_)
+        canvas.saveState()
+        canvas.setFont("Barlow", 7)
+        canvas.setFillColor(GRIGIO)
+        canvas.drawString(12 * mm, 8 * mm, f"{config.BRAND} · {nome} · sviluppo dei giocatori · "
+                                           f"{date.today().strftime('%d/%m/%Y')}")
+        canvas.drawRightString(A4[0] - 12 * mm, 8 * mm, f"pagina {doc_.page}")
+        canvas.restoreState()
+    doc.build(el, onFirstPage=pagina, onLaterPages=pagina)
+    return buf.getvalue()
+
+
+def _scheda_sviluppo(g: dict, S, W):
+    """Scheda di sviluppo: foto e numeri, poi cosa fa bene, cosa fa male, aree di miglioramento."""
+    nome = ParagraphStyle("sn", parent=S["h3"], fontSize=13, leading=15, spaceBefore=0, spaceAfter=0, textColor=NAVY)
+    voce = ParagraphStyle("sv", parent=S["body"], fontSize=8, leading=10.3, leftIndent=8, firstLineIndent=-8)
+    tit = lambda t, c: Paragraph(t, ParagraphStyle("st", parent=S["h3"], fontSize=9.5, leading=11, textColor=c,
+                                                   spaceBefore=0, spaceAfter=3))  # noqa: E731
+    meta = [x for x in (g.get("ruolo"), f"{g['altezza']} cm" if g.get("altezza") else None,
+                        f"{g['eta']} anni" if g.get("eta") else None, g.get("nazionalita"),
+                        f"{g['partite']} partite") if x]
+    wd = W - 27 * mm - 16
+    numeri = Table([[Paragraph(k, S["kpi_l"]) for k, _ in g["numeri"]],
+                    [Paragraph(v, ParagraphStyle("nv2", parent=S["kpi_v"], fontSize=14, leading=15, textColor=NAVY))
+                     for _, v in g["numeri"]]], colWidths=[min(22 * mm, wd / len(g["numeri"]))] * len(g["numeri"]),
+                   hAlign="LEFT")
+    numeri.setStyle(TableStyle([("LEFTPADDING", (0, 0), (-1, -1), 0), ("TOPPADDING", (0, 0), (-1, -1), 0),
+                                ("BOTTOMPADDING", (0, 0), (-1, -1), 0)]))
+    an = g.get("andamento")
+    trend = ""
+    if an:
+        (pu, pm), (mi, mm_) = an["punti"], an["minuti"]
+        trend = (f"Ultime {an['ultime']} partite: {_fmt(pu)} punti in {_fmt(mi)} minuti (stagione {_fmt(pm)} in "
+                 f"{_fmt(mm_)}) · <b>{an['tendenza']}</b>")
+    testa = [Paragraph(_esc(g["nome"]), nome), Paragraph(_esc(" · ".join(meta)), S["small"]), Spacer(1, 3),
+             numeri, Paragraph(_esc(g["tiro"]), S["small"])] + ([Paragraph(trend, S["small"])] if trend else [])
+    cw = (W - 16) / 3
+    bene = [tit("COSA FA BENE", BLU)] + [Paragraph(f'<font color="#2a78d6"><b>+</b></font>&nbsp;&nbsp;{_esc(x)}', voce)
+                                        for x in g["forza"]]
+    male = [tit("COSA FA MALE", ROSSO)] + ([Paragraph(f'<font color="#d95926"><b>−</b></font>&nbsp;&nbsp;{_esc(x)}', voce)
+                                           for x in g["deboli"]] or
+                                          [Paragraph("Nessun difetto evidente rispetto al campionato.", S["small"])])
+    aree = [tit("AREE DI MIGLIORAMENTO", NAVY)]
+    for a in g["aree"]:
+        punti = f" · circa {_fmt(a['punti_pg'])} punti a partita" if pd.notna(a["punti_pg"]) and a["punti_pg"] >= 0.3 \
+            else ""
+        aree += [Paragraph(f"<b>{_esc(a['voce'])}</b>", voce),
+                 Paragraph(f"{a['valore']} › obiettivo <b>{a['obiettivo']}</b>{punti}", S["small"]),
+                 ST.Obiettivo(cw - 20, a["da"], a["a"], a["alto"]), Spacer(1, 3)]
+    if len(aree) == 1:
+        aree.append(Paragraph("Nessuna voce sotto il livello del ruolo.", S["small"]))
+    tre = Table([[bene, male, aree]], colWidths=[cw] * 3)
+    tre.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                             ("RIGHTPADDING", (0, 0), (-1, -1), 8), ("LINEBEFORE", (1, 0), (-1, 0), 0.5, BORDO)]))
+    alto_ = Table([[ST.FotoMaglia(g.get("foto"), g["nome"], g.get("maglia")), testa]], colWidths=[27 * mm, wd])
+    alto_.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                               ("RIGHTPADDING", (0, 0), (-1, -1), 0), ("TOPPADDING", (0, 0), (-1, -1), 0),
+                               ("BOTTOMPADDING", (0, 0), (-1, -1), 4)]))
+    return KeepTogether(_carta([alto_, tre], W - 4, bordo=ARANCIO, pad=9))
+
+
 def unisci_titoli(el: list) -> list:
     """Tiene ogni titolo di sezione sulla stessa pagina del blocco che lo segue."""
     out, i = [], 0

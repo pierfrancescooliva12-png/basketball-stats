@@ -109,6 +109,10 @@ VOCI_CHIAVE = [("punti_pg", "{v} punti a partita"), ("rimb_tot_pg", "{v} rimbalz
                ("ts_pct", "{v}% di tiro reale")]
 
 
+SINGOLARE = {"punti": "punto", "rimbalzi": "rimbalzo", "triple": "tripla", "palloni recuperati": "pallone recuperato",
+             "stoppate": "stoppata", "falli subiti": "fallo subito"}
+
+
 def _meglio(pct: float) -> str:
     n = int(round(pct / 5) * 5)
     art = "dell'" if str(n).startswith("8") or n == 11 else "del "
@@ -174,7 +178,11 @@ def caratteristiche(p, rif: pd.DataFrame, tiro=None, falli=None, finali=None,
         for col, testo in VOCI_CHIAVE:
             v = getattr(p, col, None)
             if col in rif and v is not None and pd.notna(v) and v > 0:
-                cand.append((_pct(rif[col], v), col, testo.format(v=_it(v))))
+                t = testo.format(v=_it(v))
+                if _it(v) == "1":
+                    for pl_, sg in SINGOLARE.items():
+                        t = t.replace(pl_, sg)
+                cand.append((_pct(rif[col], v), col, t))
         for pct, col, testo in sorted(cand, reverse=True):
             if len(forza) >= 2:
                 break
@@ -185,7 +193,8 @@ def caratteristiche(p, rif: pd.DataFrame, tiro=None, falli=None, finali=None,
     return forza, deboli
 
 
-def schede(ctx, sid: int, foto: bool = True) -> list[dict]:
+def schede(ctx, sid: int, foto: bool = True, minuti: float = MINUTI_ROTAZIONE,
+           massimo: int = MAX_GIOCATORI) -> list[dict]:
     """Una scheda per ogni giocatore di rotazione (almeno 10 minuti a partita)."""
     pl = ctx.players
     camp = pl.loc[pl["squadra_id"] == sid, "campionato_id"]
@@ -193,8 +202,8 @@ def schede(ctx, sid: int, foto: bool = True) -> list[dict]:
         return []
     camp = camp.iloc[0]
     rif = pl[(pl["campionato_id"] == camp) & (pl["minuti_pg"] >= MINUTI_ROTAZIONE)]
-    mine = pl[(pl["squadra_id"] == sid) & (pl["minuti_pg"] >= MINUTI_ROTAZIONE)] \
-        .sort_values("minuti_pg", ascending=False).head(MAX_GIOCATORI)
+    mine = pl[(pl["squadra_id"] == sid) & (pl["minuti_pg"] >= minuti)] \
+        .sort_values("minuti_pg", ascending=False).head(massimo)
     ana = anagrafica(ctx.conn)
 
     def riga(df, gid):

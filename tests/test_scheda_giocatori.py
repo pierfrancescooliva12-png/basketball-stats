@@ -72,3 +72,27 @@ def test_report_word_e_pdf(tmp_path, monkeypatch):
     assert "SCOUTING DEI GIOCATORI" in testo and "Note dello staff" in testo
     assert "difenderlo" not in testo and "Nessuna caratteristica" not in testo
     assert build_pdf(ctx, 10050, 100118, foto=False)[:4] == b"%PDF"
+
+
+def test_aree_di_miglioramento_con_obiettivo():
+    from basket import sviluppo as SV
+    pari = pd.DataFrame({"tl_pct": [60, 65, 70, 72, 75, 78, 80, 82, 85, 88],
+                         "tov_pct": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]})
+    p = _p(tl_pct=55.0, tla=12, tla_pg=4.0, tov_pct=11.0, perse_pg=2.0, fga_pg=8.0, gruppo="esterni")
+    aree, forza = SV.aree(p, pari)
+    assert aree[0]["voce"] == "Tiri liberi" and aree[0]["obiettivo"] == "76%"
+    assert abs(aree[0]["punti_pg"] - (76.5 - 55) / 100 * 4) < 1e-9
+    assert not any(a["voce"].startswith("Palle perse") for a in aree)
+    assert SV.gruppo("Play", None) == "esterni" and SV.gruppo(None, 206) == "lunghi"
+    assert SV.gruppo("Ala grande", 200) == "lunghi" and SV.gruppo(None, 196) == "ali"
+
+
+def test_report_sviluppo(tmp_path, monkeypatch):
+    from basket import config, db, update
+    from basket.contesto import Contesto
+    from basket.report_pdf import build_sviluppo
+    from tests.test_pbp import Client
+    monkeypatch.setattr(config, "CRONACA_DIR", tmp_path / "cronaca")
+    conn = db.connect(tmp_path / "t.sqlite")
+    update.update_league(conn, Client(), "ita2", "x2627", {2})
+    assert build_sviluppo(Contesto(conn, "x2627"), 10050, foto=False)[:4] == b"%PDF"
