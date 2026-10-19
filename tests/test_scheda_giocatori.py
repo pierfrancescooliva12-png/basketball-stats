@@ -69,6 +69,6 @@ def test_report_word_e_pdf(tmp_path, monkeypatch):
     ctx = Contesto(conn, "x2627")
     doc = build_docx(ctx, 10050, 100118, foto=False)
     testo = zipfile.ZipFile(io.BytesIO(doc)).read("word/document.xml").decode()
-    assert "Scouting dei giocatori" in testo and "Note dello staff" in testo
+    assert "SCOUTING DEI GIOCATORI" in testo and "Note dello staff" in testo
     assert "difenderlo" not in testo and "Nessuna caratteristica" not in testo
     assert build_pdf(ctx, 10050, 100118, foto=False)[:4] == b"%PDF"

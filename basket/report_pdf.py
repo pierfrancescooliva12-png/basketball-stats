@@ -19,12 +19,13 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import (Image, KeepTogether, PageBreak, Paragraph, SimpleDocTemplate,
-                                Spacer, Table, TableStyle)
+from reportlab.platypus import (Image, KeepInFrame, KeepTogether, PageBreak, Paragraph,
+                                SimpleDocTemplate, Spacer, Table, TableStyle)
 
 from . import approfondimenti as X
 from . import lavagna as L
 from . import config, scouting
+from . import pdf_stile as ST
 from .contesto import Contesto, open_readonly
 
 FONT_DIR = config.ROOT / "assets" / "fonts"
@@ -97,6 +98,7 @@ def _table(rows, widths, header=True, align_right_from=1, zebra=True, align_left
         ("BOTTOMPADDING", (0, 0), (-1, -1), 2.5),
         ("ALIGN", (align_right_from, 0), (-1, -1), "RIGHT"),
         ("LINEBELOW", (0, -1), (-1, -1), 0.4, BORDO),
+        ("BACKGROUND", (0, 0), (-1, -1), colors.white),
     ] + [("ALIGN", (c, 0), (c, -1), "LEFT") for c in align_left]
     if header:
         style += [("FONTNAME", (0, 0), (-1, 0), "Barlow-SemiBold"),
@@ -153,37 +155,18 @@ def _bar(val, media, width):
 
 
 def _header(r, prossima, S, width, stagione_label=config.STAGIONE_LABEL):
-    righe = [[Paragraph(f"SCOUTING REPORT · {r.campionato.upper()} {stagione_label}",
-                        S["eyebrow"])],
-             [Paragraph(r.squadra.upper(), S["h1"])],
-             [Paragraph(f"Record {r.record} · {r.posizione}° posto · report del "
-                        f"{date.today().strftime('%d/%m/%Y')}", S["meta"])]]
+    meta = f"report del {date.today().strftime('%d/%m/%Y')}"
     if prossima:
-        txt = (f"Prossima partita: {prossima['giornata']}ª giornata, {prossima['data']} "
-               f"{prossima['ora'] or ''} · {prossima['casa']} – {prossima['ospite']}")
+        meta = (f"{prossima['giornata']}ª giornata · {prossima['data'][8:10]}/{prossima['data'][5:7]} "
+                f"{prossima['ora'] or ''} · {prossima['casa']} – {prossima['ospite']}")
         pv = prossima.get("previsione")
         if pv:
             p_team = pv["prob_casa"] if prossima["casa"] == r.squadra else 1 - pv["prob_casa"]
-            txt += (f" · probabilità di vittoria {r.squadra.split()[-1]}: {100 * p_team:.0f}% "
-                    f"(stima {pv['punti_casa']:.0f}-{pv['punti_ospite']:.0f})")
-        righe.append([Paragraph(txt, S["meta"])])
-    testo = Table(righe, colWidths=[width - 34 * mm])
-    testo.setStyle(TableStyle([("LEFTPADDING", (0, 0), (-1, -1), 0),
-                               ("TOPPADDING", (0, 0), (-1, -1), 1),
-                               ("BOTTOMPADDING", (0, 0), (-1, -1), 1)]))
-    marchio = [Image(str(config.LOGO_DIR / "assist-mark-512.png"), 16 * mm, 16 * mm),
-               Paragraph(config.BRAND, ParagraphStyle(
-                   "brand", fontName="Condensed", fontSize=11, leading=13, alignment=1,
-                   textColor=colors.white, spaceBefore=2))]
-    t = Table([[testo, marchio]], colWidths=[width - 34 * mm, 34 * mm])
-    t.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), NAVY),
-                           ("LEFTPADDING", (0, 0), (0, 0), 12),
-                           ("TOPPADDING", (0, 0), (-1, -1), 10),
-                           ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
-                           ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                           ("ALIGN", (1, 0), (1, 0), "CENTER"),
-                           ("LINEBELOW", (0, -1), (-1, -1), 3, ARANCIO)]))
-    return t
+            meta += f" · vittoria {r.squadra.split()[-1]} {100 * p_team:.0f}%"
+    return ST.Intestazione(width, 12 * mm, 12 * mm,
+                           f"Scouting report · {r.campionato} {stagione_label}", r.squadra,
+                           chips=[r.record, f"{r.posizione}° posto"] if r.posizione else [r.record],
+                           meta=meta, marchio=config.BRAND)
 
 
 def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
@@ -214,7 +197,9 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
           Spacer(1, 6)]
 
     # ---- 0. visione di squadra e scouting dei giocatori
-    el += _sintesi(SI.squadra(ctx, squadra_id, mia, r), r, S, W)
+    # la visione di squadra sta sempre in una pagina (si riduce se i testi sono lunghi)
+    libera = A4[1] - 26 * mm - el[0].wrap(W, A4[1])[1] - el[1].height - 2
+    el.append(KeepInFrame(W, libera, _sintesi(SI.squadra(ctx, squadra_id, mia, r), r, S, W), mode="shrink"))
     giocatori = SG.schede(ctx, squadra_id, foto=foto)
     if giocatori:
         el += [PageBreak()] + _schede(giocatori, r.squadra, S, W)
@@ -461,6 +446,7 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
                                                          "disegnati dallo staff, fase per fase")
 
     def footer(canvas, doc_):
+        ST.sfondo(canvas, doc_)
         canvas.saveState()
         canvas.setFont("Barlow", 7)
         canvas.setFillColor(GRIGIO)
@@ -478,72 +464,72 @@ DEBOLE = colors.HexColor("#d95926")
 
 
 def _semaforo(profilo: pd.DataFrame, S, W):
-    """Otto voci chiave con la posizione in campionato: forte, nella media, debole."""
+    """Otto voci chiave con la posizione in campionato: tessere con barra della posizione."""
     from . import sintesi as SI
-    tinta = {"forza": VERDE_FORTE, "debole": DEBOLE, "media": GRIGIO, "neutro": INK}
-    celle = []
-    for v in SI.semaforo(profilo):
-        colore = tinta[v["tipo"]]
-        hexc = colore.hexval()[2:]
-        corpo = [Paragraph(v["etichetta"].upper(), S["kpi_l"]),
-                 Paragraph(_fmt(v["valore"]), S["kpi_v"]),
-                 Paragraph(f'<font color="#{hexc}"><b>{v["giudizio"]}</b></font> · '
-                           f'{v["posizione"]}° su {v["squadre"]}', S["kpi_s"]),
-                 Paragraph(v["spiega"], S["kpi_s"])]
-        t = Table([[c] for c in corpo], colWidths=[W / 4 - 6])
-        t.setStyle(TableStyle([("LINEBEFORE", (0, 0), (0, -1), 3, colore),
-                               ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#fafbfd")),
-                               ("LEFTPADDING", (0, 0), (-1, -1), 6),
-                               ("TOPPADDING", (0, 0), (-1, -1), 1),
-                               ("BOTTOMPADDING", (0, 0), (-1, -1), 1)]))
-        celle.append(t)
-    righe = [celle[i:i + 4] + [""] * (4 - len(celle[i:i + 4])) for i in range(0, len(celle), 4)]
-    if not righe:
+    w = W / 4 - 4
+    celle = [ST.Tessera(w, v, _fmt(v["valore"])) for v in SI.semaforo(profilo)]
+    if not celle:
         return Spacer(1, 1)
+    righe = [celle[i:i + 4] + [""] * (4 - len(celle[i:i + 4])) for i in range(0, len(celle), 4)]
     g = Table(righe, colWidths=[W / 4] * 4)
     g.setStyle(TableStyle([("LEFTPADDING", (0, 0), (-1, -1), 2), ("RIGHTPADDING", (0, 0), (-1, -1), 2),
-                           ("BOTTOMPADDING", (0, 0), (-1, -1), 4), ("VALIGN", (0, 0), (-1, -1), "TOP")]))
+                           ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 3)]))
     return g
+
+
+def _carta(contenuto, w, bordo=None, sfondo=colors.white, pad=8):
+    """Riquadro arrotondato (bianco o scuro) con un eventuale bordo colorato in alto."""
+    t = Table([[contenuto]], colWidths=[w], cornerRadii=[7, 7, 7, 7])
+    stile = [("BACKGROUND", (0, 0), (-1, -1), sfondo), ("LEFTPADDING", (0, 0), (-1, -1), pad),
+             ("RIGHTPADDING", (0, 0), (-1, -1), pad), ("TOPPADDING", (0, 0), (-1, -1), pad - 2),
+             ("BOTTOMPADDING", (0, 0), (-1, -1), pad - 2), ("VALIGN", (0, 0), (-1, -1), "TOP")]
+    if bordo is not None:
+        stile.append(("LINEABOVE", (0, 0), (-1, 0), 3, bordo))
+    t.setStyle(TableStyle(stile))
+    return t
 
 
 def _sintesi(s: dict, r, S, W) -> list:
     """Prima pagina, visione di squadra: in 30 secondi, come stanno in campionato, come
     difendere e attaccare, ritmo e momenti, le tre cose da ricordare."""
-    grande = ParagraphStyle("grande", parent=S["body"], fontSize=11, leading=15)
-    voce = ParagraphStyle("voce", parent=S["body"], fontSize=9, leading=12, spaceAfter=3)
-    el = [Paragraph("LA SQUADRA IN 30 SECONDI", S["h2"]), Paragraph(_esc(s.get("sintesi", "")), grande),
-          Spacer(1, 6), Paragraph("COME STANNO IN CAMPIONATO", S["h3"]), _semaforo(r.profilo, S, W)]
+    titolo = ParagraphStyle("tmd", parent=S["h2"], fontSize=13, leading=15, textColor=ARANCIO,
+                            spaceBefore=0, spaceAfter=2)
+    sez = ParagraphStyle("smd", parent=S["h2"], fontSize=13, leading=15, textColor=NAVY,
+                         spaceBefore=8, spaceAfter=4)
+    grande = ParagraphStyle("grande", parent=S["body"], fontSize=10.5, leading=14)
+    voce = ParagraphStyle("voce", parent=S["body"], fontSize=8.6, leading=11.2, spaceAfter=4)
+    el = [_carta([Paragraph("LA SQUADRA IN 30 SECONDI", titolo), Paragraph(_esc(s.get("sintesi", "")), grande)],
+                 W - 4, pad=10),
+          Paragraph("COME STANNO IN CAMPIONATO", sez), _semaforo(r.profilo, S, W)]
 
-    def colonna(titolo, voci, colore):
-        corpo = [Paragraph(titolo, S["h3"])]
-        corpo += [Paragraph(f'<font color="{colore}"><b>›</b></font> {_esc(v)}', voce) for v in voci] or \
-            [Paragraph("Nessuna indicazione marcata.", S["small"])]
-        return corpo
-    tre = Table([[colonna("IN DIFESA · contro il loro attacco", s.get("in_difesa", []), "#2a78d6"),
-                  colonna("IN ATTACCO · contro la loro difesa", s.get("in_attacco", []), "#ff7a1a"),
-                  colonna("RITMO, MOMENTI E FINALI", s.get("ritmo", []), "#6b7489")]],
-                colWidths=[W * 0.35, W * 0.35, W * 0.30])
-    tre.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 3),
-                             ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-                             ("LINEBEFORE", (1, 0), (-1, 0), 0.5, BORDO)]))
-    el += [Spacer(1, 4), tre]
+    def colonna(titolo_c, voci, colore, w):
+        st_t = ParagraphStyle("ct", parent=S["h3"], fontSize=11, leading=13, textColor=colore,
+                              spaceBefore=0, spaceAfter=4)
+        corpo = [Paragraph(titolo_c, st_t)]
+        corpo += [Paragraph(_esc(v), voce) for v in voci] or [Paragraph("Nessuna indicazione marcata.", S["small"])]
+        return _carta(corpo, w, pad=9)
+    w3 = W / 3 - 4
+    tre = Table([[colonna("IN DIFESA · contro il loro attacco", s.get("in_difesa", []), BLU, w3),
+                  colonna("IN ATTACCO · contro la loro difesa", s.get("in_attacco", []), ARANCIO, w3),
+                  colonna("RITMO, MOMENTI E FINALI", s.get("ritmo", []), NAVY, w3)]],
+                colWidths=[W / 3] * 3)
+    tre.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                             ("RIGHTPADDING", (0, 0), (-1, -1), 2)]))
+    el += [Spacer(1, 6), tre]
     if s.get("da_ricordare"):
-        num = ParagraphStyle("num", parent=S["h1"], fontSize=20, leading=22, textColor=ARANCIO)
-        testo = ParagraphStyle("ric", parent=S["body"], fontName="Barlow-SemiBold", fontSize=11,
-                               leading=14, textColor=colors.white)
-        righe = [[Paragraph(str(i), num), Paragraph(_esc(x), testo)]
-                 for i, x in enumerate(s["da_ricordare"][:3], start=1)]
-        box = Table([[Paragraph("DA RICORDARE", S["eyebrow"])],
-                     [Table(righe, colWidths=[12 * mm, W - 28 * mm])]], colWidths=[W - 4 * mm])
-        box.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), NAVY),
-                                 ("LEFTPADDING", (0, 0), (-1, -1), 10), ("TOPPADDING", (0, 0), (-1, -1), 4),
-                                 ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-                                 ("LINEBELOW", (0, -1), (-1, -1), 3, ARANCIO)]))
-        el += [Spacer(1, 8), box]
+        num = ParagraphStyle("num", parent=S["h1"], fontSize=24, leading=26, textColor=ARANCIO)
+        testo = ParagraphStyle("ric", parent=S["body"], fontName="Barlow-SemiBold", fontSize=10,
+                               leading=13, textColor=colors.white)
+        voci = s["da_ricordare"][:3]
+        celle = [_carta([Paragraph(f"<i>{i}</i>", num), Paragraph(_esc(x), testo)], W / 3 - 4,
+                        sfondo=NAVY, pad=10) for i, x in enumerate(voci, start=1)]
+        celle += [""] * (3 - len(celle))
+        box = Table([celle], colWidths=[W / 3] * 3)
+        box.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                                 ("RIGHTPADDING", (0, 0), (-1, -1), 2)]))
+        el += [Paragraph("DA RICORDARE", sez), box]
     if s.get("attenzione"):
         el += [Spacer(1, 4), Paragraph(f"⚠ {_esc(s['attenzione'])}", S["small"])]
-    el += [Spacer(1, 4), Paragraph("Nelle pagine seguenti lo scouting dei giocatori e il dettaglio "
-                                   "della squadra.", S["small"])]
     return el
 
 
@@ -567,43 +553,43 @@ def _foto(dati: bytes | None, nome: str, w, h):
 
 
 def _scheda(g: dict, S, w):
-    """Scheda di un giocatore: foto, anagrafica, numeri, cosa fa meglio e cosa fa peggio."""
-    nome = ParagraphStyle("gn", parent=S["h3"], fontSize=12, leading=14, spaceBefore=0, spaceAfter=1)
-    voce = ParagraphStyle("gv", parent=S["body"], fontSize=8.2, leading=10.5)
-    meta = [x for x in (f"#{g['maglia']}" if g.get("maglia") else None, g.get("ruolo"),
-                        f"{g['altezza']} cm" if g.get("altezza") else None,
+    """Scheda di un giocatore: foto con maglia, anagrafica, numeri, cosa fa meglio e peggio."""
+    nome = ParagraphStyle("gn", parent=S["h3"], fontSize=12.5, leading=14, spaceBefore=0, spaceAfter=0,
+                          textColor=NAVY)
+    voce = ParagraphStyle("gv", parent=S["body"], fontSize=8, leading=10.3, leftIndent=8, firstLineIndent=-8)
+    meta = [x for x in (g.get("ruolo"), f"{g['altezza']} cm" if g.get("altezza") else None,
                         f"{g['eta']} anni" if g.get("eta") else None, g.get("nazionalita")) if x]
+    wd = w - 27 * mm - 16
     numeri = Table([[Paragraph(k, S["kpi_l"]) for k, _ in g["numeri"]],
-                    [Paragraph(v, ParagraphStyle("nv", parent=S["kpi_v"], fontSize=13, leading=14))
-                     for _, v in g["numeri"]]], colWidths=[(w - 30 * mm) / len(g["numeri"])] * len(g["numeri"]))
+                    [Paragraph(v, ParagraphStyle("nv", parent=S["kpi_v"], fontSize=14, leading=15, textColor=NAVY))
+                     for _, v in g["numeri"]]], colWidths=[wd / len(g["numeri"])] * len(g["numeri"]))
     numeri.setStyle(TableStyle([("LEFTPADDING", (0, 0), (-1, -1), 0), ("TOPPADDING", (0, 0), (-1, -1), 0),
                                 ("BOTTOMPADDING", (0, 0), (-1, -1), 0)]))
     destra = [Paragraph(_esc(g["nome"]), nome), Paragraph(_esc(" · ".join(meta)) or "&nbsp;", S["small"]),
-              Spacer(1, 2), numeri, Paragraph(_esc(g["tiro"]), S["small"]), Spacer(1, 2)]
-    destra += [Paragraph(f'<font color="#2a78d6"><b>+</b></font> {_esc(c)}', voce) for c in g["forza"]]
-    destra += [Paragraph(f'<font color="#d95926"><b>−</b></font> {_esc(c)}', voce) for c in g["deboli"]]
-    t = Table([[_foto(g.get("foto"), g["nome"], 24 * mm, 30 * mm), destra]],
-              colWidths=[27 * mm, w - 27 * mm])
-    t.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 4),
-                           ("RIGHTPADDING", (0, 0), (-1, -1), 4), ("TOPPADDING", (0, 0), (-1, -1), 5),
-                           ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-                           ("BOX", (0, 0), (-1, -1), 0.5, BORDO),
-                           ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#fafbfd"))]))
-    return t
+              Spacer(1, 3), numeri, Paragraph(_esc(g["tiro"]), S["small"]), Spacer(1, 3)]
+    destra += [Paragraph(f'<font color="#2a78d6"><b>+</b></font>&nbsp;&nbsp;{_esc(c)}', voce) for c in g["forza"]]
+    destra += [Paragraph(f'<font color="#d95926"><b>−</b></font>&nbsp;&nbsp;{_esc(c)}', voce) for c in g["deboli"]]
+    interno = Table([[ST.FotoMaglia(g.get("foto"), g["nome"], g.get("maglia")), destra]],
+                    colWidths=[27 * mm, wd])
+    interno.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                                 ("RIGHTPADDING", (0, 0), (-1, -1), 0), ("TOPPADDING", (0, 0), (-1, -1), 0),
+                                 ("BOTTOMPADDING", (0, 0), (-1, -1), 0)]))
+    return _carta(interno, w, bordo=ARANCIO, pad=8)
 
 
 def _schede(giocatori: list[dict], squadra: str, S, W) -> list:
-    el = [Paragraph(f"SCOUTING DEI GIOCATORI · {squadra.upper()}", S["h2"]),
+    el = [ST.Intestazione(W, 12 * mm, 12 * mm, "Scouting dei giocatori", squadra, marchio=config.BRAND,
+                          grande=False),
           Paragraph("Giocatori di rotazione (almeno 10 minuti a partita), in ordine di minuti. "
                     "<font color='#2a78d6'><b>+</b></font> cosa fa meglio, "
                     "<font color='#d95926'><b>−</b></font> cosa fa peggio in modo evidente, sempre "
-                    "rispetto ai giocatori di rotazione del campionato.", S["small"]), Spacer(1, 4)]
-    w = W / 2 - 3
+                    "rispetto ai giocatori di rotazione del campionato.", S["small"]), Spacer(1, 5)]
+    w = W / 2 - 4
     for i in range(0, len(giocatori), 2):
         coppia = [_scheda(g, S, w) for g in giocatori[i:i + 2]] + [""] * (2 - len(giocatori[i:i + 2]))
         t = Table([coppia], colWidths=[W / 2, W / 2])
-        t.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 1.5),
-                               ("RIGHTPADDING", (0, 0), (-1, -1), 1.5), ("BOTTOMPADDING", (0, 0), (-1, -1), 4)]))
+        t.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                               ("RIGHTPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 5)]))
         el.append(t)
     return el
 
