@@ -3,6 +3,7 @@ striscia arancione, tessere bianche con il bordo colorato, barra della posizione
 foto dei giocatori con il numero di maglia."""
 
 import io
+import re
 
 from reportlab.lib import colors
 from reportlab.lib.units import mm
@@ -57,12 +58,14 @@ class Intestazione(Flowable):
                  marchio="ASSIST", altezza=44 * mm, grande=True):
         super().__init__()
         self.w, self.ms, self.mt = larghezza, margine_sx, margine_top
-        self.eyebrow, self.titolo, self.chips, self.meta, self.marchio = eyebrow, titolo.upper(), chips, meta, marchio
+        self.eyebrow, self.titolo, self.chips, self.marchio = eyebrow, titolo.upper(), chips, marchio
+        # più righe di sotto-titolo separate da <br/>; niente altri tag
+        self.meta = [re.sub(r"<[^>]+>", "", x).strip() for x in re.split(r"<br\s*/?>", meta or "") if x.strip()]
         self.grande = grande
         self.size = _adatta(self.titolo, "Condensed", 40 if grande else 26, 22 if grande else 18, larghezza * 0.74)
         self.linee = _righe(self.titolo, "Condensed", self.size, larghezza * 0.74)[:2]
         # altezza dal contenuto: margine, occhiello, titolo, chip, spazio per il taglio diagonale
-        righe_meta = (16 if chips else 0) + (11 if meta else 0)
+        righe_meta = (16 if chips else 0) + 11 * len(self.meta)
         self.h = margine_top + (5 * mm if grande else 2 * mm) + 8 + self.size * 0.95 * len(self.linee) \
             + righe_meta + (7 * mm if grande else 4 * mm) + 9 * mm
 
@@ -137,10 +140,9 @@ class Intestazione(Flowable):
                 c.setFont("Barlow-SemiBold", 8)
                 c.drawString(x + 5, y + 0.5, chip)
                 x += w + 5
-            if self.meta:
-                if self.chips:
-                    y -= 13
-                meta = self.meta
+            for i, meta in enumerate(self.meta):
+                if self.chips or i:
+                    y -= 13 if i == 0 else 11
                 while stringWidth(meta, "Barlow", 8) > self.w * 0.76 and " " in meta:
                     meta = meta.rsplit(" ", 1)[0]
                 c.setFillColor(colors.HexColor("#c9d1e0"))

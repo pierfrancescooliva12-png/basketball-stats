@@ -14,16 +14,15 @@ from pathlib import Path
 import pandas as pd
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
-from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from . import analysis as A
 from . import approfondimenti as X
 from . import avvisi as AV
 from . import config, mercato, scouting
 from .contesto import Contesto, open_readonly
-from .report_pdf import (ARANCIO, BLU, GRIGIO, INK, NAVY, ROSSO, _fmt, _fonts, _kpis, _styles,
+from .report_pdf import (ARANCIO, BLU, GRIGIO, INK, ROSSO, _fmt, _fonts, _kpis, _styles,
                          _table, slug)
 
 FATTORI = [("efg_pct", "eFG%", True, 1), ("tov_pct", "Palle perse %", False, 1),
@@ -121,24 +120,9 @@ def riepilogo_partita(ctx: Contesto, squadra_id: int, partita_id: str,
 # ------------------------------------------------------------------ PDF comuni
 
 def _testata(eyebrow: str, titolo: str, meta: str, S, W):
-    testo = Table([[Paragraph(eyebrow.upper(), S["eyebrow"])], [Paragraph(titolo, S["h1"])],
-                   [Paragraph(meta, S["meta"])]], colWidths=[W - 34 * mm])
-    testo.setStyle(TableStyle([("LEFTPADDING", (0, 0), (-1, -1), 0),
-                               ("TOPPADDING", (0, 0), (-1, -1), 1),
-                               ("BOTTOMPADDING", (0, 0), (-1, -1), 1)]))
-    marchio = [Image(str(config.LOGO_DIR / "assist-mark-512.png"), 16 * mm, 16 * mm),
-               Paragraph(config.BRAND, ParagraphStyle(
-                   "brand", fontName="Condensed", fontSize=11, leading=13, alignment=1,
-                   textColor=colors.white, spaceBefore=2))]
-    t = Table([[testo, marchio]], colWidths=[W - 34 * mm, 34 * mm])
-    t.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), NAVY),
-                           ("LEFTPADDING", (0, 0), (0, 0), 12),
-                           ("TOPPADDING", (0, 0), (-1, -1), 10),
-                           ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
-                           ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                           ("ALIGN", (1, 0), (1, 0), "CENTER"),
-                           ("LINEBELOW", (0, -1), (-1, -1), 3, ARANCIO)]))
-    return t
+    """Intestazione in stile Match day (come il report prepartita)."""
+    from . import pdf_stile as ST
+    return ST.Intestazione(W, 12 * mm, 12 * mm, eyebrow, titolo, meta=meta, marchio=config.BRAND)
 
 
 def _documento(titolo: str):
@@ -151,6 +135,8 @@ def _documento(titolo: str):
 
 def _piede(testo: str):
     def footer(canvas, doc_):
+        from . import pdf_stile as ST
+        ST.sfondo(canvas, doc_)
         canvas.saveState()
         canvas.setFont("Barlow", 7)
         canvas.setFillColor(GRIGIO)
