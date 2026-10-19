@@ -30,8 +30,8 @@ from . import previsioni as F
 PESI = {"efg": 1.48, "tov": -1.39, "orb": 0.51, "ftr": 27.1}
 
 # nome del fattore visto dalla propria difesa
-NOMI_DIFESA = {"efg": "Tiro concesso (eFG%)", "tov": "Palle perse forzate %",
-               "orb": "Rimbalzi offensivi concessi %", "ftr": "Tiri liberi concessi"}
+NOMI_DIFESA = {"efg": "Tiro concesso agli avversari", "tov": "Palle perse forzate",
+               "orb": "Rimbalzi offensivi concessi", "ftr": "Tiri liberi concessi"}
 NOMI_BREVI = {("efg", "In attacco"): "Tiro", ("efg", "In difesa"): "Tiro concesso",
               ("tov", "In attacco"): "Palle perse", ("tov", "In difesa"): "Palle perse forzate",
               ("orb", "In attacco"): "Rimbalzi offensivi",
@@ -40,10 +40,10 @@ NOMI_BREVI = {("efg", "In attacco"): "Tiro", ("efg", "In difesa"): "Tiro concess
 
 # fattore: (nome, attacco, difesa concessa)
 FATTORI = {
-    "efg": ("Tiro (eFG%)", "efg_pct", "opp_efg_pct"),
-    "tov": ("Palle perse %", "tov_pct", "opp_tov_pct"),
-    "orb": ("Rimbalzi offensivi %", "orb_pct", None),       # difesa: 100 − drb_pct
-    "ftr": ("Tiri liberi (segnati per tiro)", "ft_rate", "opp_ft_rate"),
+    "efg": ("Tiro dal campo (triple pesate)", "efg_pct", "opp_efg_pct"),
+    "tov": ("Palle perse", "tov_pct", "opp_tov_pct"),
+    "orb": ("Rimbalzi offensivi", "orb_pct", None),       # difesa: 100 − drb_pct
+    "ftr": ("Liberi segnati", "ft_rate", "opp_ft_rate"),
 }
 
 PARTITE_MIN_PER_LATO = 4   # partite minime sotto e sopra la soglia di un giocatore
@@ -125,15 +125,13 @@ def numero(v: float, altro: float | None = None) -> str:
 
 
 def leggibile(r, quale: str) -> str:
-    """Valore di una leva per tabelle e frasi: numero a partita con la percentuale tra
-    parentesi per palle perse, rimbalzi e liberi; la percentuale per il tiro."""
+    """Valore di una leva per tabelle e frasi: numero a partita per palle perse, rimbalzi e
+    liberi; la percentuale per il tiro."""
     v = r[quale]
     if r["chiave"] not in UNITA or pd.isna(r.get(f"{quale}_n")):
         return _f(r["chiave"], v) + ("" if r["chiave"] == "ftr" else "%")
     altro = r["obiettivo_n"] if quale != "obiettivo" else r["atteso_n"]
-    pct = f" ({_f(r['chiave'], v)}{'' if r['chiave'] == 'ftr' else '%'})" \
-        if r["chiave"] != "ftr" else ""
-    return numero(r[f"{quale}_n"], altro) + pct
+    return numero(r[f"{quale}_n"], altro)
 
 
 def leve(profile: pd.DataFrame, forze: pd.DataFrame, mia: int, avv: int, casa_mia: bool,
@@ -207,13 +205,13 @@ def quando_perdono(bs: pd.DataFrame, squadra_id: int) -> pd.DataFrame:
         return pd.DataFrame()
     g = g.assign(t3a_rate=100 * g["t3a"] / (g["t2a"] + g["t3a"]),
                  drb_conc=100 - g["drb_pct"])
-    voci = [("Tiro (eFG%)", "efg_pct", PESI["efg"]),
-            ("Palle perse %", "tov_pct", PESI["tov"]),
-            ("Rimbalzi offensivi %", "orb_pct", PESI["orb"]),
-            ("Tiri liberi (segnati per tiro)", "ft_rate", PESI["ftr"]),
-            ("Tiro concesso (eFG%)", "opp_efg_pct", -PESI["efg"]),
-            ("Palle perse forzate %", "opp_tov_pct", -PESI["tov"]),
-            ("Rimbalzi offensivi concessi %", "drb_conc", -PESI["orb"]),
+    voci = [("Tiro dal campo (triple pesate)", "efg_pct", PESI["efg"]),
+            ("Palle perse", "tov_pct", PESI["tov"]),
+            ("Rimbalzi offensivi", "orb_pct", PESI["orb"]),
+            ("Liberi segnati", "ft_rate", PESI["ftr"]),
+            ("Tiro concesso agli avversari", "opp_efg_pct", -PESI["efg"]),
+            ("Palle perse forzate", "opp_tov_pct", -PESI["tov"]),
+            ("Rimbalzi offensivi concessi", "drb_conc", -PESI["orb"]),
             ("Tiri liberi concessi", "opp_ft_rate", -PESI["ftr"]),
             ("Ritmo (possessi)", "pace", 0.0),
             ("Quota di tiri da 3", "t3a_rate", 0.0)]
@@ -334,7 +332,7 @@ def _f(chiave: str, v: float) -> str:
 
 # come si dice, per ogni fattore e lato, che cosa fare (valore atteso → obiettivo)
 AZIONI = {
-    ("efg", "In attacco"): "Tiro: alzare la vostra eFG% da {a}% a {o}%",
+    ("efg", "In attacco"): "Tiro: alzare la vostra percentuale al tiro (triple pesate) da {a}% a {o}%",
     ("tov", "In attacco"): "Palle perse: non più di {on} a partita (attese {an}; {o}% delle "
                            "azioni)",
     ("orb", "In attacco"): "Rimbalzi offensivi: almeno {on} a partita (attesi {an}; il {o}% dei "

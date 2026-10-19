@@ -29,7 +29,7 @@ def test_leve_obiettivo_e_guadagno():
     assert lv["guadagno"].is_monotonic_decreasing
     top = lv.iloc[0]
     # tiro concesso: loro attaccano bene (54,5) contro una difesa che concede 56 → a sfavore
-    assert top["fattore"] == "Tiro concesso (eFG%)" and top["situazione"] == "a vostro sfavore"
+    assert top["fattore"] == "Tiro concesso agli avversari" and top["situazione"] == "a vostro sfavore"
     assert top["obiettivo"] == pytest.approx(lv["media"].iloc[0])
     assert top["prob_obiettivo"] > top["prob_ora"]
     assert "media del campionato" in C.frase_leva(top, "Avv")
@@ -56,7 +56,7 @@ def test_quando_perdono():
                       "drb_pct": 72.0, "ft_rate": 0.2, "opp_ft_rate": 0.2, "pace": 70.0,
                       "t2a": 40, "t3a": 25})
     qp = C.quando_perdono(pd.DataFrame(righe), 5)
-    assert qp.iloc[0]["voce"] == "Tiro (eFG%)" and qp.iloc[0]["differenza"] == pytest.approx(-10)
+    assert qp.iloc[0]["voce"] == "Tiro dal campo (triple pesate)" and qp.iloc[0]["differenza"] == pytest.approx(-10)
     assert C.quando_perdono(pd.DataFrame(righe[:4]), 5).empty
 
 

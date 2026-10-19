@@ -23,11 +23,11 @@ def _profilo():
 def test_priorita_ordine_e_vittorie():
     pri = M.priorita(_profilo(), 0)
     top = pri.iloc[0]
-    assert top["voce"] == "Tiro concesso (eFG%)" and top["sotto_media"]
+    assert top["voce"] == "Tiro concesso agli avversari" and top["sotto_media"]
     assert top["obiettivo"] == pytest.approx(51.5) and top["vittorie"] > 0
-    assert pri.loc[pri["voce"] == "Tiro (eFG%)", "posizione"].iloc[0] == 8
+    assert pri.loc[pri["voce"] == "Tiro dal campo (triple pesate)", "posizione"].iloc[0] == 8
     sopra = M.priorita(_profilo(), 7)
-    r = sopra[sopra["voce"] == "Tiro (eFG%)"].iloc[0]
+    r = sopra[sopra["voce"] == "Tiro dal campo (triple pesate)"].iloc[0]
     assert not r["sotto_media"] and r["obiettivo"] == r["migliori"]
 
 
@@ -85,5 +85,5 @@ def test_numeri_a_partita():
     assert M.a_partita("orb_pct", 30.0, M._base(me, "orb_pct")) == pytest.approx(11)
     assert M.a_partita("ft_rate", 0.2, M._base(me, "ft_rate")) == pytest.approx(12)
     r = {"colonna": "tov_pct", "valore": 15.0, "valore_n": 12.15}
-    assert M.leggibile(r, "valore") == "12,2 (15,0%)"
+    assert M.leggibile(r, "valore") == "12,2"
     assert M.leggibile({"colonna": "efg_pct", "valore": 52.34}, "valore") == "52,3%"

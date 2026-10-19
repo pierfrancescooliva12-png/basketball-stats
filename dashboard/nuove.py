@@ -625,10 +625,10 @@ def render_avvisi(a: App):
 
 # ------------------------------------------------------------------ la mia squadra
 
-METRICHE_OBIETTIVI = {"efg_pct": "eFG% in attacco", "tov_pct": "Palle perse %",
-                      "orb_pct": "Rimbalzi offensivi %", "ft_rate": "FT rate",
-                      "opp_efg_pct": "eFG% concessa", "opp_tov_pct": "Palle perse forzate %",
-                      "drb_pct": "Rimbalzi difensivi %", "opp_ft_rate": "FT rate concesso"}
+METRICHE_OBIETTIVI = {"efg_pct": "Tiro dal campo (triple pesate)", "tov_pct": "Palle perse (% delle azioni)",
+                      "orb_pct": "Rimbalzi offensivi (% presi)", "ft_rate": "Liberi segnati per tiro",
+                      "opp_efg_pct": "Tiro concesso agli avversari", "opp_tov_pct": "Palle perse forzate (% delle azioni)",
+                      "drb_pct": "Rimbalzi difensivi (% presi)", "opp_ft_rate": "Liberi concessi per tiro"}
 
 
 def render_mia_squadra(a: App):

@@ -860,8 +860,8 @@ def _piano(ctx: Contesto, avv: int, mia: int | None, S, W) -> tuple[list, list]:
     det.append(_table(rows, [42 * mm, 16 * mm] + [21 * mm] * 3 + [25 * mm] + [(W - 146 * mm) / 2]
                       * 2, align_left=(1, 5)))
     det.append(Paragraph("Palle perse, rimbalzi offensivi e liberi: numero a partita sui possessi "
-                         "e sui tiri attesi nella partita, con la percentuale tra parentesi. Il "
-                         "tiro resta in eFG%.", S["small"]))
+                         "e sui tiri attesi nella partita. Il tiro è la percentuale dal campo con "
+                         "le triple che valgono 1,5.", S["small"]))
     for _, x in lv.iterrows():
         det.append(Paragraph(f"• {_virgole(C.frase_leva(x, nome_avv.split()[-1]))}", S["small"]))
     det.append(Paragraph(f"Ritmo: con {_fmt(lento['possessi'], 0)} possessi "
