@@ -154,7 +154,7 @@ def _piede(testo: str):
         canvas.saveState()
         canvas.setFont("Barlow", 7)
         canvas.setFillColor(GRIGIO)
-        canvas.drawString(12 * mm, 8 * mm, f"{config.BRAND} · {testo} · dati legapallacanestro.com"
+        canvas.drawString(12 * mm, 8 * mm, f"{config.BRAND} · {testo}"
                                            f" · {date.today().strftime('%d/%m/%Y')}")
         canvas.drawRightString(A4[0] - 12 * mm, 8 * mm, f"pagina {doc_.page}")
         canvas.restoreState()
