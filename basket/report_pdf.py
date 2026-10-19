@@ -450,7 +450,7 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
         canvas.saveState()
         canvas.setFont("Barlow", 7)
         canvas.setFillColor(GRIGIO)
-        canvas.drawString(12 * mm, 8 * mm, f"{config.BRAND} · {r.squadra} · dati legapallacanestro.com"
+        canvas.drawString(12 * mm, 8 * mm, f"{config.BRAND} · {r.squadra}"
                                            f" · {date.today().strftime('%d/%m/%Y')}")
         canvas.drawRightString(A4[0] - 12 * mm, 8 * mm, f"pagina {doc_.page}")
         canvas.restoreState()

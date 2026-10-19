@@ -185,7 +185,7 @@ def build_docx(ctx, squadra_id: int, mia: int | None = None, foto: bool = True) 
                         run.font.size = Pt(8.5)
 
     p = sez.footer.paragraphs[0]
-    _testo(p, f"{config.BRAND} · {r.squadra} · dati legapallacanestro.com · "
+    _testo(p, f"{config.BRAND} · {r.squadra} · "
               f"{date.today().strftime('%d/%m/%Y')}", size=7, colore=GRIGIO)
     buf = io.BytesIO()
     doc.save(buf)

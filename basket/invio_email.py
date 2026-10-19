@@ -83,7 +83,7 @@ def prepare(ctx, sub: dict) -> tuple[str, str, list[tuple[bytes, str]]] | None:
              f"{mia} ({dove}, {g['giornata']}ª giornata, {g['data']} {g['ora'] or ''}).\n\n"
              + ("Trovate anche il report post-partita sull'ultima partita giocata.\n\n"
                 if len(allegati) > 1 else "") +
-             f"Dati aggiornati alle partite giocate finora (fonte legapallacanestro.com).\n\n"
+             f"Dati aggiornati alle partite giocate finora.\n\n"
              f"{config.BRAND} · {config.BRAND_TAGLINE}")
     return oggetto, testo, allegati
 
