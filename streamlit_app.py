@@ -63,15 +63,23 @@ if (utente.get("demo") or not utente.get("club")) and st.session_state.get("mia_
     utente["squadra_id"] = st.session_state["mia_demo"]
 
 camp_disp = [c for c in config.CAMPIONATI if c in set(bs["campionato_id"])]
+mia_id = utente.get("squadra_id")
+mia_camp = (bs.loc[bs["squadra_id"] == mia_id, "campionato_id"].iloc[0]
+            if mia_id in set(bs["squadra_id"]) else None)
+# utente di un club: il campionato è sempre quello della sua squadra
+club_fisso = bool(utente.get("club")) and not utente.get("demo") and mia_camp is not None
+if club_fisso:
+    st.session_state["f_camp"] = mia_camp
 if st.session_state.get("f_camp") not in camp_disp:
     camp_default = camp_disp[0]
-    if qp.get("campionato") in camp_disp:
+    if qp.get("campionato") in camp_disp and not club_fisso:
         camp_default = qp["campionato"]
     elif utente.get("squadra_id") in set(bs["squadra_id"]):
         camp_default = bs.loc[bs["squadra_id"] == utente["squadra_id"], "campionato_id"].iloc[0]
     st.session_state["f_camp"] = camp_default
 camp = f1.selectbox("Campionato", camp_disp, format_func=lambda c: config.CAMPIONATI[c],
-                    key="f_camp")
+                    key="f_camp", disabled=club_fisso,
+                    help="Il campionato della tua squadra." if club_fisso else None)
 players = ctx.players[ctx.players["campionato_id"] == camp]
 profile = ctx.profile[ctx.profile["campionato_id"] == camp]
 squadre = profile.sort_values("squadra")
@@ -84,15 +92,26 @@ if "f_sq" not in st.session_state and qp.get("squadra"):
         pass
 if st.session_state.get("f_sq") not in opzioni_sq:
     st.session_state["f_sq"] = None
-# Scouting senza squadra scelta: si apre sulla prossima avversaria della squadra del club
-if nav.url_path == "scouting" and st.session_state.get("f_sq") is None \
-        and utente.get("squadra_id"):
-    ng = ctx.next_game(utente["squadra_id"])
+# esperienza della squadra del club (o di quella scelta nella Home da demo/admin):
+# - pagine della propria squadra: sempre e solo quella, filtro bloccato
+# - scouting e lavagna dell'avversaria: entrandoci si aprono sulla prossima avversaria
+pagina = nav.url_path
+entrata = st.session_state.get("_pagina") != pagina
+st.session_state["_pagina"] = pagina
+esplicita = st.session_state.pop("_scelta", False)
+mia_ok = mia_id in sq_names
+solo_mia = mia_ok and pagina in pagine.MIE
+if solo_mia:
+    st.session_state["f_sq"] = mia_id
+elif mia_ok and pagina in pagine.AVVERSARIA and not esplicita \
+        and (entrata or st.session_state.get("f_sq") is None):
+    ng = ctx.next_game(mia_id)
     if ng:
-        avv = ng["ospite_id"] if ng["casa_id"] == utente["squadra_id"] else ng["casa_id"]
+        avv = ng["ospite_id"] if ng["casa_id"] == mia_id else ng["casa_id"]
         if avv in sq_names:
             st.session_state["f_sq"] = avv
-sq = f2.selectbox("Squadra", opzioni_sq, key="f_sq",
+sq = f2.selectbox("Squadra", opzioni_sq, key="f_sq", disabled=solo_mia,
+                  help="Questa pagina riguarda la tua squadra." if solo_mia else None,
                   format_func=lambda s: "Tutte" if s is None else sq_names[s])
 pool = (players if sq is None else players[players["squadra_id"] == sq]).sort_values("giocatore")
 g_names = {(r.giocatore_id, r.squadra_id): f"{r.giocatore} ({r.squadra})"
@@ -143,8 +162,8 @@ with barra:
             meta += (f' · {n_incomplete} box score incompleti{tip("incompleto")}')
         topbar(meta)
     if not utente.get("demo") and c2.button("Esci", key="logout"):
-        for k in ("utente", "mia_demo", "w_mia"):
-            st.session_state.pop(k, None)
+        st.session_state.clear()            # niente filtri o scelte del precedente utente
+        st.query_params.clear()
         st.rerun()
 
 # ------------------------------------------------------------------ pagine

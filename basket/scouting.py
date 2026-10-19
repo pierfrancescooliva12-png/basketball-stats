@@ -131,7 +131,7 @@ def build_report(conn, squadra_id: int, stagione: str = config.STAGIONE) -> Scou
         record=f"{int(me['vinte'])}-{int(me['perse_partite'])}", posizione=posizione,
         profilo=profilo, giocatori=giocatori, ultime=ultime, casa_trasferta=casa_trasferta,
         periodi=periodi, punti_forza=forza, punti_deboli=deboli,
-        prossima=_next_game(conn, squadra_id),
+        prossima=_next_game(conn, squadra_id, stagione),
     )
 
 
@@ -153,17 +153,19 @@ def _periods(conn, squadra_id: int, stagione: str) -> pd.DataFrame:
     return df.reset_index()
 
 
-def _next_game(conn, squadra_id: int) -> str | None:
+def _next_game(conn, squadra_id: int, stagione: str) -> str | None:
+    # solo la stagione del report: nelle stagioni passate restano partite mai chiuse
     row = conn.execute(
         """SELECT c.data, c.ora, c.giornata, sc.nome, so.nome FROM calendario c
            JOIN squadre sc ON sc.squadra_id = c.squadra_casa_id
            JOIN squadre so ON so.squadra_id = c.squadra_ospite_id
-           WHERE (c.squadra_casa_id = ? OR c.squadra_ospite_id = ?)
+           WHERE c.stagione = ? AND (c.squadra_casa_id = ? OR c.squadra_ospite_id = ?)
              AND c.stato != 'finished'
-           ORDER BY c.data, c.ora LIMIT 1""", (squadra_id, squadra_id)).fetchone()
+           ORDER BY c.data, c.ora LIMIT 1""", (stagione, squadra_id, squadra_id)).fetchone()
     if not row:
         return None
     data, ora, giornata, casa, ospite = row
+    data = f"{data[8:10]}/{data[5:7]}/{data[:4]}" if data and len(data) >= 10 else data
     return f"{giornata}ª giornata, {data} {ora or ''}: {casa} - {ospite}".strip()
 
 

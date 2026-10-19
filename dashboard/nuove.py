@@ -355,7 +355,8 @@ def render_anteprima(a: App):
     nomi = dict(zip(teams["squadra_id"], teams["squadra"]))
     ids = list(nomi)
     default_a, default_b = (ids[0], ids[1]) if len(ids) > 1 else (ids[0], ids[0])
-    rif = a.sq if a.sq is not None else a.mia_squadra
+    propria = a.utente.get("squadra_id")
+    rif = propria if propria in nomi else a.sq
     ng = ctx.next_game(rif) if rif is not None else None
     if ng and ng["casa_id"] in nomi and ng["ospite_id"] in nomi:
         default_a, default_b = ng["casa_id"], ng["ospite_id"]
@@ -744,7 +745,8 @@ PRIORITA_CLASSE = {"Alta": "neg", "Media": "pos", "Bassa": ""}
 
 
 def fabbisogni(a: App, hist: pd.DataFrame):
-    sid = a.sq if a.sq is not None else a.mia_squadra
+    propria = a.utente.get("squadra_id")
+    sid = propria if propria in set(a.profile["squadra_id"]) else a.sq
     if sid is None:
         note_html("Seleziona una squadra in alto per vedere i suoi fabbisogni e i giocatori "
                   "che potrebbero servirle.", "fabbisogni")

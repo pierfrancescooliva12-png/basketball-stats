@@ -79,6 +79,9 @@ def login(utenti: dict) -> None:
                 ok = accesso.authenticate(utenti, u, p)
                 st.session_state["_accesso"] = accesso.registra(stato, bool(ok), time.time())
                 if ok:
+                    for k in [k for k in st.session_state if k != "_accesso"]:
+                        del st.session_state[k]     # filtri e scelte di prima non valgono più
+                    st.query_params.clear()
                     st.session_state["utente"] = ok
                     st.rerun()
                 time.sleep(1)                      # rallenta i tentativi automatici
