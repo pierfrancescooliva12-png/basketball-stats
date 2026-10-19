@@ -105,3 +105,16 @@ def test_anagrafica_con_valori_mancanti():
                        "foto_url": None})
     assert info == {"maglia": "7", "nazionalita": "ITA"}
     assert SG.meta({"ruolo": math.nan, "altezza": None, "eta": 24, "nazionalita": "ITA"}) == "24 anni · ITA"
+
+
+def test_impatto_obiettivo_dai_dati():
+    from basket import impatto as I
+    righe = []
+    for i in range(10):
+        alto = i % 2 == 0
+        righe.append({"giocatore_id": "G", "stagione": "x2627", "punti": 20 if alto else 8, "t3m": 0,
+                      "assist": 0, "rimb_tot": 0, "perse": 0, "scarto": 6.0 if alto else -6.0})
+    voci = I.giocatore(pd.DataFrame(righe), "G", "x2627")
+    punti = next(v for v in voci if v["colonna"] == "punti")
+    assert punti["soglia"] == 14 and punti["partite_sopra"] == 5 and 0 < punti["effetto"] < 12
+    assert not any(v["colonna"] == "assist" for v in voci)          # soglia troppo bassa: nessun obiettivo

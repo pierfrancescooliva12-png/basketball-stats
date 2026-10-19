@@ -15,8 +15,8 @@ from basket.glossario import G
 
 from .stato import App, partite_df, report
 from .ui import (ACQUA, ARANCIO, BLU, COURT_SVG, GRIGIO, NEUTRO, SUPERFICIE, TESTO, badge,
-                 badge_pos, esc, frase, it, kpis, leader_cards, num, pills, plot, section, short,
-                 show, tip)
+                 badge_pos, esc, frase, it, kpis, leader_cards, note_html, num, pills, plot, section,
+                 short, show, tip)
 
 
 def render_panoramica(a: App):
@@ -327,6 +327,30 @@ def render_giocatore(a: App):
              .drop(columns=["Campionato", "Giocatore", "Squadra"]))
 
 
+@st.cache_data(show_spinner="Valuto l'impatto dei giocatori…")
+def _obiettivi(_ctx, mtime: float, stagione: str, sid: int, avversaria: bool = True) -> list[dict]:
+    from basket import impatto as I
+    return I.obiettivi(_ctx, sid, n=5 if avversaria else 6, avversaria=avversaria)
+
+
+def obiettivi_singoli(a: App, sid: int, avversaria: bool = True):
+    """Obiettivi sui giocatori (avversaria) o prestazioni che spostano il risultato (propria squadra)."""
+    from basket import impatto as I
+    ob = _obiettivi(a.ctx, a.mtime, a.stagione, sid, avversaria)
+    section("Obiettivi sui singoli" if avversaria else "Le prestazioni che spostano il risultato",
+            "per limitarne l'impatto sulla partita" if avversaria else
+            "le soglie oltre le quali la squadra rende meglio del previsto", key=None)
+    if not ob:
+        note_html("Nessun giocatore con dati sufficienti per un obiettivo.")
+        return
+    show(pd.DataFrame([{"Giocatore": o["giocatore"], "Obiettivo": o["obiettivo"], "Vale": I.testo_vale(o),
+                        "Perché": o["perche"]} for o in ob]), voci=[])
+    note_html("Margine: punti di differenza nel risultato. Dai dati delle sue partite (questa stagione e la precedente, "
+              "anche con un'altra squadra) rispetto a quanto la sua squadra rende di solito; quando le partite non "
+              "bastano si usa la stima generale del campionato (quanto vale in media un punto, una tripla, un assist, "
+              "un rimbalzo o una palla persa).")
+
+
 def render_scouting(a: App):
     profile = a.profile
     sq = a.sq
@@ -376,6 +400,8 @@ def render_scouting(a: App):
         with col_d:
             section("Punti deboli")
             pills(r.punti_deboli, "neg", "Nessuno marcato")
+
+        obiettivi_singoli(a, sq)
 
         from . import chiavi_ui
         chiavi_ui.render(a, sq)

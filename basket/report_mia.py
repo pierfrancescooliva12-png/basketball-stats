@@ -43,6 +43,14 @@ def _rank(lega: pd.DataFrame, sid: int, col: str, asc: bool = False) -> str:
     return f"{int(v.rank(ascending=asc, method='min')[sid])}° su {len(v)}"
 
 
+def _prestazioni(ctx, sid: int) -> list[dict]:
+    from . import impatto as I
+    try:
+        return I.obiettivi(ctx, sid, n=6, avversaria=False)
+    except Exception:
+        return []
+
+
 def _titolo(testo: str, S) -> Paragraph:
     return Paragraph(testo.upper(), S["h2"])
 
@@ -235,7 +243,7 @@ def build_mia_squadra(ctx: Contesto, sid: int, obiettivi: dict | None = None,
         from . import sviluppo as SV
         from .report_pdf import sviluppo_flowables
         el += [PageBreak()] + sviluppo_flowables(SV.squadra(ctx, sid, foto=foto), S, W, titolo=True,
-                                                 sfondo=ST.SFONDO) \
+                                                 sfondo=ST.SFONDO, prestazioni=_prestazioni(ctx, sid)) \
             + [PageBreak()]
 
     ct = ctx.clutch_teams
