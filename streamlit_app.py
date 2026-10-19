@@ -8,7 +8,7 @@ sono nell'indirizzo). Accesso per club configurabile nei secrets di Streamlit.
 
 import streamlit as st
 
-from basket import config, scouting
+from basket import accesso, config, scouting
 from dashboard import pagine
 from dashboard.stato import (App, archivio, archivio_url, brand_club, contesto, secrets,
                              stagioni_disponibili, tema_club)
@@ -25,12 +25,23 @@ if not config.DB_PATH.exists():
 
 # ------------------------------------------------------------------ accesso
 
-utenti = {k.lower(): dict(v) for k, v in (secrets().get("utenti") or {}).items()}
+arch = archivio(archivio_url())
+try:
+    utenti_db = arch.users()
+except Exception:                         # database non raggiungibile: restano i Secrets
+    utenti_db = {}
+utenti = accesso.unisci(secrets().get("utenti") or {}, utenti_db)
 if utenti:
+    from dashboard import accesso_ui
     if "utente" not in st.session_state:
-        from dashboard import accesso_ui
-        accesso_ui.login(utenti)            # si ferma qui finché l'accesso non riesce
+        accesso_ui.login(utenti, arch)      # si ferma qui finché l'accesso non riesce
     utente = dict(st.session_state["utente"])
+    # utente del database disattivato nel frattempo: fuori
+    if utente.get("fonte") == "database" and utente["username"] not in utenti:
+        st.session_state.clear()
+        st.rerun()
+    if utente.get("cambio"):
+        accesso_ui.cambio_obbligatorio(utente, arch)   # primo accesso: nuova password
 else:
     utente = {"username": "demo", "club": None, "ruolo": "admin", "demo": True}
 
@@ -164,7 +175,7 @@ if tema is not None:
     st.markdown(brand.css(tema), unsafe_allow_html=True)
 
 a = App(ctx=ctx, mtime=mtime, stagione=stagione, camp=camp, sq=sq, gsel=gsel, utente=utente,
-        archivio=archivio(archivio_url()), players=players, profile=profile,
+        archivio=arch, players=players, profile=profile,
         bs_c=bs[bs["campionato_id"] == camp], bg_c=ctx.bg[ctx.bg["campionato_id"] == camp],
         esperto=esperto, tema=tema)
 
@@ -182,10 +193,15 @@ with barra:
         if n_incomplete:
             meta += (f' · {n_incomplete} box score incompleti{tip("incompleto")}')
         topbar(meta)
-    if not utente.get("demo") and c2.button("Esci", key="logout"):
-        st.session_state.clear()            # niente filtri o scelte del precedente utente
-        st.query_params.clear()
-        st.rerun()
+    if not utente.get("demo"):
+        b1, b2 = c2.columns(2)
+        if utente.get("fonte") == "database" and b1.button("Password", key="cambia_pw",
+                                                           help="Cambia la tua password"):
+            accesso_ui.cambia_password(utente, arch)
+        if b2.button("Esci", key="logout"):
+            st.session_state.clear()        # niente filtri o scelte del precedente utente
+            st.query_params.clear()
+            st.rerun()
 
 # ------------------------------------------------------------------ pagine
 

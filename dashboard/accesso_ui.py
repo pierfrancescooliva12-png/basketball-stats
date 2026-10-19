@@ -64,9 +64,9 @@ def _hero(tema=None):
                 unsafe_allow_html=True)
 
 
-def club_da_link() -> tuple[int, str] | None:
+def club_da_link(voluto: str | None = None) -> tuple[int, str] | None:
     """La squadra del link di accesso del club (?club=luiss-roma), se esiste."""
-    voluto = (st.query_params.get("club") or "").strip().lower()
+    voluto = (voluto or st.query_params.get("club") or "").strip().lower()
     if not voluto:
         return None
     from basket import brand, db
@@ -81,8 +81,8 @@ def club_da_link() -> tuple[int, str] | None:
     return None
 
 
-def _tema_link():
-    club = club_da_link()
+def _tema_link(voluto: str | None = None):
+    club = club_da_link(voluto)
     if club is None:
         return None
     import json
@@ -96,7 +96,7 @@ def _tema_link():
     return tema
 
 
-def login(utenti: dict) -> None:
+def login(utenti: dict, arch=None) -> None:
     """Mostra la schermata di accesso e ferma la pagina finché le credenziali non sono giuste."""
     st.markdown(CSS, unsafe_allow_html=True)
     tema = _tema_link()                   # pagina di accesso con il brand del club
@@ -123,6 +123,11 @@ def login(utenti: dict) -> None:
                         del st.session_state[k]     # filtri e scelte di prima non valgono più
                     st.query_params.clear()
                     st.session_state["utente"] = ok
+                    if ok.get("fonte") == "database" and arch is not None:
+                        try:
+                            arch.touch_login(ok["username"])
+                        except Exception:
+                            pass
                     st.rerun()
                 time.sleep(1)                      # rallenta i tentativi automatici
                 st.error("Utente o password non corretti.")
@@ -161,3 +166,52 @@ def primo_accesso() -> None:
                 st.markdown('<div class="note">Copia il testo, incollalo nei Secrets e salva. '
                             'Ruolo admin senza club: vedi tutte le squadre e scegli dalla Home '
                             'quella da seguire.</div>', unsafe_allow_html=True)
+
+
+def _nuova_password(utente: dict, arch, chiave: str, vecchia_richiesta: bool) -> bool:
+    """Modulo per la nuova password; True se è stata salvata."""
+    with st.form(chiave, clear_on_submit=True):
+        vecchia = st.text_input("Password attuale", type="password",
+                                autocomplete="current-password") if vecchia_richiesta else None
+        nuova = st.text_input("Nuova password (almeno 10 caratteri)", type="password",
+                              autocomplete="new-password")
+        ripeti = st.text_input("Ripeti la nuova password", type="password",
+                               autocomplete="new-password")
+        salva = st.form_submit_button("Salva la nuova password", type="primary", width="stretch")
+    if not salva:
+        return False
+    if vecchia_richiesta:
+        attuale = (arch.users().get(utente["username"]) or {}).get("password_hash", "")
+        if not accesso.verify_password(vecchia or "", attuale):
+            st.error("La password attuale non è corretta.")
+            return False
+    errore = accesso.errore_password(nuova, ripeti, vecchia)
+    if errore:
+        st.error(f"Nuova password: {errore}.")
+        return False
+    arch.set_password(utente["username"], accesso.hash_password(nuova), cambio=False)
+    return True
+
+
+def cambio_obbligatorio(utente: dict, arch) -> None:
+    """Primo accesso con la password iniziale: prima di entrare si sceglie la propria."""
+    st.markdown(CSS, unsafe_allow_html=True)
+    from basket import brand
+    tema = _tema_link(brand.slug(utente["club"])) if utente.get("club") else None
+    c1, _, c2 = st.columns([1.25, 0.08, 1], vertical_alignment="center")
+    with c1:
+        _hero(tema)
+    with c2:
+        st.markdown('<div class="accesso-titolo">Scegli la tua password</div><div class="accesso-sotto">'
+                    f'Primo accesso di «{esc(utente["username"])}»: la password ricevuta è '
+                    'provvisoria. Scegline una tua: la conosci solo tu.</div>', unsafe_allow_html=True)
+        if _nuova_password(utente, arch, "pw_primo", vecchia_richiesta=False):
+            st.session_state["utente"] = {**utente, "cambio": False}
+            st.rerun()
+    st.stop()
+
+
+@st.dialog("Cambia la password")
+def cambia_password(utente: dict, arch) -> None:
+    if _nuova_password(utente, arch, "pw_cambio", vecchia_richiesta=True):
+        st.success("Password aggiornata: vale dal prossimo accesso.")

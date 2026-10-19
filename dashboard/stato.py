@@ -18,9 +18,15 @@ def secrets() -> dict:
 
 
 def brand_club(squadra_id: int) -> dict:
-    """Correzioni al brand del club dai Secrets ([brand.<id squadra>])."""
+    """Correzioni al brand del club: Secrets ([brand.<id squadra>]) e, sopra, quelle salvate
+    dall'Amministrazione nel database."""
     b = secrets().get("brand") or {}
-    return dict(b.get(str(squadra_id)) or b.get(squadra_id) or {})
+    out = dict(b.get(str(squadra_id)) or b.get(squadra_id) or {})
+    try:
+        out.update(archivio(archivio_url()).brand(squadra_id))
+    except Exception:
+        pass
+    return out
 
 
 @st.cache_data(ttl=6 * 3600, show_spinner=False)

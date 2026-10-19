@@ -34,6 +34,15 @@ SCHEMA = [
     """CREATE TABLE IF NOT EXISTS video_sync (
         club TEXT NOT NULL, partita_id TEXT NOT NULL, inizi TEXT NOT NULL,
         PRIMARY KEY (club, partita_id))""",
+    # utenti dei club gestiti dall'Amministrazione (solo l'hash della password)
+    """CREATE TABLE IF NOT EXISTS utenti (
+        username TEXT PRIMARY KEY, password_hash TEXT NOT NULL, club TEXT, ruolo TEXT NOT NULL,
+        attivo INTEGER NOT NULL DEFAULT 1, cambio_password INTEGER NOT NULL DEFAULT 1,
+        creato_il TEXT NOT NULL, creato_da TEXT, ultimo_accesso TEXT)""",
+    # colori e logo corretti per il brand del club
+    """CREATE TABLE IF NOT EXISTS brand (
+        squadra_id INTEGER PRIMARY KEY, primario TEXT, secondario TEXT, logo_url TEXT,
+        aggiornato_il TEXT NOT NULL, autore TEXT)""",
 ]
 
 
@@ -146,6 +155,56 @@ class Archivio:
             r = c.execute(text("SELECT inizi FROM video_sync WHERE club = :c AND partita_id = :p"),
                           {"c": club, "p": partita_id}).fetchone()
         return {int(k): v for k, v in json.loads(r[0]).items()} if r else {}
+
+    # ------------------------------------------------------------ utenti
+    def users(self, anche_disattivi: bool = False) -> dict:
+        """{username: {password_hash, club, ruolo, attivo, cambio_password, ...}}"""
+        q = "SELECT * FROM utenti" + ("" if anche_disattivi else " WHERE attivo = 1")
+        with self.engine.connect() as c:
+            rows = c.execute(text(q)).mappings().all()
+        return {r["username"]: {**dict(r), "attivo": bool(r["attivo"]),
+                                "cambio_password": bool(r["cambio_password"])} for r in rows}
+
+    def add_user(self, username: str, password_hash: str, club: str | None, ruolo: str,
+                 autore: str | None = None):
+        with self.engine.begin() as c:
+            c.execute(text("INSERT INTO utenti (username, password_hash, club, ruolo, attivo, "
+                           "cambio_password, creato_il, creato_da) "
+                           "VALUES (:u, :h, :c, :r, 1, 1, :d, :a)"),
+                      {"u": username.strip().lower(), "h": password_hash, "c": club, "r": ruolo,
+                       "d": _now(), "a": autore})
+
+    def set_password(self, username: str, password_hash: str, cambio: bool):
+        """Nuova password; cambio=True obbliga a cambiarla al prossimo accesso."""
+        with self.engine.begin() as c:
+            c.execute(text("UPDATE utenti SET password_hash = :h, cambio_password = :x "
+                           "WHERE username = :u"),
+                      {"u": username, "h": password_hash, "x": int(cambio)})
+
+    def set_active(self, username: str, attivo: bool):
+        with self.engine.begin() as c:
+            c.execute(text("UPDATE utenti SET attivo = :a WHERE username = :u"),
+                      {"u": username, "a": int(attivo)})
+
+    def touch_login(self, username: str):
+        with self.engine.begin() as c:
+            c.execute(text("UPDATE utenti SET ultimo_accesso = :d WHERE username = :u"),
+                      {"u": username, "d": _now()})
+
+    # ------------------------------------------------------------ brand
+    def brand(self, squadra_id: int) -> dict:
+        with self.engine.connect() as c:
+            r = c.execute(text("SELECT primario, secondario, logo_url FROM brand "
+                               "WHERE squadra_id = :s"), {"s": int(squadra_id)}).mappings().first()
+        return {k: v for k, v in dict(r).items() if v} if r else {}
+
+    def set_brand(self, squadra_id: int, valori: dict, autore: str | None = None):
+        with self.engine.begin() as c:
+            c.execute(text("DELETE FROM brand WHERE squadra_id = :s"), {"s": int(squadra_id)})
+            c.execute(text("INSERT INTO brand VALUES (:s, :p, :x, :l, :d, :a)"),
+                      {"s": int(squadra_id), "p": valori.get("primario"),
+                       "x": valori.get("secondario"), "l": valori.get("logo_url"),
+                       "d": _now(), "a": autore})
 
     def delete_play(self, club: str, gioco_id: str):
         with self.engine.begin() as c:
