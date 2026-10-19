@@ -62,7 +62,7 @@ def _stato_database(a: App):
         st.warning("Database temporaneo: note, osservati e giochi si perdono a ogni riavvio dell'app "
                    "e gli utenti dei club si gestiscono incollando blocchi nei Secrets. Collega un "
                    "database PostgreSQL (per esempio Neon, gratuito) aggiungendo ai Secrets "
-                   "[database] url = \"postgresql+psycopg2://…\".")
+                   "[database] url = \"…la connection string di Neon, così com'è…\".")
 
 
 # ------------------------------------------------------------------ utenti

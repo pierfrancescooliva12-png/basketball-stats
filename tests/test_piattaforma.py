@@ -92,3 +92,12 @@ def test_regole_nuova_password_e_brand():
     arch = Archivio("sqlite://")
     arch.set_brand(9583, {"primario": "#0b2a5b", "secondario": None})
     assert arch.brand(9583) == {"primario": "#0b2a5b"} and arch.brand(1) == {}
+
+
+def test_connection_string_incollata_com_e():
+    from dashboard.stato import normalizza_url
+    neon = "postgresql://u:p@ep-x.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+    assert normalizza_url(neon) == neon.replace("postgresql://", "postgresql+psycopg2://")
+    assert normalizza_url(" postgres://u:p@h/db ") == "postgresql+psycopg2://u:p@h/db"
+    assert normalizza_url("psql 'postgresql://u:p@h/db'") == "postgresql+psycopg2://u:p@h/db"
+    assert normalizza_url("postgresql+psycopg2://u:p@h/db") == "postgresql+psycopg2://u:p@h/db"

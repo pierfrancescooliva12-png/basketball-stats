@@ -216,8 +216,11 @@ Con un database PostgreSQL gratuito (per esempio [Neon](https://neon.tech) o
 
 ```toml
 [database]
-url = "postgresql+psycopg2://utente:password@host/nome_db?sslmode=require"
+url = "postgresql://utente:password@host/nome_db?sslmode=require"
 ```
+
+La connection string si incolla così come la dà Neon o Supabase (`postgresql://…` o
+`postgres://…`): il sito la adatta da solo al driver.
 
 Le tabelle si creano da sole al primo avvio. Con il database collegato:
 
