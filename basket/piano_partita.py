@@ -274,27 +274,27 @@ def consigli(ctx, avv: int, mia: int | None = None, rt: pd.DataFrame | None = No
     if not mig.empty:
         q = mig.iloc[0]
         P.add(D, 0.7, f"Il loro quintetto migliore ({q['giocatori']}, "
-                      f"{_it(q['net_rtg'], 0, True)} di Net rating in {_it(q['minuti'], 0)}') "
+                      f"{_it(q['net_rtg'], 0, True)} punti ogni 100 possessi in {_it(q['minuti'], 0)}' insieme) "
                       "va spezzato: preparare i cambi difensivi per quando entra")
 
     # ================================================ in attacco (vostro attacco, loro difesa)
-    vs = "la vostra eFG%" if noi else ""
+    vs = "tirate con il" if noi else ""
     P.duello(A, L.z("opp_efg_pct"), N.z("efg_pct"),
-             f"Concedono tiri facili (eFG% concessa {_it(L.v('opp_efg_pct'))}%, "
+             f"Concedono tiri facili (gli avversari tirano con il {_it(L.v('opp_efg_pct'))}%, "
              f"{L.pos('opp_efg_pct', False)} per difesa): muovere la palla e prendere tiri "
              "aperti, senza fretta",
-             f"Tiro: il vostro attacco è tra i più efficaci ({vs} {_it(N.v('efg_pct'))}%, "
+             f"Tiro: il vostro attacco è tra i più efficaci ({vs} {_it(N.v('efg_pct'))}% al tiro, "
              f"{N.pos('efg_pct')}) e la loro difesa concede molto "
              f"({_it(L.v('opp_efg_pct'))}%, {L.pos('opp_efg_pct', False)}): giocare il vostro "
              "attacco abituale, cercare i tiri migliori",
-             curare=f"Il vostro tiro è tra i migliori del campionato (eFG% "
-                    f"{_it(N.v('efg_pct'))}%, {N.pos('efg_pct')}): costruire tiri per chi è in "
+             curare=f"Il vostro tiro è tra i migliori del campionato ("
+                    f"{_it(N.v('efg_pct'))}% al tiro, {N.pos('efg_pct')}): costruire tiri per chi è in "
                     "forma e non accontentarsi del primo tiro")
     if L.z("opp_efg_pct") <= -SOGLIA_Z:
         tt = (f", contro il vostro attacco al {_it(N.v('efg_pct'))}% ({N.pos('efg_pct')})"
               if noi else "")
         P.add(A, -L.z("opp_efg_pct") + max(0, N.z("efg_pct")),
-              f"Difesa che concede poco al tiro (eFG% concessa {_it(L.v('opp_efg_pct'))}%, "
+              f"Difesa che concede poco al tiro (gli avversari tirano con il {_it(L.v('opp_efg_pct'))}%, "
               f"{L.pos('opp_efg_pct', False)}){tt}: pazienza, extra-passaggio, cercare la "
               "lunetta e i rimbalzi offensivi", "sfida" if N.z("efg_pct") >= SOGLIA_Z else "")
     tir = pn[(pn["t3a_pg"] >= 2.5)].sort_values("t3_pct", ascending=False).head(2)
@@ -386,8 +386,8 @@ def consigli(ctx, avv: int, mia: int | None = None, rt: pd.DataFrame | None = No
                           "quarto in post e in uno contro uno")
     if not peg.empty:
         q = peg.iloc[0]
-        P.add(A, 0.7, f"Quando giocano con {q['giocatori']} ({_it(q['net_rtg'], 0, True)} di "
-                      f"Net rating in {_it(q['minuti'], 0)}') rendono peggio: è il momento di "
+        P.add(A, 0.7, f"Quando giocano con {q['giocatori']} ({_it(q['net_rtg'], 0, True)} punti "
+                      f"ogni 100 possessi in {_it(q['minuti'], 0)}' insieme) rendono peggio: è il momento di "
                       "spingere")
 
     # ================================================ ritmo, rotazioni e momenti

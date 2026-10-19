@@ -36,35 +36,61 @@ def _tiri(p) -> float:
     return (p.fga_pg or 0) + 0.44 * (p.tla_pg or 0)
 
 
-# (voce, colonna, più alto è meglio, gruppi in cui conta (None = tutti), condizione di volume,
-#  formato del valore, stima dei punti a partita in gioco (valore, obiettivo, giocatore))
+def _n(x, d=1) -> str:
+    return f"{x:.{d}f}".rstrip("0").rstrip(".").replace(".", ",") if d else f"{x:.0f}"
+
+
+def _per_partita(col40):
+    """Valore a partita con i minuti del giocatore (il confronto resta per 40 minuti)."""
+    return lambda v, p: v * (p.minuti_pg or 0) / 40
+
+
+def _ogni(v, p):
+    return 100 / v if v else np.nan          # palle perse: 1 ogni N possessi usati
+
+
+def _per_tiro(v, p):
+    return 2 * v / 100                        # tiro reale -> punti per tiro (liberi compresi)
+
+
+# Ogni voce: confronto sulla colonna "col" (per 40 minuti o percentuale), mostrata in un'unità
+# da allenatore ("mostra" la converte, "fmt" la scrive). "punti": punti a partita in gioco.
 VOCI = [
-    ("Tiri liberi", "tl_pct", True, None, lambda p: (p.tla or 0) >= 6, "{:.0f}%",
-     lambda v, t, p: (t - v) / 100 * (p.tla_pg or 0)),
-    ("Tiro da 3", "t3_pct", True, None, lambda p: (p.t3a_pg or 0) >= 1.5, "{:.0f}%",
-     lambda v, t, p: 3 * (t - v) / 100 * (p.t3a_pg or 0)),
-    ("Efficienza al tiro (tiro reale)", "ts_pct", True, None, lambda p: (p.fga_pg or 0) >= 4, "{:.1f}%",
-     lambda v, t, p: 2 * (t - v) / 100 * _tiri(p)),
-    ("Palle perse (% dei possessi)", "tov_pct", False, None, lambda p: (p.perse_pg or 0) >= 1, "{:.1f}%",
-     lambda v, t, p: (v - t) / 100 * (_tiri(p) + (p.perse_pg or 0)) * 1.05),
-    ("Assist (% dei canestri dei compagni)", "ast_pct", True, {"esterni"}, lambda p: True, "{:.1f}%", None),
-    ("Rimbalzi in difesa (% presi)", "drb_pct", True, {"ali", "lunghi"}, lambda p: (p.minuti_pg or 0) >= 12,
-     "{:.1f}%", None),
-    ("Rimbalzi in attacco (% presi)", "orb_pct", True, {"lunghi"}, lambda p: (p.minuti_pg or 0) >= 12,
-     "{:.1f}%", None),
-    ("Recuperi (ogni 40')", "recuperate_p40", True, {"esterni", "ali"}, lambda p: (p.minuti_pg or 0) >= 12,
-     "{:.1f}", None),
-    ("Stoppate (ogni 40')", "stoppate_p40", True, {"lunghi"}, lambda p: (p.minuti_pg or 0) >= 12,
-     "{:.1f}", None),
-    ("Falli commessi (ogni 40')", "falli_commessi_p40", False, None, lambda p: (p.minuti_pg or 0) >= 12,
-     "{:.1f}", None),
+    dict(voce="Tiri liberi", col="tl_pct", alto=True, volume=lambda p: (p.tla or 0) >= 6,
+         fmt=lambda x, p: f"{_n(x, 0)}%", conti=lambda p: f" ({int(p.tlm)}/{int(p.tla)})",
+         punti=lambda v, t, p: (t - v) / 100 * (p.tla_pg or 0)),
+    dict(voce="Tiro da 3", col="t3_pct", alto=True, volume=lambda p: (p.t3a_pg or 0) >= 1.5,
+         fmt=lambda x, p: f"{_n(x, 0)}%", conti=lambda p: f" ({int(p.t3m)}/{int(p.t3a)})",
+         punti=lambda v, t, p: 3 * (t - v) / 100 * (p.t3a_pg or 0)),
+    dict(voce="Punti per tiro (liberi compresi)", col="ts_pct", alto=True, volume=lambda p: (p.fga_pg or 0) >= 4,
+         mostra=_per_tiro, fmt=lambda x, p: _n(x, 2), punti=lambda v, t, p: 2 * (t - v) / 100 * _tiri(p)),
+    dict(voce="Palle perse", col="tov_pct", alto=False, volume=lambda p: (p.perse_pg or 0) >= 1,
+         mostra=_ogni, fmt=lambda x, p: f"1 ogni {_n(x, 1)} azioni",
+         punti=lambda v, t, p: (v - t) / 100 * (_tiri(p) + (p.perse_pg or 0)) * 1.05),
+    dict(voce="Assist", col="assist_p40", alto=True, solo={"esterni"}, volume=lambda p: (p.minuti_pg or 0) >= 10,
+         mostra=_per_partita("assist"), fmt=lambda x, p: f"{_n(x)} a partita"),
+    dict(voce="Rimbalzi difensivi", col="rimb_dif_p40", alto=True, solo={"ali", "lunghi"},
+         volume=lambda p: (p.minuti_pg or 0) >= 12, mostra=_per_partita("rimb_dif"),
+         fmt=lambda x, p: f"{_n(x)} a partita"),
+    dict(voce="Rimbalzi offensivi", col="rimb_off_p40", alto=True, solo={"lunghi"},
+         volume=lambda p: (p.minuti_pg or 0) >= 12, mostra=_per_partita("rimb_off"),
+         fmt=lambda x, p: f"{_n(x)} a partita"),
+    dict(voce="Recuperi", col="recuperate_p40", alto=True, solo={"esterni", "ali"},
+         volume=lambda p: (p.minuti_pg or 0) >= 12, mostra=_per_partita("recuperate"),
+         fmt=lambda x, p: f"{_n(x)} a partita"),
+    dict(voce="Stoppate", col="stoppate_p40", alto=True, solo={"lunghi"},
+         volume=lambda p: (p.minuti_pg or 0) >= 12, mostra=_per_partita("stoppate"),
+         fmt=lambda x, p: f"{_n(x)} a partita"),
+    dict(voce="Falli commessi", col="falli_commessi_p40", alto=False,
+         volume=lambda p: (p.minuti_pg or 0) >= 12, mostra=_per_partita("falli"),
+         fmt=lambda x, p: f"{_n(x)} a partita"),
 ]
 
 
 # parole che indicano lo stesso argomento, per non ripetere un punto di forza già scritto
-TEMI = {"tl_pct": ("liberi",), "t3_pct": ("da 3", "triple"), "ts_pct": ("tiro reale", "efficiente"),
-        "tov_pct": ("palle perse", "palloni"), "ast_pct": ("assist", "compagni"), "drb_pct": ("rimbalz",),
-        "orb_pct": ("rimbalz",), "recuperate_p40": ("recuper",), "stoppate_p40": ("stoppat",),
+TEMI = {"tl_pct": ("liberi",), "t3_pct": ("da 3", "triple"), "ts_pct": ("per tiro", "efficiente"),
+        "tov_pct": ("palle perse", "palloni"), "assist_p40": ("assist", "compagni"), "rimb_dif_p40": ("rimbalz",),
+        "rimb_off_p40": ("rimbalz",), "recuperate_p40": ("recuper",), "stoppate_p40": ("stoppat",),
         "falli_commessi_p40": ("falli",)}
 
 
@@ -80,30 +106,38 @@ def _gruppi_lega(rif: pd.DataFrame, ana: pd.DataFrame) -> pd.Series:
 
 
 def aree(p, pari: pd.DataFrame, gia: list[str] = ()) -> tuple[list[dict], list[str]]:
-    """(aree di miglioramento, punti di forza del ruolo) di un giocatore rispetto ai pari."""
+    """(aree di miglioramento, punti di forza del ruolo) di un giocatore rispetto ai pari. Il
+    confronto è sulla colonna della voce (per 40 minuti o percentuale); valore e obiettivo sono
+    scritti in un'unità da allenatore, a partita con i minuti del giocatore."""
     g = getattr(p, "gruppo", None)
     out, forza = [], []
-    for voce, col, alto, solo, volume, fmt, valore in VOCI:
-        if solo and g not in solo:
+    for x in VOCI:
+        col, alto = x["col"], x["alto"]
+        if x.get("solo") and g not in x["solo"]:
             continue
         v = getattr(p, col, None)
-        if v is None or pd.isna(v) or not volume(p) or col not in pari:
+        if v is None or pd.isna(v) or not x["volume"](p) or col not in pari:
             continue
         s = pari[col].dropna()
         if len(s) < 8:
             continue
         pct = SG._pct(s, v) if alto else 100 - SG._pct(s, v)
         med = float(s.median())
+        mostra = x.get("mostra", lambda y, p: y)
+        da, a = mostra(v, p), mostra(med, p)
+        if pd.isna(da) or pd.isna(a):
+            continue
+        conti = x["conti"](p) if "conti" in x else ""
         if pct <= SOTTO and (med > v if alto else med < v):
-            punti = valore(v, med, p) if valore else np.nan
-            out.append({"voce": voce, "valore": _it(fmt.format(v)), "obiettivo": _it(fmt.format(med)),
-                        "percentile": pct, "punti_pg": punti, "alto": alto,
-                        "da": float(v), "a": float(med),
-                        "testo": f"{voce}: {_it(fmt.format(v))} → obiettivo {_it(fmt.format(med))}"
-                                 + (f" (circa {_it(f'{punti:.1f}')} punti a partita)" if pd.notna(punti) and punti >= 0.3
+            punti = x["punti"](v, med, p) if "punti" in x else np.nan
+            val, obi = x["fmt"](da, p), x["fmt"](a, p)
+            out.append({"voce": x["voce"], "valore": val + conti, "obiettivo": obi, "percentile": pct,
+                        "punti_pg": punti, "alto": alto if col != "tov_pct" else True, "da": float(da), "a": float(a),
+                        "testo": f"{x['voce']}: {val}{conti} → obiettivo {obi}"
+                                 + (f" (circa {_n(punti)} punti a partita)" if pd.notna(punti) and punti >= 0.3
                                     else "")})
         elif pct >= SOPRA and not any(t in " ".join(gia).lower() for t in TEMI.get(col, ())):
-            forza.append(f"{voce}: {_it(fmt.format(v))}, tra i migliori del ruolo")
+            forza.append(f"{x['voce']}: {x['fmt'](da, p)}{conti}, tra i migliori del ruolo")
     out.sort(key=lambda a: (-(a["punti_pg"] if pd.notna(a["punti_pg"]) else 0), a["percentile"]))
     return out, forza
 

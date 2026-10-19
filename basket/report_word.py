@@ -125,7 +125,7 @@ def build_docx(ctx, squadra_id: int, mia: int | None = None, foto: bool = True) 
     p = doc.add_paragraph()
     _testo(p, s["sintesi"], size=11)
     _titolo(doc, "Come stanno in campionato", 2)
-    voci = SI.semaforo(r.profilo)
+    voci = SI.semaforo(r.profilo, s.get("riga"))
     tab = doc.add_table(rows=1, cols=4)
     tab.style = "Light Grid Accent 1"
     for c, h in zip(tab.rows[0].cells, ("Voce", "Valore", "Posizione", "Giudizio")):

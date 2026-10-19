@@ -463,11 +463,11 @@ VERDE_FORTE = colors.HexColor("#2a78d6")      # punto di forza (stesso blu dei p
 DEBOLE = colors.HexColor("#d95926")
 
 
-def _semaforo(profilo: pd.DataFrame, S, W):
+def _semaforo(profilo: pd.DataFrame, S, W, riga=None):
     """Otto voci chiave con la posizione in campionato: tessere con barra della posizione."""
     from . import sintesi as SI
     w = W / 4 - 4
-    celle = [ST.Tessera(w, v, _fmt(v["valore"])) for v in SI.semaforo(profilo)]
+    celle = [ST.Tessera(w, v, _fmt(v["valore"])) for v in SI.semaforo(profilo, riga)]
     if not celle:
         return Spacer(1, 1)
     righe = [celle[i:i + 4] + [""] * (4 - len(celle[i:i + 4])) for i in range(0, len(celle), 4)]
@@ -500,7 +500,7 @@ def _sintesi(s: dict, r, S, W) -> list:
     voce = ParagraphStyle("voce", parent=S["body"], fontSize=8.6, leading=11.2, spaceAfter=4)
     el = [_carta([Paragraph("LA SQUADRA IN 30 SECONDI", titolo), Paragraph(_esc(s.get("sintesi", "")), grande)],
                  W - 4, pad=10),
-          Paragraph("COME STANNO IN CAMPIONATO", sez), _semaforo(r.profilo, S, W)]
+          Paragraph("COME STANNO IN CAMPIONATO", sez), _semaforo(r.profilo, S, W, s.get("riga"))]
 
     def colonna(titolo_c, voci, colore, w):
         st_t = ParagraphStyle("ct", parent=S["h3"], fontSize=11, leading=13, textColor=colore,
@@ -614,7 +614,9 @@ def build_sviluppo(ctx: Contesto, squadra_id: int, foto: bool = True) -> bytes:
           Paragraph("Ogni giocatore è confrontato con i giocatori di rotazione del campionato dello stesso "
                     "ruolo (esterni, ali, lunghi). <b>Area di miglioramento</b>: una voce in cui è tra i "
                     "più bassi del ruolo; l'<b>obiettivo</b> è il valore normale del ruolo (la mediana) e, "
-                    "quando si può stimare, quanti punti a partita vale raggiungerlo.", S["small"])]
+                    "quando si può stimare, quanti punti a partita vale raggiungerlo. Rimbalzi, assist, recuperi e falli "
+                    "sono a partita con i minuti del giocatore; <b>azione</b> = un tiro, una coppia di liberi o una "
+                    "palla persa; <b>punti per tiro</b> = punti segnati per ogni tiro tentato, liberi compresi.", S["small"])]
     if not giocatori:
         el.append(Paragraph("Nessun giocatore con almeno 5 minuti a partita.", S["body"]))
     else:

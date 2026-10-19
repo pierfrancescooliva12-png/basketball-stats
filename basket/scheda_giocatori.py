@@ -106,7 +106,7 @@ VOCI_CHIAVE = [("punti_pg", "{v} punti a partita"), ("rimb_tot_pg", "{v} rimbalz
                ("assist_pg", "{v} assist a partita"), ("t3m_pg", "{v} triple a partita"),
                ("recuperate_pg", "{v} palloni recuperati a partita"),
                ("stoppate_pg", "{v} stoppate a partita"), ("falli_subiti_pg", "{v} falli subiti a partita"),
-               ("ts_pct", "{v}% di tiro reale")]
+               ("punti_per_tiro", "{v} punti per tiro")]
 
 
 SINGOLARE = {"punti": "punto", "rimbalzi": "rimbalzo", "triple": "tripla", "palloni recuperati": "pallone recuperato",
@@ -127,7 +127,8 @@ def caratteristiche(p, rif: pd.DataFrame, tiro=None, falli=None, finali=None,
     t3a, t3p = p.t3a_pg or 0, p.t3_pct
     usg = _pct(rif["usg_pct"], p.usg_pct)
     if pd.notna(p.usg_pct) and usg >= 85:
-        forza.append((1, f"Prima opzione dell'attacco ({_it(p.usg_pct)}% dei possessi finiti da lui)"))
+        azioni = (p.fga_pg or 0) + 0.44 * (p.tla_pg or 0) + (p.perse_pg or 0)
+        forza.append((1, f"Prima opzione dell'attacco ({_it(azioni)} azioni concluse a partita)"))
     if t3a >= 3 and pd.notna(t3p) and t3p >= 36:
         forza.append((2, f"Tiratore da 3 ({_it(p.t3m_pg)}/{_it(t3a)} a partita, {_it(t3p, 0)}%)"))
     elif t3a >= 2.5 and pd.notna(t3p) and t3p < 30:
@@ -136,10 +137,11 @@ def caratteristiche(p, rif: pd.DataFrame, tiro=None, falli=None, finali=None,
         deboli.append((4, f"Quasi mai al tiro da 3 ({_it(t3a)} tentativi a partita)"))
     if tiro is not None and (tiro.get("tiri") or 0) >= 10 and pd.notna(tiro.get("quota_area")):
         if tiro["quota_area"] >= 55:
-            forza.append((3, f"Attacca il ferro ({_it(tiro['quota_area'], 0)}% dei tiri in area, "
-                             f"{_it(tiro.get('area_pct'), 0)}% realizzati)"))
+            g_ = max(1, getattr(p, "partite", 1) or 1)
+            forza.append((3, f"Attacca il ferro ({_it(tiro['area_t'] / g_)} tiri in area a partita, "
+                             f"{int(tiro.get('area_r') or 0)}/{int(tiro['area_t'])} segnati)"))
         if (tiro.get("area_t") or 0) >= 10 and pd.notna(tiro.get("area_pct")) and tiro["area_pct"] < 45:
-            deboli.append((3, f"Fatica a concludere in area ({_it(tiro['area_pct'], 0)}% su "
+            deboli.append((3, f"Fatica a concludere in area ({int(tiro.get('area_r') or 0)} segnati su "
                               f"{int(tiro['area_t'])} tiri)"))
     if (p.tla_pg or 0) >= 3 and _pct(rif["ft_rate"], p.ft_rate) >= 80:
         forza.append((4, f"Va spesso in lunetta ({_it(p.tla_pg)} liberi a partita)"))
@@ -156,27 +158,33 @@ def caratteristiche(p, rif: pd.DataFrame, tiro=None, falli=None, finali=None,
         forza.append((3, f"Rimbalzista offensivo ({_it(p.rimb_off_pg)} a partita)"))
     if pd.notna(p.ts_pct) and usg >= 50:
         if p.ts_pct >= 60:
-            forza.append((3, f"Molto efficiente al tiro ({_it(p.ts_pct)}% di tiro reale)"))
+            forza.append((3, f"Molto efficiente al tiro ({_it(2 * p.ts_pct / 100, 2)} punti per tiro)"))
         elif p.ts_pct < 47:
-            deboli.append((3, f"Poco efficiente per quanto tira ({_it(p.ts_pct)}% di tiro reale)"))
+            deboli.append((3, f"Poco efficiente per quanto tira ({_it(2 * p.ts_pct / 100, 2)} punti per tiro)"))
     if altezza and altezza >= 203 and "trb_pct" in rif and \
             _pct(rif["trb_pct"], getattr(p, "trb_pct", None)) <= 25:
         deboli.append((4, f"Pochi rimbalzi per la sua taglia ({_it(p.rimb_tot_pg)} a partita, {altezza} cm)"))
     if pd.notna(getattr(p, "on_off", None)) and (p.minuti_pg or 0) >= 15:
         if p.on_off >= 10:
-            forza.append((3, f"Con lui in campo rendono molto meglio (+{_it(p.on_off, 0)} di Net rating)"))
+            forza.append((3, f"Con lui in campo la squadra va molto meglio (+{_it(p.on_off, 0)} punti ogni "
+                             f"100 possessi rispetto a quando è fuori)"))
         elif p.on_off <= -10:
-            deboli.append((4, f"Con lui in campo rendono peggio ({_it(p.on_off, 0)} di Net rating)"))
+            deboli.append((4, f"Con lui in campo la squadra va peggio ({_it(p.on_off, 0)} punti ogni 100 "
+                              f"possessi rispetto a quando è fuori)"))
     if falli is not None and (falli.get("partite_problemi") or 0) >= 2:
         deboli.append((3, f"Problemi di falli ({int(falli['partite_problemi'])} partite con 2 falli nel "
                           f"1° quarto o 3 all'intervallo)"))
     if finali is not None and (finali.get("fga") or 0) >= 3 and (finali.get("quota_tiri") or 0) >= 30:
-        forza.append((2, f"Uomo dei finali ({_it(finali['quota_tiri'], 0)}% dei tiri negli ultimi 5')"))
+        forza.append((2, f"Uomo dei finali ({int(finali['fga'])} tiri negli ultimi 5' punto a punto, "
+                         f"{_it(finali['quota_tiri'], 0)}% di quelli della squadra)"))
     forza = [t for _, t in sorted(forza)][:4]
     if len(forza) < 2:                 # sempre almeno due informazioni chiave
         cand = []
         for col, testo in VOCI_CHIAVE:
-            v = getattr(p, col, None)
+            v = getattr(p, col, None) if col != "punti_per_tiro" else (
+                2 * p.ts_pct / 100 if pd.notna(getattr(p, "ts_pct", None)) else None)
+            if col == "punti_per_tiro" and "ts_pct" in rif:
+                rif = rif.assign(punti_per_tiro=2 * rif["ts_pct"] / 100)
             if col in rif and v is not None and pd.notna(v) and v > 0:
                 t = testo.format(v=_it(v))
                 if _it(v) == "1":
@@ -225,8 +233,9 @@ def schede(ctx, sid: int, foto: bool = True, minuti: float = MINUTI_ROTAZIONE,
             "foto_url": foto_url(p.giocatore_id, info, ctx.stagione),
             "numeri": [("MIN", _it(p.minuti_pg)), ("PT", _it(p.punti_pg)), ("RIM", _it(p.rimb_tot_pg)),
                        ("AS", _it(p.assist_pg)), ("PP", _it(p.perse_pg))],
-            "tiro": f"Da 3: {_it(p.t3m_pg)}/{_it(p.t3a_pg)} ({_it(p.t3_pct, 0)}%) · Liberi {_it(p.tl_pct, 0)}% · "
-                    f"Tiro reale {_it(p.ts_pct)}%",
+            "tiro": f"Da 3: {_it(p.t3m_pg)}/{_it(p.t3a_pg)} a partita ({_it(p.t3_pct, 0)}%) · Liberi "
+                    f"{int(p.tlm or 0)}/{int(p.tla or 0)} ({_it(p.tl_pct, 0)}%) · "
+                    f"{_it(2 * p.ts_pct / 100, 2) if pd.notna(p.ts_pct) else '–'} punti per tiro",
             "forza": forza, "deboli": deboli, "foto": None})
     if foto and out:
         with ThreadPoolExecutor(max_workers=6) as ex:
