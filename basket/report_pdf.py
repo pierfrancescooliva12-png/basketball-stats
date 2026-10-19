@@ -188,14 +188,15 @@ def _header(r, prossima, S, width, stagione_label=config.STAGIONE_LABEL):
 
 def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
               giochi: list[dict] | None = None, note: list[dict] | None = None,
-              ai: bool = True) -> bytes:
-    """Report di scouting su squadra_id, con tutte le sezioni della pagina Scouting.
-    Si apre con una pagina di sintesi da spogliatoio (scritta con l'AI se disponibile e ai è
-    True, altrimenti dai consigli automatici), poi il piano partita: con mia (la squadra dello
-    staff) probabilità, chiavi per vincere e consigli; senza, i consigli ricavati dai dati. Con
-    giochi (disegnati sulla lavagna) aggiunge i suoi giochi fase per fase; con note quelle dello
-    staff."""
-    from . import assistente as AI
+              foto: bool = True) -> bytes:
+    """Report prepartita su squadra_id. Si apre con la visione di squadra (una pagina da
+    spogliatoio) e lo scouting breve dei giocatori di rotazione (con le foto del sito se foto è
+    True), poi il piano partita: con mia (la squadra dello staff) probabilità, chiavi per
+    vincere e consigli; senza, i consigli ricavati dai dati. Seguono tutte le sezioni della
+    pagina Scouting. Con giochi (disegnati sulla lavagna) aggiunge i suoi giochi fase per fase;
+    con note quelle dello staff."""
+    from . import scheda_giocatori as SG
+    from . import sintesi as SI
     _fonts()
     S = _styles()
     r = scouting.build_report(ctx.conn, squadra_id, ctx.stagione)
@@ -212,10 +213,11 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
     el = [_header(r, prossima, S, W, config.STAGIONI.get(ctx.stagione, ctx.stagione)),
           Spacer(1, 6)]
 
-    # ---- 0. in sintesi: una pagina da spogliatoio
-    f = AI.fatti(ctx, squadra_id, mia)
-    sintesi = AI.scrivi(f) if ai else AI.automatica(f)
-    el += _sintesi(sintesi, r, S, W)
+    # ---- 0. visione di squadra e scouting dei giocatori
+    el += _sintesi(SI.squadra(ctx, squadra_id, mia, r), r, S, W)
+    giocatori = SG.schede(ctx, squadra_id, foto=foto)
+    if giocatori:
+        el += [PageBreak()] + _schede(giocatori, r.squadra, S, W)
     el.append(PageBreak())
 
     el.append(_kpis([
@@ -526,30 +528,22 @@ def _semaforo(profilo: pd.DataFrame, S, W):
 
 
 def _sintesi(s: dict, r, S, W) -> list:
-    """Prima pagina: in 30 secondi, il semaforo, come difendere e attaccare, chi fermare,
-    le tre cose da ricordare."""
+    """Prima pagina, visione di squadra: in 30 secondi, come stanno in campionato, come
+    difendere e attaccare, ritmo e momenti, le tre cose da ricordare."""
     grande = ParagraphStyle("grande", parent=S["body"], fontSize=11, leading=15)
     voce = ParagraphStyle("voce", parent=S["body"], fontSize=9, leading=12, spaceAfter=3)
-    el = [Paragraph("IN 30 SECONDI", S["h2"]), Paragraph(_esc(s.get("sintesi", "")), grande)]
-    if s.get("identita"):
-        pill = " ".join(f'<font backColor="#fff1e6" color="#b4510e">&nbsp;{_esc(x)}&nbsp;</font>'
-                        for x in s["identita"][:4])
-        el += [Spacer(1, 3), Paragraph(pill, S["body"])]
-    el += [Spacer(1, 6), Paragraph("COME STANNO IN CAMPIONATO", S["h3"]), _semaforo(r.profilo, S, W)]
+    el = [Paragraph("LA SQUADRA IN 30 SECONDI", S["h2"]), Paragraph(_esc(s.get("sintesi", "")), grande),
+          Spacer(1, 6), Paragraph("COME STANNO IN CAMPIONATO", S["h3"]), _semaforo(r.profilo, S, W)]
 
     def colonna(titolo, voci, colore):
         corpo = [Paragraph(titolo, S["h3"])]
         corpo += [Paragraph(f'<font color="{colore}"><b>›</b></font> {_esc(v)}', voce) for v in voci] or \
             [Paragraph("Nessuna indicazione marcata.", S["small"])]
         return corpo
-    gio = [Paragraph("DA FERMARE", S["h3"])]
-    for g in s.get("giocatori", [])[:3]:
-        gio += [Paragraph(f"<b>{_esc(g['nome'])}</b>", voce),
-                Paragraph(_esc(g.get("chi_e", "")), S["small"]),
-                Paragraph(f'<font color="#d95926"><b>›</b></font> {_esc(g.get("come_fermarlo", ""))}', voce)]
     tre = Table([[colonna("IN DIFESA · contro il loro attacco", s.get("in_difesa", []), "#2a78d6"),
                   colonna("IN ATTACCO · contro la loro difesa", s.get("in_attacco", []), "#ff7a1a"),
-                  gio]], colWidths=[W * 0.36, W * 0.36, W * 0.28])
+                  colonna("RITMO, MOMENTI E FINALI", s.get("ritmo", []), "#6b7489")]],
+                colWidths=[W * 0.35, W * 0.35, W * 0.30])
     tre.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 3),
                              ("RIGHTPADDING", (0, 0), (-1, -1), 8),
                              ("LINEBEFORE", (1, 0), (-1, 0), 0.5, BORDO)]))
@@ -569,11 +563,71 @@ def _sintesi(s: dict, r, S, W) -> list:
         el += [Spacer(1, 8), box]
     if s.get("attenzione"):
         el += [Spacer(1, 4), Paragraph(f"⚠ {_esc(s['attenzione'])}", S["small"])]
-    fonte = ("Sintesi scritta con l'AI di ASSIST a partire dai soli dati di questo report: ogni "
-             "numero è controllato sui dati. Il dettaglio è nelle pagine seguenti."
-             if s.get("fonte") == "ai" else
-             "Sintesi automatica dai dati del report. Il dettaglio è nelle pagine seguenti.")
-    el += [Spacer(1, 4), Paragraph(fonte, S["small"])]
+    el += [Spacer(1, 4), Paragraph("Nelle pagine seguenti lo scouting dei giocatori e il dettaglio "
+                                   "della squadra.", S["small"])]
+    return el
+
+
+def _foto(dati: bytes | None, nome: str, w, h):
+    """Foto del giocatore o, se manca, un riquadro con le iniziali."""
+    if dati:
+        try:
+            from reportlab.lib.utils import ImageReader
+            ImageReader(io.BytesIO(dati)).getSize()
+            img = Image(io.BytesIO(dati), w, h, kind="proportional")
+            return img
+        except Exception:
+            pass
+    from reportlab.graphics.shapes import Drawing, Rect, String
+    iniziali = "".join(x[0] for x in nome.split()[:2]).upper()
+    d = Drawing(w, h)
+    d.add(Rect(0, 0, w, h, fillColor=colors.HexColor("#e9edf4"), strokeColor=None))
+    d.add(String(w / 2, h / 2 - 6, iniziali, fontName="Condensed", fontSize=18, fillColor=GRIGIO,
+                 textAnchor="middle"))
+    return d
+
+
+def _scheda(g: dict, S, w):
+    """Scheda di un giocatore: foto, anagrafica, numeri, caratteristiche, come difenderlo."""
+    nome = ParagraphStyle("gn", parent=S["h3"], fontSize=12, leading=14, spaceBefore=0, spaceAfter=1)
+    voce = ParagraphStyle("gv", parent=S["body"], fontSize=8.2, leading=10.5)
+    meta = [x for x in (f"#{g['maglia']}" if g.get("maglia") else None, g.get("ruolo"),
+                        f"{g['altezza']} cm" if g.get("altezza") else None,
+                        f"{g['eta']} anni" if g.get("eta") else None, g.get("nazionalita")) if x]
+    numeri = Table([[Paragraph(k, S["kpi_l"]) for k, _ in g["numeri"]],
+                    [Paragraph(v, ParagraphStyle("nv", parent=S["kpi_v"], fontSize=13, leading=14))
+                     for _, v in g["numeri"]]], colWidths=[(w - 30 * mm) / len(g["numeri"])] * len(g["numeri"]))
+    numeri.setStyle(TableStyle([("LEFTPADDING", (0, 0), (-1, -1), 0), ("TOPPADDING", (0, 0), (-1, -1), 0),
+                                ("BOTTOMPADDING", (0, 0), (-1, -1), 0)]))
+    destra = [Paragraph(_esc(g["nome"]), nome), Paragraph(_esc(" · ".join(meta)) or "&nbsp;", S["small"]),
+              Spacer(1, 2), numeri, Paragraph(_esc(g["tiro"]), S["small"]), Spacer(1, 2)]
+    destra += [Paragraph(f'<font color="#2a78d6"><b>›</b></font> {_esc(c)}', voce) for c in g["caratteristiche"]] \
+        or [Paragraph("Nessuna caratteristica marcata rispetto al campionato.", S["small"])]
+    if g["difesa"]:
+        destra.append(Paragraph('<font color="#d95926"><b>COME DIFENDERLO</b></font> · ' +
+                                _esc(" · ".join(g["difesa"])), voce))
+    t = Table([[_foto(g.get("foto"), g["nome"], 24 * mm, 30 * mm), destra]],
+              colWidths=[27 * mm, w - 27 * mm])
+    t.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                           ("RIGHTPADDING", (0, 0), (-1, -1), 4), ("TOPPADDING", (0, 0), (-1, -1), 5),
+                           ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                           ("BOX", (0, 0), (-1, -1), 0.5, BORDO),
+                           ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#fafbfd"))]))
+    return t
+
+
+def _schede(giocatori: list[dict], squadra: str, S, W) -> list:
+    el = [Paragraph(f"SCOUTING DEI GIOCATORI · {squadra.upper()}", S["h2"]),
+          Paragraph("Giocatori di rotazione (almeno 10 minuti a partita), in ordine di minuti. "
+                    "Le caratteristiche sono quelle che li distinguono dai giocatori di rotazione "
+                    "del campionato.", S["small"]), Spacer(1, 4)]
+    w = W / 2 - 3
+    for i in range(0, len(giocatori), 2):
+        coppia = [_scheda(g, S, w) for g in giocatori[i:i + 2]] + [""] * (2 - len(giocatori[i:i + 2]))
+        t = Table([coppia], colWidths=[W / 2, W / 2])
+        t.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 1.5),
+                               ("RIGHTPADDING", (0, 0), (-1, -1), 1.5), ("BOTTOMPADDING", (0, 0), (-1, -1), 4)]))
+        el.append(t)
     return el
 
 

@@ -97,7 +97,6 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           MITTENTE: ${{ secrets.MITTENTE }}
           ABBONATI: ${{ secrets.ABBONATI }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # sintesi con l'AI (facoltativa)
         run: |
           # nelle esecuzioni automatiche il report parte solo il lunedì
           if [ "$GITHUB_EVENT_NAME" = "schedule" ] && [ "$(date -u +%u)" != "1" ]; then

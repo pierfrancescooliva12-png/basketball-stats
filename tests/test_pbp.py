@@ -111,7 +111,8 @@ def test_event_analytics(conn):
 def test_player_bio():
     info = parse_player(load("giocatore_A94224.html"))
     assert info == {"data_nascita": "2003-12-04", "nazionalita": "ITA", "altezza_cm": 185,
-                    "peso_kg": 80, "societa": "Unieuro Forlì"}
+                    "peso_kg": 80, "societa": "Unieuro Forlì", "ruolo": "Play", "maglia": "1",
+                    "foto_url": "http://lnp.webpont.com/team/images/player/x2627/A94224.jpg"}
 
 
 def test_pbp_file_is_compact_and_immutable(conn, tmp_path):

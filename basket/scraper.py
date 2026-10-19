@@ -7,6 +7,7 @@
 import re
 import time
 from datetime import datetime
+from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 
@@ -361,7 +362,8 @@ def fetch_player(client: RateLimitedClient, giocatore_id: str) -> dict:
 
 
 def parse_player(html: str) -> dict:
-    """Anagrafica: data_nascita (ISO), nazionalita, altezza_cm, peso_kg, societa."""
+    """Anagrafica: data_nascita (ISO), nazionalita, altezza_cm, peso_kg, societa, ruolo, maglia,
+    foto_url (indirizzo della foto sul sito)."""
     soup = BeautifulSoup(html, "lxml")
     specs = {}
     for li in soup.select(".player-mini-specs li"):
@@ -383,4 +385,21 @@ def parse_player(html: str) -> dict:
         "altezza_cm": _int(re.sub(r"[^\d]", "", specs.get("altezza", "")) or None),
         "peso_kg": _int(re.sub(r"[^\d]", "", specs.get("peso", "")) or None),
         "societa": specs.get("società"),
+        "ruolo": _testo(soup, ".player-data .ruolo"),
+        "maglia": _testo(soup, ".player-data .num-maglia"),
+        "foto_url": _foto(soup),
     }
+
+
+def _testo(soup, sel: str) -> str | None:
+    el = soup.select_one(sel)
+    t = el.get_text(" ", strip=True) if el else ""
+    return t or None
+
+
+def _foto(soup) -> str | None:
+    img = soup.select_one(".player-picture-wrapper img")
+    src = (img.get("src") or "").strip() if img else ""
+    if not src or "placeholder" in src or "default" in src.rsplit("/", 1)[-1]:
+        return None
+    return src if src.startswith("http") else urljoin(config.SITE_BASE, src)

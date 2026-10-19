@@ -10,4 +10,3 @@ psycopg2-binary>=2.9
 modal>=1.6           # analisi delle clip (servizio su Modal, token nei Secrets)
 beautifulsoup4>=4.12  # cronaca delle partite in diretta
 lxml>=5.0
-anthropic>=1.15      # sintesi del report PDF con l'AI (chiave nei Secrets)
