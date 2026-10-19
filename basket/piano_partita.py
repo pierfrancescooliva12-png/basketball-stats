@@ -216,7 +216,7 @@ def consigli(ctx, avv: int, mia: int | None = None, rt: pd.DataFrame | None = No
                         "partita)" for x in caccia.itertuples())
     P.duello(D, L.z("ft_rate"), N.z("opp_ft_rate"),
              f"Vanno spesso in lunetta (liberi/tiri {_it(L.v('ft_rate'), 2)}, "
-             f"{L.pos('ft_rate')}): difendere con i piedi; chi cerca il contatto: {chi_ft}",
+             f"{L.pos('ft_rate')}): difendere senza falli; chi cerca il contatto: {chi_ft}",
              f"Lunetta: loro ci vanno spesso ({_it(L.v('ft_rate'), 2)}, "
              f"{L.pos('ft_rate')}) e voi fate molti falli ({_it(N.v('opp_ft_rate'), 2)} "
              f"concessi, {N.pos('opp_ft_rate')}): niente mani addosso, aiuti in verticalità; "
@@ -225,7 +225,7 @@ def consigli(ctx, avv: int, mia: int | None = None, rt: pd.DataFrame | None = No
              f"({N.pos('opp_ft_rate', False)} per meno liberi): continuare a difendere senza "
              "fallo",
              f"Fate molti falli ({_it(N.v('opp_ft_rate'), 2)} liberi concessi per tiro, "
-             f"{N.pos('opp_ft_rate')}): occhio al bonus, difendere con i piedi")
+             f"{N.pos('opp_ft_rate')}): occhio al bonus, difendere senza falli")
 
     if Lo is not None and Lo.ok:
         P.duello(D, L.z("punti_contropiede_pg"), zc(No, "concessi_contropiede_pg"),
@@ -338,7 +338,7 @@ def consigli(ctx, avv: int, mia: int | None = None, rt: pd.DataFrame | None = No
              forza=f"Lunetta: voi ci andate spesso "
                    f"({_it(N.v('ft_rate'), 2)}, {N.pos('ft_rate')}), loro fanno pochi falli "
                    f"({L.pos('opp_ft_rate', False)} per meno liberi concessi): servono "
-                   "penetrazioni decise e contatto con il corpo")
+                   "penetrazioni decise cercando il contatto")
     P.duello(A, L.z("opp_tov_pct"), N.z("tov_pct"),
              f"Difesa aggressiva: forzano {_q(L, 'forzate')} ({L.pos('opp_tov_pct')}): due "
              "portatori, passaggi corti, contro la pressione attaccare in fretta il centro del "
