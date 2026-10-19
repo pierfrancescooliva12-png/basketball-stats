@@ -207,18 +207,30 @@ secondario = "#4fb3e8"
 # logo_url = "https://..."   (facoltativo, un altro indirizzo per il logo)
 ```
 
-### Archivio permanente di note e osservati
+### Database permanente (utenti, note, osservati, brand)
 
-Di default note e liste sono salvate in un file locale che su Streamlit Cloud si perde a ogni
-riavvio. Per renderle permanenti crea un database PostgreSQL gratuito (per esempio
-[Supabase](https://supabase.com) o [Neon](https://neon.tech)) e aggiungi ai Secrets:
+Senza database note, osservati e giochi sono salvati in un file locale che su Streamlit Cloud
+si perde a ogni riavvio, e gli utenti dei club si gestiscono incollando blocchi nei Secrets.
+Con un database PostgreSQL gratuito (per esempio [Neon](https://neon.tech) o
+[Supabase](https://supabase.com)) è tutto permanente e si gestisce dal sito:
 
 ```toml
 [database]
-url = "postgresql+psycopg2://utente:password@host:5432/nome_db"
+url = "postgresql://utente:password@host/nome_db?sslmode=require"
 ```
 
-Le tabelle vengono create automaticamente al primo avvio.
+La connection string si incolla così come la dà Neon o Supabase (`postgresql://…` o
+`postgres://…`): il sito la adatta da solo al driver.
+
+Le tabelle si creano da sole al primo avvio. Con il database collegato:
+
+- **Admin › Amministrazione** crea gli accessi dei club direttamente (password provvisoria
+  da comunicare al club), genera nuove password provvisorie, disattiva e riattiva gli utenti,
+  salva i colori del brand;
+- al primo accesso il club sceglie la propria password; poi la cambia da solo con il pulsante
+  **Password** in alto;
+- gli utenti nei Secrets (l'amministratore) restano come accesso di riserva: a parità di nome
+  vincono sul database.
 
 ### Report PDF via email ogni lunedì
 

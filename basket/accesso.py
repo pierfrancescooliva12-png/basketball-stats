@@ -49,13 +49,33 @@ def verify_password(password: str, stored: str) -> bool:
         return False
 
 
+def unisci(da_secrets: dict, da_database: dict) -> dict:
+    """Utenti dei Secrets (amministratori, accesso di riserva) e del database (club gestiti
+    dall'Amministrazione). A parità di nome vince il Secrets."""
+    out = {k.lower(): {**v, "fonte": "database"} for k, v in (da_database or {}).items()}
+    out.update({k.lower(): {**dict(v), "fonte": "secrets"} for k, v in (da_secrets or {}).items()})
+    return out
+
+
 def authenticate(utenti: dict, username: str, password: str) -> dict | None:
     """Restituisce i dati dell'utente se le credenziali sono corrette."""
     u = utenti.get((username or "").strip().lower())
     if not u or not verify_password(password or "", u.get("password_hash", "")):
         return None
     return {"username": username.strip().lower(), "club": u.get("club"),
-            "ruolo": u.get("ruolo", "staff")}
+            "ruolo": u.get("ruolo", "staff"), "fonte": u.get("fonte", "secrets"),
+            "cambio": bool(u.get("cambio_password"))}
+
+
+def errore_password(nuova: str, ripeti: str, vecchia: str | None = None) -> str | None:
+    """Motivo per cui la nuova password non va bene (None se va bene)."""
+    if len(nuova or "") < 10:
+        return "deve avere almeno 10 caratteri"
+    if nuova != ripeti:
+        return "le due password non coincidono"
+    if vecchia is not None and nuova == vecchia:
+        return "deve essere diversa da quella attuale"
+    return None
 
 
 # senza caratteri che si confondono (0/O, 1/l/I) per dettarla o copiarla a mano
