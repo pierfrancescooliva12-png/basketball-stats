@@ -15,7 +15,8 @@ RIF = pd.DataFrame({"usg_pct": [15, 18, 20, 22, 24], "ft_rate": [0.1, 0.2, 0.25,
 def _p(**k):
     base = dict(t3a_pg=1.0, t3m_pg=0.3, t3_pct=30.0, usg_pct=18, minuti_pg=25, tla_pg=1.0, tla=4,
                 ft_rate=0.2, tl_pct=75.0, assist_pg=1.0, ast_pct=10, perse_pg=1.0, tov_pct=12,
-                orb_pct=4, rimb_off_pg=0.5, ts_pct=52.0, on_off=0.0)
+                orb_pct=4, rimb_off_pg=0.5, ts_pct=52.0, on_off=0.0, fga_pg=6.0, tlm=3, t3m=1, t3a=3,
+                partite=4)
     base.update(k)
     return NS(**base)
 
@@ -26,7 +27,7 @@ def test_cosa_fa_meglio_e_peggio():
     assert deboli == []
     forza, deboli = SG.caratteristiche(_p(tl_pct=50.0, tla=10, perse_pg=3.0, tov_pct=20), RIF,
                                        falli={"partite_problemi": 3}, finali={"fga": 5, "quota_tiri": 40})
-    assert "Uomo dei finali (40% dei tiri negli ultimi 5')" in forza
+    assert "Uomo dei finali (5 tiri negli ultimi 5' punto a punto, 40% di quelli della squadra)" in forza
     assert deboli[0] == "Debole ai liberi (50% su 10)" and len(deboli) == 3
     assert not any("difend" in x.lower() for x in forza + deboli)
 

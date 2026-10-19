@@ -74,7 +74,9 @@ def render(a: App):
     note_html("Ogni giocatore è confrontato con i giocatori di rotazione del campionato dello stesso ruolo "
               "(esterni, ali, lunghi). Un'area di miglioramento è una voce in cui è tra i più bassi del ruolo; "
               "l'obiettivo è il valore normale del ruolo e, quando si può stimare, quanti punti a partita vale "
-              "raggiungerlo. Con poche partite giocate i valori vanno confermati.")
+              "raggiungerlo. Rimbalzi, assist, recuperi e falli sono a partita con i minuti del giocatore; "
+              "un'azione è un tiro, una coppia di liberi o una palla persa; i punti per tiro sono i punti "
+              "segnati per ogni tiro tentato, liberi compresi. Con poche partite giocate i valori vanno confermati.")
 
     section("Priorità di lavoro", "la prima area di miglioramento di ogni giocatore", key=None)
     righe = []

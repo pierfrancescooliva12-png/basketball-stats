@@ -41,24 +41,33 @@ def squadra(ctx, sid: int, mia: int | None = None, report=None) -> dict:
     if frasi:
         chi += " " + (", ".join(frasi[:-1]) + " e " + frasi[-1] if len(frasi) > 1 else frasi[0])
     partite = int(prof.loc[sid, "partite"])
-    return {"sintesi": chi + ".", "in_difesa": difesa, "in_attacco": attacco, "ritmo": ritmo,
+    return {"riga": prof.loc[sid].to_dict(), "sintesi": chi + ".", "in_difesa": difesa, "in_attacco": attacco, "ritmo": ritmo,
             "da_ricordare": [a for a in (azione(x) for x in difesa[:2] + attacco[:1]) if a],
             "attenzione": "Inizio stagione: valori su poche partite, da confermare." if partite < 6 else ""}
 
 
 VOCI_SEMAFORO = [("Attacco", "Rating offensivo (ORtg)", "punti ogni 100 possessi"),
                  ("Difesa", "Rating difensivo (DRtg)", "punti subiti ogni 100 possessi"),
-                 ("Tiro", "eFG% in attacco", "efficienza al tiro"),
+                 ("Tiro", "eFG% in attacco", "% al tiro dal campo"),
                  ("Tiro da 3", "% da 3", "percentuale da 3"),
-                 ("Palle perse", "Palle perse % in attacco", "% dei possessi"),
-                 ("Rimbalzi in attacco", "Rimbalzi offensivi %", "% dei loro errori"),
-                 ("Rimbalzi in difesa", "Rimbalzi difensivi %", "% degli errori avversari"),
+                 ("Palle perse", "Palle perse % in attacco", "a partita"),
+                 ("Rimbalzi in attacco", "Rimbalzi offensivi %", "a partita"),
+                 ("Rimbalzi in difesa", "Rimbalzi difensivi %", "a partita"),
                  ("Ritmo", "Ritmo (possessi/40')", "possessi per 40'")]
 
+# Valore mostrato da allenatore (a partita) al posto della percentuale; la posizione in
+# campionato resta quella della voce avanzata, che tiene conto del numero di possessi.
+A_PARTITA = {"Palle perse % in attacco": lambda f: f.get("perse_pg"),
+             "Rimbalzi offensivi %": lambda f: f.get("rimb_off_pg"),
+             "Rimbalzi difensivi %": lambda f: f.get("rimb_dif_pg"),
+             "eFG% in attacco": lambda f: 100 * (f["t2m_pg"] + f["t3m_pg"]) / (f["t2a_pg"] + f["t3a_pg"])
+             if f.get("t2a_pg") else None}
 
-def semaforo(profilo) -> list[dict]:
+
+def semaforo(profilo, squadra=None) -> list[dict]:
     """Otto voci chiave con la posizione in campionato e il giudizio: punto di forza (primo
-    terzo), nella media, punto debole (ultimo terzo); per il ritmo veloce / lento."""
+    terzo), nella media, punto debole (ultimo terzo); per il ritmo veloce / lento. Con squadra
+    (riga del profilo) palle perse e rimbalzi sono a partita e il tiro è la % dal campo."""
     pr = profilo.set_index("Metrica")
     out = []
     for etichetta, metrica, spiega in VOCI_SEMAFORO:
@@ -78,6 +87,13 @@ def semaforo(profilo) -> list[dict]:
             giudizio, tipo = "punto debole", "debole"
         else:
             giudizio, tipo = "nella media", "media"
-        out.append({"etichetta": etichetta, "valore": x["Valore"], "posizione": pos, "squadre": n,
+        valore = x["Valore"]
+        if squadra is not None and metrica in A_PARTITA:
+            try:
+                v = A_PARTITA[metrica](squadra)
+                valore = v if v is not None and v == v else valore
+            except (KeyError, ZeroDivisionError, TypeError):
+                pass
+        out.append({"etichetta": etichetta, "valore": valore, "posizione": pos, "squadre": n,
                     "giudizio": giudizio, "tipo": tipo, "spiega": spiega})
     return out
