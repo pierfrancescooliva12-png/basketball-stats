@@ -361,10 +361,26 @@ def render_anteprima(a: App):
     if ng and ng["casa_id"] in nomi and ng["ospite_id"] in nomi:
         default_a, default_b = ng["casa_id"], ng["ospite_id"]
     c1, c2 = st.columns(2)
-    casa = c1.selectbox("Casa", ids, index=ids.index(default_a), format_func=nomi.get,
-                        key=f"ant_casa_{a.sq}")
-    ospite = c2.selectbox("Ospite", ids, index=ids.index(default_b), format_func=nomi.get,
-                          key=f"ant_osp_{a.sq}")
+    if propria in nomi:
+        # squadra del club: fissa; si sceglie l'avversaria (di base la prossima) e il campo
+        altre = [s for s in ids if s != propria]
+        avv = (ng["ospite_id"] if ng["casa_id"] == propria else ng["casa_id"]) if ng else None
+        avv = avv if avv in altre else altre[0]
+        scelta = c1.selectbox(f"Avversaria di {nomi[propria]}", altre, index=altre.index(avv),
+                              format_func=lambda s: nomi[s] + (" · prossima" if ng and s in
+                                                               (ng["casa_id"], ng["ospite_id"]) else ""),
+                              key="ant_avv")
+        prossima = bool(ng and scelta in (ng["casa_id"], ng["ospite_id"]))
+        # per la prossima partita il campo è quello del calendario, altrimenti di base in casa
+        fuori = prossima and ng["ospite_id"] == propria
+        dove = c2.radio("Campo", ["In casa", "In trasferta"], horizontal=True, index=1 if fuori else 0,
+                        key=f"ant_dove_{scelta}")
+        casa, ospite = (propria, scelta) if dove == "In casa" else (scelta, propria)
+    else:
+        casa = c1.selectbox("Casa", ids, index=ids.index(default_a), format_func=nomi.get,
+                            key=f"ant_casa_{a.sq}")
+        ospite = c2.selectbox("Ospite", ids, index=ids.index(default_b), format_func=nomi.get,
+                              key=f"ant_osp_{a.sq}")
     if casa == ospite:
         st.info("Scegli due squadre diverse.")
         return

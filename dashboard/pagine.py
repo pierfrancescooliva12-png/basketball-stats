@@ -20,7 +20,7 @@ APP: App | None = None
 PAGINE: dict = {}
 
 # pagine della propria squadra: con una squadra del club valgono solo per quella
-MIE = {"mia-squadra", "sviluppo", "live", "lavagna", "avvisi"}
+MIE = {"mia-squadra", "sviluppo", "live", "lavagna", "avvisi", "anteprima", "mercato"}
 # pagine sull'avversaria: entrandoci si aprono sulla prossima avversaria
 AVVERSARIA = {"scouting", "lavagna-avversaria"}
 
@@ -372,7 +372,7 @@ def p_admin():
     admin_ui.render(APP)
 
 
-def mappa(admin: bool = False) -> dict:
+def mappa(admin: bool = False, club: bool = False) -> dict:
     def P(fn, titolo, url, chiave, default=False, icona=None):
         pg = st.Page(fn, title=titolo, url_path=url, default=default, icon=icona)
         PAGINE[chiave] = pg
@@ -401,6 +401,9 @@ def mappa(admin: bool = False) -> dict:
                        P(p_classifica, "Classifica", "classifica", "classifica"),
                        P(p_partite, "Partite", "partite", "partite")],
     }
+    if club:      # utenti dei club: solo l'anteprima della propria partita e la proiezione
+        pagine["Previsioni"] = [p for p in pagine["Previsioni"]
+                                if p.url_path not in ("pronostici", "affidabilita")]
     if admin:
         pagine["Admin"] = [P(p_admin, "Amministrazione", "amministrazione", "admin",
                              icona=":material/admin_panel_settings:")]
