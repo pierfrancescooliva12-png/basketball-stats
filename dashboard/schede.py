@@ -165,6 +165,7 @@ def render_squadre(a: App):
 
 
 COLORI_GIOCATORI = {"Punti": True, "Rimbalzi": True, "Assist": True, "Palle perse": False,
+                    "Ass/Perse": True, "Assist per palla persa": True,
                     "% da 3": True, "Valutazione": True, "Tiro (TS%)": True, "Game Score": True,
                     "TS%": True, "Val": True}
 
@@ -202,11 +203,15 @@ def render_giocatori(a: App):
     bg_f = bg_c if sq is None else bg_c[bg_c["squadra_id"] == sq]
     p = pool[pool["partite"] >= min_pg].sort_values("punti_pg", ascending=False)
     p = p.assign(dati=pochi_dati(p))
+    from . import filtri_ui
+    p, filtri = filtri_ui.render(p, "giocatori")
+    extra = filtri_ui.colonne(filtri)
+    ids = set(p["giocatore_id"])
     if vista == "Casa/Trasferta":
-        t = V.casa_trasferta_giocatori(bg_f, bs)
+        t = V.casa_trasferta_giocatori(bg_f[bg_f["giocatore_id"].isin(ids)], bs)
         t = t[t["PG"] >= min_pg]
     elif vista == "Trend ult. 5":
-        tr = A.player_trend(bg_f, bs)
+        tr = A.player_trend(bg_f[bg_f["giocatore_id"].isin(ids)], bs)
         tr = tr[tr["partite"] >= min_pg].sort_values("valutazione_pg_delta", ascending=False)
         t = V.select(tr, V.TREND)
     else:
@@ -223,6 +228,11 @@ def render_giocatori(a: App):
         mapping = {**{k: v for k, v in mapping.items() if k in ("campionato", "giocatore",
                                                                 "squadra")},
                    "dati": "Dati", **mapping}
+        # le statistiche filtrate si vedono sempre, subito dopo il nome
+        nuove = {k: v for k, v in extra.items() if k not in mapping}
+        if nuove:
+            testa = {k: v for k, v in mapping.items() if k in ("campionato", "giocatore", "squadra", "dati")}
+            mapping = {**testa, **nuove, **{k: v for k, v in mapping.items() if k not in testa}}
         t = V.select(p, mapping)
     if gsel is not None:
         nome = players.loc[players["giocatore_id"] == gsel[0], "giocatore"].iloc[0]
@@ -231,7 +241,7 @@ def render_giocatori(a: App):
     if not a.esperto:
         st.markdown('<div class="note">Vista essenziale: attiva <b>Esperto</b> in alto per tutte '
                     'le colonne e le viste.</div>', unsafe_allow_html=True)
-    show(t.drop(columns="Campionato", errors="ignore"), height=620,
+    show(t.drop(columns="Campionato", errors="ignore"), height=620 if len(t) > 16 else None,
          progress={"USG%": (0, 40), "TS%": (0, 80)} if vista == "Avanzate" and a.esperto
          else None, colori=COLORI_GIOCATORI)
 
@@ -267,7 +277,7 @@ def render_giocatore(a: App):
         kpis([
             ("Punti", f1_(me["punti_pg"]), f"{f1_(me['punti_p40'])} per 40'"),
             ("Rimbalzi", f1_(me["rimb_tot_pg"]), f"REB% {f1_(me['trb_pct'])}"),
-            ("Assist", f1_(me["assist_pg"]), f"AST% {f1_(me['ast_pct'])}"),
+            ("Assist", f1_(me["assist_pg"]), f"AST% {f1_(me['ast_pct'])} · {num(me['ast_to'], 2)} per palla persa"),
             ("True shooting", f1_(me["ts_pct"], "%"), f"eFG% {f1_(me['efg_pct'])}"),
             ("Usage", f1_(me["usg_pct"], "%"), f"TOV% {f1_(me['tov_pct'])}"),
             ("Game Score", f1_(me["game_score_pg"]), f"valutazione {f1_(me['valutazione_pg'])}"),
@@ -413,13 +423,14 @@ def render_scouting(a: App):
             ff = r.profilo[r.profilo["Metrica"].isin([
                 "eFG% in attacco", "Palle perse % in attacco", "Rimbalzi offensivi %",
                 "eFG% concessa", "Palle perse forzate %", "Rimbalzi difensivi %"])]
+            testi = scouting.profilo_leggibile(ff)
             fig = go.Figure()
             fig.add_bar(y=ff["Metrica"], x=ff["Valore"], name=short(r.squadra), orientation="h",
-                        marker=dict(color=BLU, cornerradius=4),
-                        hovertemplate="%{y}: %{x:.1f}<extra></extra>")
+                        marker=dict(color=BLU, cornerradius=4), customdata=testi["Squadra"],
+                        hovertemplate="%{y}: %{customdata}<extra></extra>")
             fig.add_bar(y=ff["Metrica"], x=ff["Media campionato"], name="Media", orientation="h",
-                        marker=dict(color=GRIGIO, cornerradius=4),
-                        hovertemplate="%{y}: %{x:.1f}<extra>media</extra>")
+                        marker=dict(color=GRIGIO, cornerradius=4), customdata=testi["Media campionato"],
+                        hovertemplate="%{y}: %{customdata}<extra>media</extra>")
             fig.update_yaxes(autorange="reversed", showgrid=False)
             plot(fig, 400, barmode="group", bargap=0.3, bargroupgap=0.08)
         with c2:
@@ -449,7 +460,7 @@ def render_scouting(a: App):
             section("Casa / trasferta")
             show(r.casa_trasferta)
         section("Profilo completo", "posizione nel campionato per ogni metrica")
-        show(r.profilo, voci=[G[k] for k in ("ortg", "drtg", "net_rtg", "pace", "four_factors",
+        show(scouting.profilo_leggibile(r.profilo), voci=[G[k] for k in ("ortg", "drtg", "net_rtg", "pace", "four_factors",
                                              "efg", "tov", "orb", "drb", "ft_rate", "ast_ratio")])
         st.download_button("⬇ Scarica report (Markdown)", scouting.to_markdown(r),
                            file_name=f"scouting_{r.squadra}.md", mime="text/markdown")
@@ -492,8 +503,10 @@ def render_partite(a: App):
                 ("Possessi", f"{h['possessi']:.0f}", "stima per squadra"),
                 ("ORtg", f"{h['ortg']:.0f} / {o['ortg']:.0f}", "casa / ospite"),
                 ("eFG%", f"{h['efg_pct']:.0f} / {o['efg_pct']:.0f}", "casa / ospite"),
-                ("Palle perse %", f"{h['tov_pct']:.0f} / {o['tov_pct']:.0f}", "casa / ospite"),
-                ("Rimb. offensivi %", f"{h['orb_pct']:.0f} / {o['orb_pct']:.0f}", "casa / ospite"),
+                ("Palle perse", f"{h['tov_pct']:.0f}% ({h['perse']:.0f}) / {o['tov_pct']:.0f}% ({o['perse']:.0f})",
+                 "casa / ospite · % delle azioni (numero)"),
+                ("Rimb. offensivi", f"{h['orb_pct']:.0f}% ({h['rimb_off']:.0f}) / "
+                 f"{o['orb_pct']:.0f}% ({o['rimb_off']:.0f})", "casa / ospite · % presi (numero)"),
             ])
         cols = {"numero": "#", "giocatore": "Giocatore", "quintetto": "Q", "minuti": "Min",
                 "punti": "Pt", "t2m": "2PM", "t2a": "2PA", "t3m": "3PM", "t3a": "3PA",

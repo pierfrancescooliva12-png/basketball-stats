@@ -103,6 +103,13 @@ G = {
         "Quanti possessi conclusi dal giocatore (o dalla squadra) diventano un assist.",
         "100 × assist / (tiri tentati + 0,44 × liberi tentati + assist + perse).",
         "Per un playmaker 25–35; per un lungo realizzatore 5–10."),
+    "ast_to": Voce(
+        "Assist per palla persa (AST/TO)",
+        "Quanti assist fa il giocatore (o la squadra) per ogni pallone perso: misura la cura "
+        "della palla di chi la gestisce.",
+        "Assist / palle perse, sulle partite della stagione.",
+        "Per un playmaker sopra 2 è buono, sopra 3 eccellente; sotto 1 perde più palloni di "
+        "quanti assist ne fa. Per i lunghi conta poco: fanno pochi assist."),
     "ast_pct": Voce(
         "Assist % (AST%)",
         "Quota dei canestri dei compagni nati da un suo assist mentre è in campo.",
@@ -617,7 +624,8 @@ COLONNE = {
     "Pace": "pace", "Possessi": "possessi", "ORtg": "ortg", "DRtg": "drtg",
     "Net Rtg": "net_rtg", "eFG%": "efg", "eFG% avv.": "efg", "TS%": "ts", "TOV%": "tov",
     "TOV% avv.": "tov", "OREB%": "orb", "DREB%": "drb", "FT rate": "ft_rate",
-    "FT rate avv.": "ft_rate", "AST ratio": "ast_ratio", "USG%": "usg", "AST%": "ast_pct",
+    "FT rate avv.": "ft_rate", "AST ratio": "ast_ratio", "Ass/Perse": "ast_to",
+    "Assist per palla persa": "ast_to", "AST/TO": "ast_to", "USG%": "usg", "AST%": "ast_pct",
     "REB%": "reb_ind", "STL%": "stl_blk", "BLK%": "stl_blk", "FTA/FGA": "ft_rate",
     "% tiri da 3": "t3a_rate", "Variabilità punti": "variabilita", "Game Score": "game_score",
     "GmSc": "game_score", "Val": "valutazione", "Val/40": "per40", "Punti/40": "per40",

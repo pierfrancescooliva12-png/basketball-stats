@@ -28,12 +28,14 @@ TEAM_AVANZATE = TEAM_BASE | {
     "efg_pct": "eFG%", "ts_pct": "TS%", "tov_pct": "TOV%", "orb_pct": "OREB%",
     "ft_rate": "FT rate", "opp_efg_pct": "eFG% avv.", "opp_tov_pct": "TOV% avv.",
     "drb_pct": "DREB%", "opp_ft_rate": "FT rate avv.", "ast_ratio": "AST ratio",
+    "ast_to": "Ass/Perse",
 }
 PLAYER_MEDIE = PLAYER_BASE | {
     "punti_pg": "Punti", "t2m_pg": "2PM", "t2a_pg": "2PA", "t2_pct": "2P%",
     "t3m_pg": "3PM", "t3a_pg": "3PA", "t3_pct": "3P%", "tlm_pg": "TLM", "tla_pg": "TLA",
     "tl_pct": "TL%", "rimb_off_pg": "RO", "rimb_dif_pg": "RD", "rimb_tot_pg": "RT",
-    "assist_pg": "Ass", "perse_pg": "Perse", "recuperate_pg": "Rec", "stoppate_pg": "Stop",
+    "assist_pg": "Ass", "perse_pg": "Perse", "ast_to": "Ass/Perse", "recuperate_pg": "Rec",
+    "stoppate_pg": "Stop",
     "falli_commessi_pg": "Falli", "falli_subiti_pg": "F. sub.", "valutazione_pg": "Val",
 }
 PLAYER_TOTALI = PLAYER_BASE | {
@@ -50,8 +52,8 @@ PLAYER_P40 = PLAYER_BASE | {
 }
 PLAYER_AVANZATE = PLAYER_BASE | {
     "fg_pct": "FG%", "efg_pct": "eFG%", "ts_pct": "TS%", "t3_pct": "3P%", "tl_pct": "TL%",
-    "usg_pct": "USG%", "ast_ratio": "AST ratio", "game_score_pg": "Game Score",
-    "punti_p40": "Punti/40",
+    "usg_pct": "USG%", "ast_ratio": "AST ratio", "ast_to": "Ass/Perse",
+    "game_score_pg": "Game Score", "punti_p40": "Punti/40",
 }
 PLAYER_RUOLO = PLAYER_BASE | {
     "ast_pct": "AST%", "tov_pct": "TOV%", "orb_pct": "OREB%", "drb_pct": "DREB%",
@@ -71,13 +73,15 @@ TEAM_PROFILO = TEAM_BASE | {
 PLAYER_ESSENZIALE = {
     "campionato": "Campionato", "giocatore": "Giocatore", "squadra": "Squadra",
     "partite": "Partite", "minuti_pg": "Minuti", "punti_pg": "Punti", "rimb_tot_pg": "Rimbalzi",
-    "assist_pg": "Assist", "perse_pg": "Palle perse", "recuperate_pg": "Recuperi",
+    "assist_pg": "Assist", "perse_pg": "Palle perse", "ast_to": "Assist per palla persa",
+    "recuperate_pg": "Recuperi",
     "t2_pct": "% da 2", "t3_pct": "% da 3", "tl_pct": "% liberi", "valutazione_pg": "Valutazione",
 }
 PLAYER_AVANZATE_ESS = {
     "campionato": "Campionato", "giocatore": "Giocatore", "squadra": "Squadra",
     "partite": "Partite", "minuti_pg": "Minuti", "punti_pg": "Punti",
     "ts_pct": "Tiro (TS%)", "usg_pct": "Possessi usati (USG%)", "ast_pct": "Assist % (AST%)",
+    "ast_to": "Assist per palla persa",
     "trb_pct": "Rimbalzi % (REB%)", "game_score_pg": "Game Score",
 }
 TEAM_ESSENZIALE = {

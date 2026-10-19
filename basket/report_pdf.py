@@ -135,10 +135,15 @@ def _box(content):
 def _bar_rows(df, width_bar=38 * mm):
     """Tabella Four Factors con barra squadra vs media."""
     rows = [["Metrica", "Squadra", "Media", "Pos.", ""]]
-    for r in df.itertuples():
-        rows.append([r.Metrica, _fmt(r.Valore, 2 if "Liberi" in r.Metrica else 1),
-                     _fmt(r._3, 2 if "Liberi" in r.Metrica else 1), r.Posizione,
-                     _bar(r.Valore, r._3, width_bar)])
+    for _, r in df.iterrows():
+        d = 2 if "Liberi" in r["Metrica"] else 1
+        v, m = _fmt(r["Valore"], d), _fmt(r["Media campionato"], d)
+        # palle perse e rimbalzi: la percentuale con il numero a partita tra parentesi
+        if pd.notna(r.get("A partita")):
+            v += f"% ({_fmt(r['A partita'])})"
+        if pd.notna(r.get("Media a partita")):
+            m += f"% ({_fmt(r['Media a partita'])})"
+        rows.append([r["Metrica"], v, m, r["Posizione"], _bar(r["Valore"], r["Media campionato"], width_bar)])
     return rows
 
 
@@ -255,7 +260,7 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
         for x in q.itertuples()]
     blocco = Table([[
         [Paragraph("FOUR FACTORS", S["h2"]),
-         _table(_bar_rows(ff), [46 * mm, 16 * mm, 14 * mm, 12 * mm, 40 * mm])],
+         _table(_bar_rows(ff, 22 * mm), [46 * mm, 24 * mm, 24 * mm, 12 * mm, 22 * mm])],
         [Paragraph("QUARTO PER QUARTO", S["h2"]),
          _table(qrows, [16 * mm, 14 * mm, 14 * mm, 14 * mm]),
          Spacer(1, 4),
@@ -423,11 +428,8 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
                                                for v in row] for row in r.ultime.values],
                   [18 * mm, 10 * mm, 50 * mm, 18 * mm, 22 * mm, 14 * mm, 14 * mm, 14 * mm,
                    26 * mm], align_left=(2, 3, 8))]
-    prof_c = r.profilo
-    rows = [["Metrica", "Valore", "Media campionato", "Posizione"]] + [
-        [x.Metrica, _fmt(x.Valore, 2 if "Liberi" in x.Metrica else 1),
-         _fmt(x._3, 2 if "Liberi" in x.Metrica else 1), str(x.Posizione)]
-        for x in prof_c.itertuples()]
+    prof_c = scouting.profilo_leggibile(r.profilo)
+    rows = [["Metrica", "Valore", "Media campionato", "Posizione"]] + prof_c.values.tolist()
     el += [Paragraph("PROFILO COMPLETO · posizione nel campionato", S["h2"]),
            _table(rows, [80 * mm] + [(W - 80 * mm) / 3] * 3)]
 

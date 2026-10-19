@@ -85,5 +85,5 @@ def test_numeri_a_partita():
     assert M.a_partita("orb_pct", 30.0, M._base(me, "orb_pct")) == pytest.approx(11)
     assert M.a_partita("ft_rate", 0.2, M._base(me, "ft_rate")) == pytest.approx(12)
     r = {"colonna": "tov_pct", "valore": 15.0, "valore_n": 12.15}
-    assert M.leggibile(r, "valore") == "12,2"
+    assert M.leggibile(r, "valore") == "15,0% (12,2)"
     assert M.leggibile({"colonna": "efg_pct", "valore": 52.34}, "valore") == "52,3%"

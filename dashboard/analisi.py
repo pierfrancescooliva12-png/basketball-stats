@@ -113,7 +113,7 @@ def sezione_rotazioni(a: App, sid: int, nomi: dict):
     etich = [nomi.get(x, x) for x in z.index]
     fig = go.Figure(go.Heatmap(
         z=z.values, x=[f"{m + 1}'" for m in z.columns], y=etich, zmin=0, zmax=100,
-        colorscale=[[0, SUPERFICIE], [0.5, "#2b5d9e"], [1, BLU]], xgap=1, ygap=2,
+        colorscale=[[0, SUPERFICIE], [0.5, "#9cc0ec"], [1, BLU]], xgap=1, ygap=2,
         showscale=False,
         hovertemplate="%{y}<br>minuto %{x}: in campo nel %{z:.0f}% delle partite<extra></extra>"))
     for q in (10, 20, 30):
@@ -231,8 +231,7 @@ def ultima_partita(a: App):
                     "<br>".join(esc(it(f)) for f in r["frasi"]) + "</div>",
                     unsafe_allow_html=True)
     if r["affidabile"]:
-        rows = [{"Fattore": f["voce"], "Partita": num(f["partita"], f["decimali"]),
-                 "Media stagione": num(f["media"], f["decimali"]),
+        rows = [{"Fattore": f["voce"], "Partita": f["partita_txt"], "Media stagione": f["media_txt"],
                  "Obiettivo": num(f["obiettivo"], f["decimali"]),
                  "Esito": "" if f["raggiunto"] is None else ("✅ raggiunto" if f["raggiunto"]
                                                              else "❌ mancato")}

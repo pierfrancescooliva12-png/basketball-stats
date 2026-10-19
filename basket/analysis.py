@@ -36,9 +36,9 @@ MIN_PACE_AFFIDABILE = 58.0
 
 TEAM_ADV = ["fg_pct", "t2_pct", "t3_pct", "tl_pct", "efg_pct", "ts_pct", "possessi", "pace",
             "ortg", "drtg", "net_rtg", "tov_pct", "orb_pct", "ft_rate", "opp_efg_pct",
-            "opp_tov_pct", "drb_pct", "opp_ft_rate", "ast_ratio"]
+            "opp_tov_pct", "drb_pct", "opp_ft_rate", "ast_ratio", "ast_to"]
 PLAYER_ADV = ["fg_pct", "t2_pct", "t3_pct", "tl_pct", "efg_pct", "ts_pct", "usg_pct",
-              "ast_ratio", "ast_pct", "orb_pct", "drb_pct", "trb_pct", "stl_pct", "blk_pct",
+              "ast_ratio", "ast_to", "ast_pct", "orb_pct", "drb_pct", "trb_pct", "stl_pct", "blk_pct",
               "tov_pct", "ft_rate", "t3a_rate"]
 
 
@@ -166,6 +166,7 @@ def team_ratings(df: pd.DataFrame) -> pd.DataFrame:
     df["drb_pct"] = 100 * _div(df["rimb_dif"], df["rimb_dif"] + df["opp_rimb_off"])
     df["opp_ft_rate"] = _div(df["opp_tlm"], opp_fga)
     df["ast_ratio"] = 100 * _div(df["assist"], _fga(df) + FT * df["tla"] + df["assist"] + df["perse"])
+    df["ast_to"] = _div(df["assist"], df["perse"])
     return df
 
 
@@ -299,6 +300,7 @@ def _player_summary(bg: pd.DataFrame, bs: pd.DataFrame, by: list[str] | None = N
     tot["usg_pct"] = 100 * _div(tot["poss_used"], tot["sh_poss_used"])
     tot["ast_ratio"] = 100 * _div(tot["assist"], tot["fga"] + FT * tot["tla"] + tot["assist"]
                                   + tot["perse"])
+    tot["ast_to"] = _div(tot["assist"], tot["perse"])          # assist per palla persa
     # Percentuali individuali (stile basketball-reference)
     tot["ast_pct"] = 100 * _div(tot["assist"], tot["sh_fgm"] - tot["fgm"])
     tot["orb_pct"] = 100 * _div(tot["rimb_off"], tot["sh_reb_off"])

@@ -21,6 +21,7 @@ from . import analysis as A
 from . import approfondimenti as X
 from . import avvisi as AV
 from . import config, mercato, scouting
+from . import numeri as N
 from .contesto import Contesto, open_readonly
 from .report_pdf import (ARANCIO, BLU, GRIGIO, INK, ROSSO, _fmt, _fonts, _kpis, _styles,
                          _table, slug)
@@ -54,12 +55,20 @@ def riepilogo_partita(ctx: Contesto, squadra_id: int, partita_id: str,
     obiettivi = {**AV.OBIETTIVI_DEFAULT, **(obiettivi or {})}
     affidabile = bool(riga.get("affidabile", True))
 
+    n_partite = int(bs[(bs["squadra_id"] == squadra_id) & bs["affidabile"]]["partita_id"].nunique()) or 1
     fattori = []
     for col, lab, alto, d in FATTORI:
         v, m, o = riga.get(col), stagione.get(col), obiettivi.get(col)
         ok = None if pd.isna(v) or o is None else (v >= o if alto else v <= o)
+        # palle perse e rimbalzi: la percentuale con il numero (della partita, medio) tra parentesi
+        base = N.CONTE.get(col, (None,))[0]
+        if base and base in riga:
+            p_txt = N.con_numero(riga, col, v, d, numero=float(riga[base]))
+            m_txt = N.con_numero(stagione, col, m, d, numero=float(stagione[base]) / n_partite)
+        else:
+            p_txt, m_txt = _fmt(v, d), _fmt(m, d)
         fattori.append({"voce": lab, "partita": v, "media": m, "obiettivo": o, "raggiunto": ok,
-                        "decimali": d, "alto": alto})
+                        "decimali": d, "alto": alto, "partita_txt": p_txt, "media_txt": m_txt})
 
     # fattore decisivo: dove la partita si discosta di più dalla media, nel verso giusto o no
     def scarto(f):
@@ -95,8 +104,7 @@ def riepilogo_partita(ctx: Contesto, squadra_id: int, partita_id: str,
     if affidabile:
         verbo = "Vinta" if vinta else "Persa"
         frasi.append(f"{verbo}: la voce che ha pesato di più è {chiave['voce']} "
-                     f"({_fmt(chiave['partita'], chiave['decimali'])}, media stagionale "
-                     f"{_fmt(chiave['media'], chiave['decimali'])}).")
+                     f"({chiave['partita_txt']}, media stagionale {chiave['media_txt']}).")
     sopra = giocatori[giocatori["delta_gs"] >= 5].sort_values("delta_gs", ascending=False)
     sotto = giocatori[(giocatori["delta_gs"] <= -5) & (giocatori["minuti"] >= 10)]
     if not sopra.empty:
@@ -237,10 +245,9 @@ def build_post_partita(ctx: Contesto, squadra_id: int, partita_id: str | None = 
         for f in r["fattori"]:
             esito_f = "" if f["raggiunto"] is None else ("raggiunto" if f["raggiunto"]
                                                          else "mancato")
-            rows.append([f["voce"], _fmt(f["partita"], f["decimali"]),
-                         _fmt(f["media"], f["decimali"]), _fmt(f["obiettivo"], f["decimali"]),
+            rows.append([f["voce"], f["partita_txt"], f["media_txt"], _fmt(f["obiettivo"], f["decimali"]),
                          esito_f])
-        t = _table(rows, [60 * mm, 25 * mm, 30 * mm, 25 * mm, 25 * mm])
+        t = _table(rows, [56 * mm, 32 * mm, 32 * mm, 22 * mm, 24 * mm])
         stile = []
         for i, f in enumerate(r["fattori"], start=1):
             if f["raggiunto"] is not None:

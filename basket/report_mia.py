@@ -13,6 +13,7 @@ import pandas as pd
 from reportlab.lib.units import mm
 from reportlab.platypus import PageBreak, Paragraph, Spacer
 
+from . import numeri as N
 from . import avvisi as AV
 from . import chiavi as C
 from . import config
@@ -128,7 +129,7 @@ def build_mia_squadra(ctx: Contesto, sid: int, obiettivi: dict | None = None,
                      M.leggibile(x, "obiettivo"), f"+{_fmt(x['vittorie'], 1)}"])
     el += [_titolo("Priorità di lavoro · Four Factors", S),
            _table(rows, [44 * mm, 18 * mm] + [(W - 62 * mm) / 6] * 6, align_left=(1,)),
-           Paragraph("Palle perse e rimbalzi: numero a partita; tiro dal campo: percentuale con le triple che valgono 1,5; "
+           Paragraph("Palle perse e rimbalzi: percentuale e, tra parentesi, numero a partita; tiro dal campo: percentuale con le triple che valgono 1,5; "
                      "tiri liberi: liberi segnati a partita. "
                      "Vittorie in più su 30 partite raggiungendo l'obiettivo: la media del "
                      "campionato per le voci sotto la media, il livello del miglior quarto per "
@@ -195,7 +196,8 @@ def build_mia_squadra(ctx: Contesto, sid: int, obiettivi: dict | None = None,
         d = 2 if "ft" in k else 1
         n = M.a_partita(k, goals[k], M._base(me, k))
         rows.append([lab, _fmt(goals[k], d), "–" if pd.isna(n) else f"{_fmt(n)} {M.UNITA[k]}",
-                     _fmt(val, d), _fmt(ult, d), "sì" if ok else "no"])
+                     N.con_numero(me, k, val, d) if k in N.CONTE else _fmt(val, d), _fmt(ult, d),
+                     "sì" if ok else "no"])
     el += [_titolo("Obiettivi Four Factors · impostati dallo staff", S),
            _table(rows, [50 * mm, 22 * mm, 46 * mm] + [(W - 118 * mm) / 3] * 3)]
 
