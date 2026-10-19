@@ -21,6 +21,8 @@ import getpass
 import hashlib
 import hmac
 import os
+import re
+import secrets
 import sys
 
 ITERAZIONI = 200_000
@@ -54,6 +56,26 @@ def authenticate(utenti: dict, username: str, password: str) -> dict | None:
         return None
     return {"username": username.strip().lower(), "club": u.get("club"),
             "ruolo": u.get("ruolo", "staff")}
+
+
+# senza caratteri che si confondono (0/O, 1/l/I) per dettarla o copiarla a mano
+_ALFABETO = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+
+
+def genera_password(gruppi: int = 3, lunghezza: int = 4) -> str:
+    """Password casuale leggibile, es. "k7Pq-Mx3a-Tn9w" (circa 70 bit)."""
+    return "-".join("".join(secrets.choice(_ALFABETO) for _ in range(lunghezza))
+                    for _ in range(gruppi))
+
+
+def errore_nome(utente: str, esistenti) -> str | None:
+    """Motivo per cui il nome utente non va bene (None se va bene)."""
+    u = (utente or "").strip().lower()
+    if not re.fullmatch(r"[a-z0-9][a-z0-9_-]{2,31}", u):
+        return "da 3 a 32 caratteri: lettere minuscole, numeri, trattino o trattino basso"
+    if u in {e.lower() for e in esistenti}:
+        return "esiste già"
+    return None
 
 
 def blocco_toml(utente: str, password: str, club: str | None = None, ruolo: str = "staff") -> str:

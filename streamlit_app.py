@@ -36,7 +36,9 @@ else:
 
 # ------------------------------------------------------------------ filtri (dall'indirizzo)
 
-nav = st.navigation(pagine.mappa(), position="top")
+# l'area Amministrazione c'è solo per gli admin veri (non in modalità demo)
+nav = st.navigation(pagine.mappa(admin=utente.get("ruolo") == "admin" and not utente.get("demo")),
+                    position="top")
 qp = st.query_params
 mtime = config.DB_PATH.stat().st_mtime
 stagioni = stagioni_disponibili()

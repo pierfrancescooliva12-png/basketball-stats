@@ -107,8 +107,8 @@ def primo_accesso() -> None:
             p2 = c3.text_input("Ripeti la password", type="password", autocomplete="new-password")
             fatto = st.form_submit_button("Crea il blocco per i Secrets", type="primary")
         if fatto:
-            if not u.strip() or not u.strip().replace("_", "").replace(".", "").isalnum():
-                st.error("Utente: solo lettere, numeri, punto o trattino basso.")
+            if accesso.errore_nome(u, []):
+                st.error(f"Utente: {accesso.errore_nome(u, [])}.")
             elif len(p1) < 10:
                 st.error("La password deve avere almeno 10 caratteri.")
             elif p1 != p2:
