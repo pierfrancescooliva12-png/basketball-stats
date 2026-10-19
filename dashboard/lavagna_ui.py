@@ -58,7 +58,10 @@ def giochi(a: App, riferimento) -> list[dict]:
 
 def render(a: App, riferimento: int, contesto: str, titolo: str, nome_squadra: str):
     """Lavagna con i giochi della squadra riferimento ("nostro" o "avversaria")."""
-    video_ui.render(a, riferimento, contesto, nome_squadra)
+    # bozza del gioco dal video (riconoscimento automatico): per ora solo per l'amministratore,
+    # i risultati non sono ancora affidabili. Il video sincronizzato a mano resta per tutti.
+    if a.utente.get("ruolo") == "admin" and not a.utente.get("demo"):
+        video_ui.render(a, riferimento, contesto, nome_squadra)
     valore = _lavagna(giochi=giochi(a, riferimento), contesto=contesto, titolo=titolo,
                       schemi=SCHEMI, tema="dark", apri=st.session_state.get(f"lavagna_apri_{contesto}_{riferimento}"),
                       key=f"lavagna_{contesto}_{riferimento}",
