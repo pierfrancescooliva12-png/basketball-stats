@@ -141,7 +141,12 @@ BOX_FIELDS = [
 # Colonne aggiunte dopo la prima versione: (tabella, colonna, tipo)
 MIGRATIONS = [
     ("calendario", "stream_url", "TEXT"),
+    ("giocatori_info", "ruolo", "TEXT"),
+    ("giocatori_info", "maglia", "TEXT"),
+    ("giocatori_info", "foto_url", "TEXT"),       # indirizzo della foto sul sito (non salvata)
+    ("giocatori_info", "versione", "INTEGER"),    # 2: con ruolo, maglia e foto
 ]
+VERSIONE_INFO = 2
 
 
 def connect(path: Path | str = config.DB_PATH, readonly: bool = False) -> sqlite3.Connection:
@@ -295,15 +300,22 @@ def load_pbp_file(stagione: str, gameid: str, base: Path | None = None) -> dict 
 
 
 def players_without_info(conn) -> list[str]:
+    """Giocatori senza anagrafica o con quella della versione precedente (senza ruolo e foto),
+    prima quelli della stagione in corso."""
     return [r[0] for r in conn.execute(
         "SELECT g.giocatore_id FROM giocatori g LEFT JOIN giocatori_info i USING (giocatore_id) "
-        "WHERE i.giocatore_id IS NULL ORDER BY g.giocatore_id")]
+        "WHERE i.giocatore_id IS NULL OR COALESCE(i.versione, 1) < ? "
+        "ORDER BY EXISTS (SELECT 1 FROM box_giocatore b JOIN partite p USING (partita_id) "
+        "                 WHERE b.giocatore_id = g.giocatore_id AND p.stagione = ?) DESC, "
+        "         g.giocatore_id", (VERSIONE_INFO, config.STAGIONE))]
 
 
 def save_player_info(conn, giocatore_id: str, info: dict):
     conn.execute(
-        "INSERT OR REPLACE INTO giocatori_info VALUES (?,?,?,?,?,?,?)",
+        "INSERT OR REPLACE INTO giocatori_info (giocatore_id, data_nascita, nazionalita, altezza_cm, "
+        "peso_kg, societa, aggiornato_il, ruolo, maglia, foto_url, versione) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
         (giocatore_id, info.get("data_nascita"), info.get("nazionalita"), info.get("altezza_cm"),
          info.get("peso_kg"), info.get("societa"),
-         datetime.now(timezone.utc).isoformat(timespec="seconds")))
+         datetime.now(timezone.utc).isoformat(timespec="seconds"), info.get("ruolo"),
+         info.get("maglia"), info.get("foto_url"), VERSIONE_INFO))
     conn.commit()

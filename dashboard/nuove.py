@@ -37,6 +37,15 @@ def _pdf(_ctx, mtime: float, stagione: str, sid: int, mia: int | None = None,
     return build_pdf(_ctx, sid, mia, json.loads(giochi_json), json.loads(note_json))
 
 
+@st.cache_data(show_spinner="Preparo il file Word…")
+def _docx(_ctx, mtime: float, stagione: str, sid: int, mia: int | None = None) -> bytes:
+    from basket.report_word import build_docx
+    return build_docx(_ctx, sid, mia)
+
+
+DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+
 def note_json(a: App, sid) -> str:
     """Note dello staff sulla squadra, per il PDF di scouting (stringa, per la cache)."""
     import json
