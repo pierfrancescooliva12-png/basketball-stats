@@ -5,8 +5,10 @@ Secrets), mai nel repository:
 
     [utenti.mario]
     password_hash = "pbkdf2_sha256$200000$..."
-    club = "Unieuro Forlì"          # nome della squadra (anche parziale)
+    club = "Unieuro Forlì"          # nome della squadra (anche parziale); vuoto per admin
     ruolo = "staff"                 # staff | admin
+
+Un admin senza club vede tutto e sceglie la squadra da seguire nella Home.
 
 Per creare l'hash di una password:
     python -m basket.accesso nuovo mario "Unieuro Forlì"
@@ -22,6 +24,8 @@ import os
 import sys
 
 ITERAZIONI = 200_000
+TENTATIVI = 5              # errori consecutivi prima del blocco
+BLOCCO_S = 60              # primo blocco in secondi, poi raddoppia
 
 
 def hash_password(password: str, iterazioni: int = ITERAZIONI) -> str:
@@ -52,10 +56,38 @@ def authenticate(utenti: dict, username: str, password: str) -> dict | None:
             "ruolo": u.get("ruolo", "staff")}
 
 
+def blocco_toml(utente: str, password: str, club: str | None = None, ruolo: str = "staff") -> str:
+    """Il blocco da incollare nei secrets di Streamlit (solo l'hash, mai la password)."""
+    righe = [f"[utenti.{utente.strip().lower()}]", f'password_hash = "{hash_password(password)}"']
+    if club:
+        righe.append(f'club = "{club}"')
+    righe.append(f'ruolo = "{ruolo}"')
+    return "\n".join(righe)
+
+
+def attesa(stato: dict, ora: float) -> int:
+    """Secondi da aspettare prima di poter riprovare (0 se si può)."""
+    return max(0, int(stato.get("fino", 0) - ora + 0.999))
+
+
+def registra(stato: dict, ok: bool, ora: float) -> dict:
+    """Aggiorna il conteggio degli errori: dopo TENTATIVI errori di fila blocca per BLOCCO_S
+    secondi, raddoppiando a ogni blocco successivo. Un accesso riuscito azzera tutto."""
+    if ok:
+        return {}
+    errori = stato.get("errori", 0) + 1
+    blocchi = stato.get("blocchi", 0)
+    out = {"errori": errori, "blocchi": blocchi, "fino": stato.get("fino", 0)}
+    if errori >= TENTATIVI:
+        out.update(errori=0, blocchi=blocchi + 1, fino=ora + BLOCCO_S * 2 ** blocchi)
+    return out
+
+
 def main(argv=None) -> int:
     args = argv if argv is not None else sys.argv[1:]
     if len(args) < 3 or args[0] != "nuovo":
-        print('Uso: python -m basket.accesso nuovo <utente> "<squadra>" [admin]')
+        print('Uso: python -m basket.accesso nuovo <utente> "<squadra>" [admin]  '
+              '(squadra "" per un admin senza club)')
         return 1
     utente, club = args[1].lower(), args[2]
     ruolo = args[3] if len(args) > 3 else "staff"
@@ -64,8 +96,7 @@ def main(argv=None) -> int:
         print("Le password non coincidono")
         return 1
     print("\nIncolla nei secrets di Streamlit:\n")
-    print(f"[utenti.{utente}]\npassword_hash = \"{hash_password(pw)}\"\n"
-          f"club = \"{club}\"\nruolo = \"{ruolo}\"")
+    print(blocco_toml(utente, pw, club or None, ruolo))
     return 0
 
 

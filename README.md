@@ -163,7 +163,9 @@ La dashboard si aggiorna da sola a ogni commit del workflow.
 ### Accessi per club
 
 Nei *Secrets* dell'app su Streamlit Cloud (**App → Settings → Secrets**) aggiungi un blocco per
-ogni utente. Per generare l'hash della password:
+ogni utente. Il primo accesso (amministratore) si crea dal sito: finché non c'è nessun utente, in
+fondo alla Home c'è **Amministratore · crea le credenziali di accesso**, che produce il blocco da
+incollare (solo l'hash, mai la password). In alternativa, da riga di comando:
 
 ```bash
 python -m basket.accesso nuovo mario "Unieuro Forlì"
@@ -176,7 +178,11 @@ club = "Unieuro Forlì"
 ruolo = "staff"
 ```
 
-Con almeno un utente configurato la dashboard chiede il login. La scheda **La mia squadra**
+Per un amministratore senza club basta omettere `club` e mettere `ruolo = "admin"`: vede tutte
+le squadre e sceglie dalla Home quella da seguire.
+
+Con almeno un utente configurato la dashboard mostra la schermata di accesso (dopo 5 tentativi
+sbagliati di fila l'accesso si blocca per un minuto, poi per tempi doppi). La scheda **La mia squadra**
 si imposta sulla squadra del club e note, liste di osservati e obiettivi restano **privati per
 club**. Senza utenti la dashboard è in *modalità demo* (aperta a tutti).
 

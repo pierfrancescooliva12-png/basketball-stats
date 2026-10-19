@@ -27,3 +27,27 @@ def test_archive_is_isolated_per_club(tmp_path):
     assert len(a.notes("Forlì")) == 1
     a.delete_note("Forlì", nid)
     assert a.notes("Forlì").empty
+
+
+def test_blocco_dopo_tentativi_sbagliati():
+    s = {}
+    for _ in range(accesso.TENTATIVI - 1):
+        s = accesso.registra(s, False, 100.0)
+    assert accesso.attesa(s, 100.0) == 0                  # ancora libero
+    s = accesso.registra(s, False, 100.0)
+    assert accesso.attesa(s, 100.0) == accesso.BLOCCO_S   # bloccato
+    assert accesso.attesa(s, 100.0 + accesso.BLOCCO_S) == 0
+    for _ in range(accesso.TENTATIVI):
+        s = accesso.registra(s, False, 200.0)
+    assert accesso.attesa(s, 200.0) == 2 * accesso.BLOCCO_S  # il secondo blocco raddoppia
+    assert accesso.registra(s, True, 210.0) == {}
+
+
+def test_blocco_toml_admin_senza_club():
+    import tomllib
+    t = tomllib.loads(accesso.blocco_toml("Pier", "una-password-lunga", None, "admin"))
+    u = t["utenti"]["pier"]
+    assert "club" not in u and u["ruolo"] == "admin"
+    assert "una-password-lunga" not in str(t)
+    ok = accesso.authenticate(t["utenti"], "pier", "una-password-lunga")
+    assert ok == {"username": "pier", "club": None, "ruolo": "admin"}
