@@ -42,6 +42,65 @@ def _risultato(utente: str, password: str, blocco: str, nuovo: bool):
               "(se serve, se ne genera una nuova).")
 
 
+SITO = "https://assist-scouting.streamlit.app"
+
+
+def _sito() -> str:
+    try:
+        u = str(st.context.url or "")
+        return u.split("?")[0].rstrip("/").rsplit("/", 1)[0] if u.count("/") > 2 else SITO
+    except Exception:
+        return SITO
+
+
+def _brand(a: App):
+    import json
+    from basket import brand
+    from .stato import brand_club, tema_club
+    section("Brand dei club", "logo e colori della squadra sulla piattaforma e sull'accesso")
+    nomi = dict(a.ctx.bs.drop_duplicates("squadra_id")[["squadra_id", "squadra"]].values.tolist())
+    ordine = sorted(nomi, key=lambda s: nomi[s])
+    mia = a.utente.get("squadra_id")
+    sid = st.selectbox("Squadra", ordine, index=ordine.index(mia) if mia in ordine else None,
+                       format_func=nomi.get, placeholder="Scegli la squadra…", key="brand_sq")
+    if sid is None:
+        return
+    correzioni = brand_club(sid)
+    t = tema_club(int(sid), nomi[sid], json.dumps(correzioni, sort_keys=True))
+    link = f"{_sito()}/?club={brand.slug(nomi[sid])}"
+    c1, c2 = st.columns([1, 2])
+    with c1:
+        if t.logo:
+            st.markdown(f'<div style="background:{t.fondo};border-radius:12px;padding:18px;'
+                        f'text-align:center"><img src="{t.logo}" style="max-height:110px;max-width:100%">'
+                        '</div>', unsafe_allow_html=True)
+        else:
+            note_html("Logo non raggiungibile dal sito della Lega in questo momento: si riprova da "
+                      "solo. Si può indicare un altro indirizzo con logo_url nei Secrets.")
+    with c2:
+        origine = ("dai Secrets" if correzioni.get("primario") or correzioni.get("secondario")
+                   else "ricavati dal logo" if t.da_logo else "predefiniti di ASSIST")
+        st.markdown(f'Colori {origine}: '
+                    + "".join(f'<span style="display:inline-block;width:26px;height:26px;border-radius:6px;'
+                              f'background:{c};vertical-align:middle;margin:0 6px;border:1px solid #cfd6e2">'
+                              f'</span><code>{c}</code>' for c in (t.fondo, t.accento)),
+                    unsafe_allow_html=True)
+        st.markdown("**Link di accesso del club** (la pagina di accesso con logo e colori):")
+        st.code(link, language=None)
+    with st.form(f"brand_{sid}"):
+        k1, k2 = st.columns(2)
+        primario = k1.color_picker("Colore principale (fascia in alto, scuro)", t.fondo)
+        secondario = k2.color_picker("Colore di accento (pulsanti e strisce)", t.accento)
+        fatto = st.form_submit_button("Prepara il blocco per i Secrets")
+    if fatto:
+        righe = [f"[brand.{int(sid)}]", f'primario = "{primario}"', f'secondario = "{secondario}"']
+        if correzioni.get("logo_url"):
+            righe.append(f'logo_url = "{correzioni["logo_url"]}"')
+        st.code("\n".join(righe), language="toml")
+        note_html("Incollalo nei Secrets (sostituendo un eventuale blocco [brand] della stessa "
+                  "squadra) e salva: i colori cambiano per tutti gli utenti del club.")
+
+
 def render(a: App):
     if a.utente.get("ruolo") != "admin" or a.utente.get("demo"):
         st.error("Pagina riservata all'amministratore.")
@@ -76,6 +135,8 @@ def render(a: App):
             pw = accesso.genera_password()
             u = nome.strip().lower()
             _risultato(u, pw, accesso.blocco_toml(u, pw, club, ruolo), nuovo=True)
+
+    _brand(a)
 
     section("Nuova password per un utente", "se l'ha dimenticata o va cambiata")
     if not utenti:

@@ -17,6 +17,20 @@ def secrets() -> dict:
         return {}
 
 
+def brand_club(squadra_id: int) -> dict:
+    """Correzioni al brand del club dai Secrets ([brand.<id squadra>])."""
+    b = secrets().get("brand") or {}
+    return dict(b.get(str(squadra_id)) or b.get(squadra_id) or {})
+
+
+@st.cache_data(ttl=6 * 3600, show_spinner=False)
+def tema_club(squadra_id: int, nome: str, correzioni_json: str):
+    """Tema del club (logo scaricato una volta, colori dal logo o dai Secrets)."""
+    import json
+    from basket import brand
+    return brand.tema(squadra_id, nome, json.loads(correzioni_json))
+
+
 @st.cache_resource(show_spinner="Preparo le analisi…")
 def contesto(db_mtime: float, stagione: str) -> Contesto:
     ctx = Contesto(db.connect(config.DB_PATH, readonly=True), stagione)
@@ -63,6 +77,7 @@ class App:
     bs_c: pd.DataFrame = field(default=None)
     bg_c: pd.DataFrame = field(default=None)
     esperto: bool = False
+    tema: object = None           # brand del club (basket.brand.Tema), se c'è
 
     @property
     def club(self) -> str:

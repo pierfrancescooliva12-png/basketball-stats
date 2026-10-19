@@ -361,6 +361,25 @@ def obiettivi_singoli(a: App, sid: int, avversaria: bool = True):
               "un rimbalzo o una palla persa).")
 
 
+def _contro_di_voi(a: App, sq: int) -> str:
+    """Per la squadra del club: la prossima partita contro questa avversaria, se c'è."""
+    mia = a.utente.get("squadra_id")
+    if mia is None or mia == sq:
+        return ""
+    r = a.ctx.conn.execute(
+        """SELECT giornata, data, ora, squadra_casa_id FROM calendario
+           WHERE stagione = ? AND stato != 'finished'
+             AND ((squadra_casa_id = ? AND squadra_ospite_id = ?)
+               OR (squadra_casa_id = ? AND squadra_ospite_id = ?))
+           ORDER BY data, ora LIMIT 1""", (a.stagione, mia, sq, sq, mia)).fetchone()
+    if not r:
+        return ""
+    giornata, data, ora, casa = r
+    dove = "in casa" if casa == mia else "in trasferta"
+    return (f'<br><b style="color:#fff">Contro di voi: {giornata}ª giornata, '
+            f'{esc(it(data))} {esc(ora or "")} · {dove}</b>')
+
+
 def render_scouting(a: App):
     profile = a.profile
     sq = a.sq
@@ -375,7 +394,8 @@ def render_scouting(a: App):
             f'Report di scouting · {esc(r.campionato)}</div><div class="title" '
             f'style="font-size:2rem">{esc(r.squadra)}</div><div class="meta">Record '
             f'{esc(r.record)} · {r.posizione}° posto'
-            + (f' · prossima: {esc(it(r.prossima))}' if r.prossima else "") + '</div></div>',
+            + (f' · prossima: {esc(it(r.prossima))}' if r.prossima else "")
+            + _contro_di_voi(a, sq) + '</div></div>',
             unsafe_allow_html=True)
         frase("In una frase", X.frase_squadra(profile, sq))
         from . import lavagna_ui

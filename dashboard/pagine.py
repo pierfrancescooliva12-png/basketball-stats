@@ -19,6 +19,11 @@ from .ui import (badge_pos, brand_hero, esc, frase, it, kpis, note_html, num, pi
 APP: App | None = None
 PAGINE: dict = {}
 
+# pagine della propria squadra: con una squadra del club valgono solo per quella
+MIE = {"mia-squadra", "sviluppo", "live", "lavagna", "avvisi"}
+# pagine sull'avversaria: entrandoci si aprono sulla prossima avversaria
+AVVERSARIA = {"scouting", "lavagna-avversaria"}
+
 
 def data_it(d) -> str:
     try:
@@ -70,6 +75,7 @@ def imposta(**stato):
     """Callback dei pulsanti: imposta i filtri prima che la pagina venga ridisegnata."""
     for k, v in stato.items():
         st.session_state[k] = v
+    st.session_state["_scelta"] = True      # scelta esplicita: non sostituirla con la prossima avversaria
 
 
 def pulsante(col, etichetta: str, pagina: str, primary: bool = False, **stato):
@@ -93,8 +99,11 @@ def _home():
     mia = a.utente.get("squadra_id")
     if mia not in set(a.profile["squadra_id"]):
         mia = None
-    brand_hero("La settimana dello staff",
-               "Prossima avversaria, ultima partita, avvisi e report pronti da scaricare.")
+    nome_mia = a.profile.set_index("squadra_id")["squadra"].get(mia) if mia is not None else None
+    tema = a.tema if nome_mia else None
+    brand_hero("La settimana dello staff" if tema or not nome_mia
+               else f"{nome_mia} · la settimana dello staff",
+               "Prossima avversaria, ultima partita, avvisi e report pronti da scaricare.", tema=tema)
     if a.utente.get("demo") or not a.utente.get("club"):
         teams = a.profile.sort_values("squadra")
         nomi = dict(zip(teams["squadra_id"], teams["squadra"]))
