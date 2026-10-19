@@ -66,9 +66,14 @@ camp_disp = [c for c in config.CAMPIONATI if c in set(bs["campionato_id"])]
 mia_id = utente.get("squadra_id")
 mia_camp = (bs.loc[bs["squadra_id"] == mia_id, "campionato_id"].iloc[0]
             if mia_id in set(bs["squadra_id"]) else None)
-# utente di un club: il campionato è sempre quello della sua squadra
+pagina = nav.url_path
+entrata = st.session_state.get("_pagina") != pagina
+st.session_state["_pagina"] = pagina
+esplicita = st.session_state.pop("_scelta", False)
+# utente di un club: il campionato è sempre quello della sua squadra; per demo e admin che
+# seguono una squadra la Home si riapre comunque sul campionato di quella squadra
 club_fisso = bool(utente.get("club")) and not utente.get("demo") and mia_camp is not None
-if club_fisso:
+if club_fisso or (mia_camp is not None and pagina in ("", "home") and entrata):
     st.session_state["f_camp"] = mia_camp
 if st.session_state.get("f_camp") not in camp_disp:
     camp_default = camp_disp[0]
@@ -94,25 +99,28 @@ if st.session_state.get("f_sq") not in opzioni_sq:
     st.session_state["f_sq"] = None
 # esperienza della squadra del club (o di quella scelta nella Home da demo/admin):
 # - pagine della propria squadra: sempre e solo quella, filtro bloccato
-# - scouting e lavagna dell'avversaria: entrandoci si aprono sulla prossima avversaria
-pagina = nav.url_path
-entrata = st.session_state.get("_pagina") != pagina
-st.session_state["_pagina"] = pagina
-esplicita = st.session_state.pop("_scelta", False)
+# - scouting e lavagna dell'avversaria: la propria squadra è fissa, il filtro diventa
+#   "Avversaria" (senza la propria squadra) e si apre sulla prossima avversaria
 mia_ok = mia_id in sq_names
 solo_mia = mia_ok and pagina in pagine.MIE
+su_avversaria = mia_ok and pagina in pagine.AVVERSARIA
+etichetta_sq, aiuto_sq = "Squadra", None
 if solo_mia:
     st.session_state["f_sq"] = mia_id
-elif mia_ok and pagina in pagine.AVVERSARIA and not esplicita \
-        and (entrata or st.session_state.get("f_sq") is None):
+    aiuto_sq = "Questa pagina riguarda la tua squadra."
+elif su_avversaria:
     ng = ctx.next_game(mia_id)
-    if ng:
-        avv = ng["ospite_id"] if ng["casa_id"] == mia_id else ng["casa_id"]
-        if avv in sq_names:
-            st.session_state["f_sq"] = avv
-sq = f2.selectbox("Squadra", opzioni_sq, key="f_sq", disabled=solo_mia,
-                  help="Questa pagina riguarda la tua squadra." if solo_mia else None,
-                  format_func=lambda s: "Tutte" if s is None else sq_names[s])
+    avv = (ng["ospite_id"] if ng["casa_id"] == mia_id else ng["casa_id"]) if ng else None
+    avv = avv if avv in sq_names else None
+    opzioni_sq = ([] if avv is not None else [None]) + [s for s in sq_names if s != mia_id]
+    if st.session_state.get("f_sq") not in opzioni_sq or (entrata and not esplicita):
+        st.session_state["f_sq"] = avv if avv is not None else opzioni_sq[0]
+    etichetta_sq = "Avversaria"
+    aiuto_sq = (f"La tua squadra ({sq_names[mia_id]}) è fissa: qui scegli solo l'avversaria. "
+                "Di base è la prossima.")
+sq = f2.selectbox(etichetta_sq, opzioni_sq, key="f_sq", disabled=solo_mia, help=aiuto_sq,
+                  format_func=lambda s: "Tutte" if s is None else
+                  sq_names[s] + (" · prossima" if su_avversaria and s == avv else ""))
 pool = (players if sq is None else players[players["squadra_id"] == sq]).sort_values("giocatore")
 g_names = {(r.giocatore_id, r.squadra_id): f"{r.giocatore} ({r.squadra})"
            for r in pool.itertuples()}
