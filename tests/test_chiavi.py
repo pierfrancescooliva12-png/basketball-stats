@@ -118,3 +118,29 @@ def test_chiavi_tutte_insieme_e_frasi():
     assert "tutte e 3 le chiavi" in C.frase_combinata(c)
     r = lv[(lv["chiave"] == "tov") & (lv["lato"] == "In difesa")].iloc[0]
     assert "costringere Avv ad almeno" in C.frase_leva(r, "Avv")
+
+
+def test_verifica_chiavi_della_vigilia(tmp_path, monkeypatch):
+    from basket import config, db, update
+    from basket import verifica_chiavi as VK
+    from basket.contesto import Contesto
+    from basket.report_extra import build_post_partita
+    from tests.test_pbp import Client
+    monkeypatch.setattr(config, "CRONACA_DIR", tmp_path / "cronaca")
+    conn = db.connect(tmp_path / "t.sqlite")
+    update.update_league(conn, Client(), "ita2", "x2627", {2})
+    ctx = Contesto(conn, "x2627")
+    for pid in ctx.bs["partita_id"].unique()[:3]:
+        sid = int(ctx.bs[ctx.bs["partita_id"] == pid]["squadra_id"].iloc[0])
+        v = VK.verifica(ctx, sid, pid)
+        assert v is None            # una sola giornata: nessuna partita prima per ricostruire le chiavi
+        assert build_post_partita(ctx, sid, pid)[:4] == b"%PDF"
+
+
+def test_verifica_somma_dei_punti():
+    import pandas as pd
+    from basket import verifica_chiavi as VK
+    g = pd.Series({"efg_pct": 55.0, "tov_pct": 12.0, "orb_pct": 30.0, "ft_rate": 0.2, "opp_efg_pct": 50.0,
+                   "opp_tov_pct": 14.0, "drb_pct": 72.0, "opp_ft_rate": 0.25})
+    assert VK.reale("efg", "In attacco", g) == 55.0 and VK.reale("orb", "In difesa", g) == 28.0
+    assert VK.reale("tov", "In difesa", g) == 14.0

@@ -15,7 +15,7 @@ import pandas as pd
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from . import analysis as A
 from . import approfondimenti as X
@@ -25,12 +25,13 @@ from .contesto import Contesto, open_readonly
 from .report_pdf import (ARANCIO, BLU, GRIGIO, INK, ROSSO, _fmt, _fonts, _kpis, _styles,
                          _table, slug)
 
-FATTORI = [("efg_pct", "eFG%", True, 1), ("tov_pct", "Palle perse %", False, 1),
-           ("orb_pct", "Rimbalzi offensivi %", True, 1), ("ft_rate", "Liberi / tiri", True, 2),
-           ("opp_efg_pct", "eFG% concessa", False, 1),
-           ("opp_tov_pct", "Palle perse forzate %", True, 1),
-           ("drb_pct", "Rimbalzi difensivi %", True, 1),
-           ("opp_ft_rate", "Liberi concessi / tiri", False, 2)]
+FATTORI = [("efg_pct", "Tiro dal campo % (triple pesate)", True, 1),
+           ("tov_pct", "Palle perse (% delle azioni)", False, 1),
+           ("orb_pct", "Rimbalzi offensivi (% presi)", True, 1), ("ft_rate", "Liberi segnati per tiro", True, 2),
+           ("opp_efg_pct", "Tiro concesso agli avversari %", False, 1),
+           ("opp_tov_pct", "Palle perse forzate (% delle azioni)", True, 1),
+           ("drb_pct", "Rimbalzi difensivi (% presi)", True, 1),
+           ("opp_ft_rate", "Liberi concessi per tiro", False, 2)]
 
 
 # ------------------------------------------------------------------ dati della partita
@@ -119,6 +120,48 @@ def riepilogo_partita(ctx: Contesto, squadra_id: int, partita_id: str,
 
 # ------------------------------------------------------------------ PDF comuni
 
+def _verifica_chiavi(ctx, sid: int, pid: str, S, W) -> list:
+    """Le chiavi della vigilia a confronto con la partita, e come vanno in stagione."""
+    from . import verifica_chiavi as VK
+    v = VK.verifica(ctx, sid, pid)
+    if v is None:
+        return []
+    el = [Paragraph("LE CHIAVI DELLA VIGILIA · COM'È ANDATA", S["h2"]),
+          Paragraph("Le chiavi come ASSIST le dava prima della partita (con le sole partite giocate "
+                    "fino al giorno prima) e quello che è successo in campo.", S["small"])]
+    el += [Paragraph("• " + f, S["body"]) for f in VK.frasi(v)]
+    righe = VK.tabella(v)
+    cols = ["Chiave", "Lato", "Previsto", "Obiettivo", "In partita", "Esito", "Punti rispetto al previsto"]
+    t = _table([["Chiave", "Lato", "Previsto", "Obiettivo", "In partita", "Esito", "Punti vs previsto"]]
+               + [[x[c] for c in cols] for x in righe],
+               [40 * mm, 20 * mm, 22 * mm, 22 * mm, 22 * mm, 22 * mm, W - 148 * mm], align_left=(1, 5))
+    t.setStyle(TableStyle([("TEXTCOLOR", (5, i), (5, i), BLU if x["raggiunta"] else ROSSO)
+                           for i, x in enumerate(righe, start=1)]))
+    el += [Spacer(1, 3), t,
+           Paragraph("Tiro: percentuale dal campo con le triple che valgono 1,5. Palle perse, rimbalzi e liberi: "
+                     "numero nella partita. Punti vs previsto: quanto quella chiave ha spostato il margine rispetto "
+                     "a quello che ci si aspettava, con i possessi della partita.", S["small"])]
+    gio = v.get("giocatori") or []
+    if gio:
+        rows = [["Giocatore", "Squadra", "Chiave", "In partita", "Esito"]]
+        for g in gio:
+            rows.append([g["giocatore"], "avversaria" if g["avversario"] else "vostra", g["obiettivo"],
+                         "non ha giocato" if g["fatto"] is None else _fmt(g["fatto"], 0),
+                         "rispettata" if g["rispettato"] else "mancata"])
+        el.append(KeepTogether([Paragraph("GIOCATORI CHIAVE DELLA VIGILIA", S["h3"]),
+                                _table(rows, [44 * mm, 24 * mm, W - 44 * mm - 24 * mm - 50 * mm, 25 * mm, 25 * mm],
+                                       align_left=(1, 2, 4))]))
+    _, riass = VK.stagione(ctx, sid)
+    if not riass.empty:
+        cols = list(riass.columns)
+        el += [KeepTogether([Paragraph("IN STAGIONE · quando le chiavi sono state raggiunte", S["h3"]),
+                             _table([cols] + riass.values.tolist(),
+                                    [40 * mm, 20 * mm, 24 * mm, 32 * mm, 32 * mm, W - 148 * mm], align_left=(1,))]),
+               Paragraph("Record = vittorie-sconfitte nelle partite in cui la chiave è stata raggiunta o mancata. "
+                         "Con poche partite i numeri vanno letti con cautela.", S["small"])]
+    return el
+
+
 def _testata(eyebrow: str, titolo: str, meta: str, S, W):
     """Intestazione in stile Match day (come il report prepartita)."""
     from . import pdf_stile as ST
@@ -180,8 +223,9 @@ def build_post_partita(ctx: Contesto, squadra_id: int, partita_id: str | None = 
             ("Possessi", _fmt(riga["possessi"], 0), f"media {_fmt(st['pace'], 0)} per 40'"),
             ("Rating offensivo", _fmt(riga["ortg"]), f"media {_fmt(st['ortg'])}"),
             ("Rating difensivo", _fmt(riga["drtg"]), f"media {_fmt(st['drtg'])}"),
-            ("eFG%", _fmt(riga["efg_pct"]), f"media {_fmt(st['efg_pct'])}"),
-            ("Palle perse %", _fmt(riga["tov_pct"]), f"media {_fmt(st['tov_pct'])}"),
+            ("Tiro dal campo", f"{_fmt(riga['efg_pct'])}%", f"media {_fmt(st['efg_pct'])}% (triple pesate)"),
+            ("Palle perse", _fmt(riga["perse"], 0) if "perse" in riga else _fmt(riga["tov_pct"]),
+             f"{_fmt(riga['tov_pct'])}% delle azioni"),
         ], S, W))
     else:
         el.append(Paragraph("Box score ufficiale incompleto: le metriche avanzate di questa "
@@ -203,6 +247,8 @@ def build_post_partita(ctx: Contesto, squadra_id: int, partita_id: str | None = 
                 stile.append(("TEXTCOLOR", (4, i), (4, i), BLU if f["raggiunto"] else ROSSO))
         t.setStyle(TableStyle(stile))
         el += [Paragraph("FOUR FACTORS · partita, media e obiettivi dello staff", S["h2"]), t]
+
+    el += _verifica_chiavi(ctx, squadra_id, partita_id, S, W)
 
     if r["parziali"]:
         rows = [["Periodo"] + [q[0] for q in r["parziali"]],
