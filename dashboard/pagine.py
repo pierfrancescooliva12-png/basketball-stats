@@ -357,12 +357,18 @@ def p_partite():
     nuove.partita_extra(a, schede.render_partite(a))
 
 
-def mappa() -> dict:
+def p_admin():
+    titolo_pagina("Amministrazione", "utenti e accessi dei club")
+    from . import admin_ui
+    admin_ui.render(APP)
+
+
+def mappa(admin: bool = False) -> dict:
     def P(fn, titolo, url, chiave, default=False, icona=None):
         pg = st.Page(fn, title=titolo, url_path=url, default=default, icon=icona)
         PAGINE[chiave] = pg
         return pg
-    return {
+    pagine = {
         "": [P(home, "Home", "home", "home", default=True, icona=":material/home:")],
         "Avversaria": [P(p_scouting, "Scouting", "scouting", "scouting"),
                        P(p_lavagna_avv, "Lavagna dell'avversaria", "lavagna-avversaria",
@@ -386,3 +392,7 @@ def mappa() -> dict:
                        P(p_classifica, "Classifica", "classifica", "classifica"),
                        P(p_partite, "Partite", "partite", "partite")],
     }
+    if admin:
+        pagine["Admin"] = [P(p_admin, "Amministrazione", "amministrazione", "admin",
+                             icona=":material/admin_panel_settings:")]
+    return pagine

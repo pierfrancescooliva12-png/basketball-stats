@@ -51,3 +51,13 @@ def test_blocco_toml_admin_senza_club():
     assert "una-password-lunga" not in str(t)
     ok = accesso.authenticate(t["utenti"], "pier", "una-password-lunga")
     assert ok == {"username": "pier", "club": None, "ruolo": "admin"}
+
+
+def test_password_generata_e_nomi_utente():
+    pw = accesso.genera_password()
+    assert len(pw) == 14 and pw.count("-") == 2 and not set(pw) & set("0O1lI")
+    assert accesso.genera_password() != pw
+    assert accesso.errore_nome("forli-staff", ["pier"]) is None
+    assert accesso.errore_nome("Pier", ["pier"]) == "esiste già"
+    assert accesso.errore_nome("forli.staff", []) is not None     # il punto rompe i Secrets
+    assert accesso.errore_nome("ab", []) is not None

@@ -178,6 +178,10 @@ club = "Unieuro Forlì"
 ruolo = "staff"
 ```
 
+Gli accessi dei club si preparano dall'area **Admin › Amministrazione** (solo per gli admin):
+scegli la squadra e il nome utente, il sito genera una password iniziale casuale e il blocco da
+incollare nei Secrets. Dalla stessa pagina si genera una nuova password per un utente esistente.
+
 Per un amministratore senza club basta omettere `club` e mettere `ruolo = "admin"`: vede tutte
 le squadre e sceglie dalla Home quella da seguire.
 
