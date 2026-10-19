@@ -236,3 +236,25 @@ class FotoMaglia(Flowable):
             c.setFillColor(colors.white)
             c.setFont("Condensed", 10 if len(str(self.maglia)) < 3 else 8)
             c.drawCentredString(4.2 * mm, h - 5.6 * mm, str(self.maglia))
+
+
+class Obiettivo(Flowable):
+    """Barra "da → obiettivo": quanto manca al valore normale del ruolo."""
+
+    def __init__(self, larghezza, da, a, alto=True, altezza=2.2 * mm):
+        super().__init__()
+        self.w, self.h, self.da, self.a, self.alto = larghezza, altezza, da, a, alto
+
+    def wrap(self, aw, ah):
+        return self.w, self.h + 1
+
+    def draw(self):
+        c, w, h = self.canv, self.w, self.h
+        quota = (self.da / self.a if self.a else 0) if self.alto else (self.a / self.da if self.da else 0)
+        quota = max(0.04, min(1.0, quota))
+        c.setFillColor(SEGMENTO)
+        c.roundRect(0, 0, w, h, h / 2, stroke=0, fill=1)
+        c.setFillColor(ROSSO)
+        c.roundRect(0, 0, w * quota, h, h / 2, stroke=0, fill=1)
+        c.setFillColor(BLU)
+        c.rect(w - 1.2, -0.8, 1.2, h + 1.6, stroke=0, fill=1)

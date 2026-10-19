@@ -311,6 +311,12 @@ def p_mia():
     analisi.ultima_partita(a)
 
 
+def p_sviluppo():
+    titolo_pagina("Sviluppo dei giocatori", "cosa fanno bene, cosa fanno male, dove migliorare")
+    from . import sviluppo_ui
+    sviluppo_ui.render(APP)
+
+
 def p_live():
     titolo_pagina("Live", "la partita in diretta, con i suggerimenti per lo staff")
     from . import live_ui
@@ -364,6 +370,7 @@ def mappa() -> dict:
                       P(p_giocatore, "Scheda giocatore", "giocatore", "giocatore"),
                       P(p_mercato, "Mercato", "mercato", "mercato")],
         "La mia squadra": [P(p_mia, "La mia squadra", "mia-squadra", "mia"),
+                           P(p_sviluppo, "Sviluppo dei giocatori", "sviluppo", "sviluppo"),
                            P(p_live, "Live · partita in diretta", "live", "live"),
                            P(p_lavagna, "Lavagna dei giochi", "lavagna", "lavagna"),
                            P(p_avvisi, "Avvisi", "avvisi", "avvisi")],
