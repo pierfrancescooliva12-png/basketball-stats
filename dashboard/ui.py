@@ -522,16 +522,24 @@ def _colori(df: pd.DataFrame, colori: dict) -> pd.DataFrame:
     return css
 
 
+TABELLA_MAX = 800          # fino a qui la tabella del sito (dashboard/tabella.py), oltre la griglia
+
+
 def show(df: pd.DataFrame, height: int | None = None, progress: dict | None = None,
-         voci: list | None = None, colori: dict | None = None):
+         voci: list | None = None, colori: dict | None = None, rif: dict | None = None):
     """Tabella a tutta larghezza. progress: {colonna: (min, max)} per le barre nelle celle;
-    colori: {colonna: True se più alto è meglio} per evidenziare migliori e peggiori.
+    colori: {colonna: True se più alto è meglio} per evidenziare migliori e peggiori (rif:
+    {colonna: valori del campionato} per confrontarli con tutto il campionato).
     Sopra la tabella compare il pulsante "?" con la spiegazione delle colonne complesse.
     I numeri seguono il formato del dispositivo (virgola per i decimali in italiano);
     i valori mancanti sono mostrati come "–"."""
     spiegazioni = voci if voci is not None else voci_per_colonne(df.columns)
     if spiegazioni:
         st.markdown(legend(spiegazioni), unsafe_allow_html=True)
+    if len(df) <= TABELLA_MAX:
+        from . import tabella
+        tabella.render(df, height=height, progress=progress, colori=colori, rif=rif)
+        return
     df = df.reset_index(drop=True).copy()
     css = _colori(df, colori) if colori else None
     cfg = {}

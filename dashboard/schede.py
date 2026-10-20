@@ -470,8 +470,11 @@ def render_scouting(a: App):
             plot(fig, 400, bargap=0.45)
 
         section("Giocatori chiave", "ordinati per minuti")
-        show(r.giocatori, progress={"USG%": (0, 40)},
-             colori={"Punti": True, "TS%": True, "Val": True})
+        lega = a.players[(a.players["campionato_id"] == a.camp) & (a.players["minuti_pg"] >= 10)]
+        show(r.giocatori, progress={"Punti": (0, None)},
+             colori={"Punti": True, "TS%": True, "Val": True, "USG%": True},
+             rif={"Punti": lega["punti_pg"], "TS%": lega["ts_pct"], "Val": lega["valutazione_pg"],
+                  "USG%": lega["usg_pct"]})
         from . import figurine_ui
         from .stato import tema_squadra
         figurine_ui.render(a, sq, "I giocatori in figurine", "rotazione per minuti · confronto con il ruolo",

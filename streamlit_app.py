@@ -173,6 +173,13 @@ if mia_ok:
 if tema is not None:
     from basket import brand
     st.markdown(brand.css(tema), unsafe_allow_html=True)
+# tabelle: colori del club, la propria squadra evidenziata e i loghi accanto ai nomi
+_tt = {"sids": {v: k for k, v in sq_names.items()}, "mia_nome": sq_names.get(mia_id) if mia_ok else None}
+if tema is not None:
+    from basket import brand
+    _tt.update(accent=tema.accento, navy=tema.fondo, navy2=brand.mescola(tema.fondo, "#ffffff", 0.82),
+               mia=brand.mescola(tema.accento, "#ffffff", 0.12))
+st.session_state["_tema_tabelle"] = _tt
 
 a = App(ctx=ctx, mtime=mtime, stagione=stagione, camp=camp, sq=sq, gsel=gsel, utente=utente,
         archivio=arch, players=players, profile=profile,
