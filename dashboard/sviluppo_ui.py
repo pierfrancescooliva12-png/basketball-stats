@@ -90,6 +90,10 @@ def render(a: App):
                       "Altre aree": len(g["aree"]) - 1 if x else 0})
     show(pd.DataFrame(righe), voci=[])
 
+    from . import figurine_ui
+    figurine_ui.render(a, sid, "La rosa in figurine", "rotazione per minuti · confronto con il ruolo",
+                       a.tema or figurine_ui.tema_squadra(sid, nome))
+
     from .schede import obiettivi_singoli
     obiettivi_singoli(a, sid, avversaria=False)
 

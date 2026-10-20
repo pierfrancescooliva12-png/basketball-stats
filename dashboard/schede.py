@@ -472,6 +472,9 @@ def render_scouting(a: App):
         section("Giocatori chiave", "ordinati per minuti")
         show(r.giocatori, progress={"USG%": (0, 40)},
              colori={"Punti": True, "TS%": True, "Val": True})
+        from . import figurine_ui
+        figurine_ui.render(a, sq, "I giocatori in figurine", "rotazione per minuti · confronto con il ruolo",
+                           figurine_ui.tema_squadra(sq, r.squadra))
         c1, c2 = st.columns(2)
         with c1:
             section("Ultime 5 partite")
