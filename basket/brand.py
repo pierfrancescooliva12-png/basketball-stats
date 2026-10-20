@@ -21,7 +21,8 @@ from dataclasses import dataclass
 from . import config
 from .scheda_giocatori import _scarica
 
-CACHE_LOGHI = config.ROOT / ".cache" / "loghi"
+# "loghi2": i vecchi file "nessun logo" (si cercavano solo i PNG) non valgono più
+CACHE_LOGHI = config.ROOT / ".cache" / "loghi2"
 # il logo è quasi sempre PNG, ma alcune squadre l'hanno caricato in un altro formato
 CANDIDATI = tuple(f"https://static.legapallacanestro.com/sites/default/files/{cartella}team_logo/{{id}}.{ext}"
                   for ext in ("png", "jpg", "jpeg", "webp", "gif")
