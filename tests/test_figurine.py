@@ -52,3 +52,18 @@ def test_dividi_nome():
     assert FG.dividi_nome("Niccolo De Vico") == ("Niccolo", "De Vico")
     assert FG.dividi_nome("Regimantas Miniotas") == ("Regimantas", "Miniotas")
     assert FG.dividi_nome("Nene") == ("", "Nene")
+
+
+def test_locandina():
+    pytest.importorskip("streamlit")
+    from basket.brand import Tema
+    from dashboard import locandina as LO
+    assert LO.quando("2026-10-21", "20:30:00") == "Mercoledì 21 ottobre · ore 20:30"
+    t = Tema(1, "A", "#101820", "#202830", "#ff7a1a", "#ffffff", "#f4f6fa", "data:image/png;base64,xx", True)
+    h = LO.html("CMT Orange Tools Pesaro", "UEB Gesteco Cividale", t, None, "Prossima partita",
+                ["5ª giornata", "", "PalaX"], prob=0.76)
+    assert 'src="data:image/png;base64,xx"' in h and '<div class="ini">CIV</div>' in h
+    assert "<span>PalaX</span>" in h and "<span></span>" not in h and "76%" in h and "24%" in h
+    # stesso fondo per le due squadre (loghi mancanti): la seconda metà cambia colore
+    col = LO._colori(None, None)
+    assert col["c1"] != col["c2"]

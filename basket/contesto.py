@@ -205,9 +205,10 @@ class Contesto:
     def next_game(self, squadra_id: int) -> dict | None:
         cols = {r[1] for r in self.conn.execute("PRAGMA table_info(calendario)")}
         stream = "c.stream_url" if "stream_url" in cols else "NULL"
+        campo = "c.palazzetto" if "palazzetto" in cols else "NULL"
         r = self.conn.execute(
             f"""SELECT c.partita_id, c.giornata, c.data, c.ora, c.squadra_casa_id,
-                      c.squadra_ospite_id, c.campionato_id, {stream}
+                      c.squadra_ospite_id, c.campionato_id, {stream}, {campo}
                FROM calendario c WHERE c.stagione = ? AND c.stato != 'finished'
                  AND (c.squadra_casa_id = ? OR c.squadra_ospite_id = ?)
                ORDER BY c.data, c.ora LIMIT 1""",
@@ -215,7 +216,7 @@ class Contesto:
         if not r:
             return None
         keys = ["partita_id", "giornata", "data", "ora", "casa_id", "ospite_id",
-                "campionato_id", "stream_url"]
+                "campionato_id", "stream_url", "palazzetto"]
         g = dict(zip(keys, r))
         g["casa"] = self.nomi_squadre.get(g["casa_id"])
         g["ospite"] = self.nomi_squadre.get(g["ospite_id"])

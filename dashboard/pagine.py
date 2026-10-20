@@ -190,6 +190,10 @@ def _home():
              ("Forma", " ".join(forma) or "–")]
     cards.append(_card("La tua squadra", esc(me["squadra"]),
                        "Net rating " + badge_pos(X.posizione(pr["net_rtg"], mia)), righe))
+    if ng:
+        from . import locandina
+        locandina.render(a, ng["casa_id"], ng["ospite_id"], "Prossima partita",
+                         locandina.info_partita(ng))
     st.markdown(f'<div class="cards tre">{"".join(cards)}</div>', unsafe_allow_html=True)
 
     c = st.columns(4)

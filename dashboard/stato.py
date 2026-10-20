@@ -37,6 +37,15 @@ def tema_club(squadra_id: int, nome: str, correzioni_json: str):
     return brand.tema(squadra_id, nome, json.loads(correzioni_json))
 
 
+def tema_squadra(squadra_id: int, nome: str):
+    """Colori e logo di una squadra qualsiasi (con le correzioni salvate); None se non disponibili."""
+    import json
+    try:
+        return tema_club(int(squadra_id), nome, json.dumps(brand_club(int(squadra_id)), sort_keys=True))
+    except Exception:
+        return None
+
+
 @st.cache_resource(show_spinner="Preparo le analisi…")
 def contesto(db_mtime: float, stagione: str) -> Contesto:
     ctx = Contesto(db.connect(config.DB_PATH, readonly=True), stagione)
