@@ -1,0 +1,35 @@
+name: Verifica loghi e foto
+
+# Avvio manuale: Actions > Verifica loghi e foto > Run workflow. Controlla sul sito della Lega
+# quali squadre hanno il logo e quali giocatori la foto; il riepilogo è nella pagina
+# dell'esecuzione. Non modifica il repository.
+on:
+  # anche a ogni modifica della verifica sul branch di lavoro (per provarla prima del merge)
+  push:
+    branches: [claude/basket-stats-analysis-tool-z0mcls]
+    paths: [basket/verifica_media.py, .github/workflows/verifica_media.yml]
+  workflow_dispatch:
+    inputs:
+      solo_loghi:
+        description: "Solo i loghi (più veloce)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  verifica:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-update.txt
+      - name: Installa dipendenze
+        run: pip install -r requirements-update.txt
+      - name: Verifica
+        run: python -m basket.verifica_media ${{ inputs.solo_loghi && '--solo-loghi' || '' }}

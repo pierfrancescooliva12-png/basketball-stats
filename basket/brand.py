@@ -37,11 +37,22 @@ def slug(nome: str) -> str:
 
 # ------------------------------------------------------------------ logo
 
-def logo(squadra_id: int, url: str | None = None, timeout: float = 4.0) -> bytes | None:
-    """Logo della squadra (in cache locale); None se non c'è o il sito non risponde."""
-    path = CACHE_LOGHI / f"{int(squadra_id)}.png"
-    if path.exists():
+_FALLITI: dict[int, float] = {}
+
+
+def logo(squadra_id: int, url: str | None = None, timeout: float = 8.0) -> bytes | None:
+    """Logo della squadra (in cache locale); None se non c'è o il sito non risponde. Se il
+    sito non risponde si riprova dopo qualche minuto; se il logo non c'è, dopo qualche giorno."""
+    import time
+    from .scheda_giocatori import RIPROVA_RETE, vuota_scaduta
+    import hashlib
+    # con un indirizzo alternativo (dall'Amministrazione) il file in cache è un altro
+    extra = "_" + hashlib.md5(url.encode()).hexdigest()[:8] if url else ""
+    path = CACHE_LOGHI / f"{int(squadra_id)}{extra}.png"
+    if path.exists() and not vuota_scaduta(path):
         return path.read_bytes() or None
+    if time.time() - _FALLITI.get(int(squadra_id), 0) < RIPROVA_RETE:
+        return None
     dati, rete_ok = b"", False
     for u in ([url] if url else []) + [c.format(id=int(squadra_id)) for c in CANDIDATI]:
         try:
@@ -52,7 +63,9 @@ def logo(squadra_id: int, url: str | None = None, timeout: float = 4.0) -> bytes
         if dati:
             break
     if not rete_ok:
-        return None                       # errore di rete: si riprova la prossima volta
+        _FALLITI[int(squadra_id)] = time.time()     # errore di rete: si riprova tra qualche minuto
+        return None
+    _FALLITI.pop(int(squadra_id), None)
     try:
         CACHE_LOGHI.mkdir(parents=True, exist_ok=True)
         path.write_bytes(dati)            # anche vuoto: "nessun logo", non si richiede ancora

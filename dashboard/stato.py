@@ -30,11 +30,23 @@ def brand_club(squadra_id: int) -> dict:
 
 
 @st.cache_data(ttl=6 * 3600, show_spinner=False)
-def tema_club(squadra_id: int, nome: str, correzioni_json: str):
-    """Tema del club (logo scaricato una volta, colori dal logo o dai Secrets)."""
+def _tema(squadra_id: int, nome: str, correzioni_json: str, logo_ok: bool):
     import json
     from basket import brand
     return brand.tema(squadra_id, nome, json.loads(correzioni_json))
+
+
+def tema_club(squadra_id: int, nome: str, correzioni_json: str):
+    """Tema del club (logo scaricato una volta, colori dal logo o dai Secrets). Se il logo
+    non era arrivato (sito lento) il tema si ricalcola appena arriva, senza aspettare ore."""
+    import json
+    from basket import brand
+    url = json.loads(correzioni_json).get("logo_url")
+    try:
+        logo_ok = brand.logo(squadra_id, url) is not None
+    except Exception:
+        logo_ok = False
+    return _tema(squadra_id, nome, correzioni_json, logo_ok)
 
 
 def tema_squadra(squadra_id: int, nome: str):
@@ -46,19 +58,37 @@ def tema_squadra(squadra_id: int, nome: str):
         return None
 
 
-@st.cache_data(ttl=6 * 3600, show_spinner=False)
+@st.cache_resource
+def _miniature() -> dict:
+    return {}
+
+
 def loghi_piccoli(squadre: tuple) -> dict:
-    """Loghi in miniatura per le tabelle, scaricati in parallelo (poi restano in cache)."""
+    """Loghi in miniatura per le tabelle, scaricati in parallelo. Si ricordano solo quelli
+    trovati: i mancanti si riprovano (il download stesso aspetta qualche minuto tra un
+    tentativo e l'altro se il sito non risponde)."""
     from concurrent.futures import ThreadPoolExecutor
     from basket import brand
+    memo = _miniature()
+    mancanti = [s for s in squadre if s not in memo]
+    if mancanti:
+        url = {}
+        for sid in mancanti:
+            try:
+                url[sid] = brand_club(int(sid)).get("logo_url")
+            except Exception:
+                url[sid] = None
 
-    def uno(sid):
-        try:
-            return sid, brand.miniatura(brand.logo(sid))
-        except Exception:
-            return sid, None
-    with ThreadPoolExecutor(max_workers=8) as ex:
-        return dict(ex.map(uno, squadre))
+        def uno(sid):
+            try:
+                return sid, brand.miniatura(brand.logo(sid, url.get(sid)))
+            except Exception:
+                return sid, None
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            for sid, uri in ex.map(uno, mancanti):
+                if uri:
+                    memo[sid] = uri
+    return {s: memo.get(s) for s in squadre}
 
 
 @st.cache_resource(show_spinner="Preparo le analisi…")

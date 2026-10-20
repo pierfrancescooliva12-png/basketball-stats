@@ -93,22 +93,53 @@ def _scarica(url: str, timeout: float) -> bytes:
     raise ultimo or OSError("foto non raggiungibile")
 
 
-def scarica_foto(gid: str, url: str, timeout: float = 4.0) -> bytes | None:
-    """Foto dal sito (in cache locale); None se non c'è o non risponde."""
+RIPROVA_VUOTE = 3 * 86400       # "nessuna foto": si richiede dopo 3 giorni (i nuovi arrivano dopo)
+RIPROVA_RETE = 600              # sito che non risponde: si riprova dopo 10 minuti
+_FALLITE: dict[str, float] = {}
+
+
+def vuota_scaduta(path) -> bool:
+    """Il file vuoto ("nessuna immagine") è vecchio: vale la pena richiederla."""
+    import time
+    try:
+        return path.stat().st_size == 0 and time.time() - path.stat().st_mtime > RIPROVA_VUOTE
+    except OSError:
+        return False
+
+
+def scarica_foto(gid: str, url: str, timeout: float = 8.0) -> bytes | None:
+    """Foto dal sito (in cache locale); None se non c'è o non risponde. Se il sito non
+    risponde si riprova dopo qualche minuto; se la foto non c'è, dopo qualche giorno."""
+    import time
     path = CACHE_FOTO / f"{gid}.jpg"
-    if path.exists():
+    if path.exists() and not vuota_scaduta(path):
         dati = path.read_bytes()
         return dati or None
+    if time.time() - _FALLITE.get(gid, 0) < RIPROVA_RETE:
+        return None
     try:
         dati = _scarica(url, timeout)
     except Exception:
-        return None                      # errore di rete: si riprova la prossima volta
+        _FALLITE[gid] = time.time()      # errore di rete: si riprova tra qualche minuto
+        return None
+    _FALLITE.pop(gid, None)
     try:
         CACHE_FOTO.mkdir(parents=True, exist_ok=True)
         path.write_bytes(dati)           # anche vuota: "nessuna foto", non si richiede ancora
     except OSError:
         pass
     return dati or None
+
+
+def completa_foto(schede: list[dict]) -> list[dict]:
+    """Riprova le foto mancanti di schede già calcolate (in memoria): quelle già scaricate
+    arrivano dal disco, le altre si riprovano solo se è passato abbastanza tempo."""
+    mancano = [s for s in schede if not s.get("foto") and s.get("foto_url")]
+    if mancano:
+        with ThreadPoolExecutor(max_workers=6) as ex:
+            for s, dati in zip(mancano, ex.map(lambda s: scarica_foto(s["giocatore_id"], s["foto_url"]), mancano)):
+                s["foto"] = dati
+    return schede
 
 
 def _eta(nascita) -> int | None:

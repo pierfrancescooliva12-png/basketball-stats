@@ -67,7 +67,7 @@ def carte(ctx, hist: pd.DataFrame, sid: int, massimo: int = 8, minuti: float = 1
         out.append({
             "giocatore_id": s["giocatore_id"], "nome": nome, "cognome": cognome, "maglia": s.get("maglia"),
             "ruolo_sito": s.get("ruolo"), "ruolo": ruolo, "sigla": SIGLA_RUOLO.get(ruolo, ruolo.upper()),
-            "meta": SG.meta(s), "foto": s.get("foto"), "impatto": dims.get("Impatto"),
+            "meta": SG.meta(s), "foto": s.get("foto"), "foto_url": s.get("foto_url"), "impatto": dims.get("Impatto"),
             "barre": dims, "numeri": _numeri(r, ruolo),
             "piede": f"Confronto con {p['pool']} {PLURALE_RUOLO.get(ruolo, ruolo.lower())} di {p['scala']} · "
                      f"{int(r['partite'])} partite, {_it(r['minuti_pg'])} minuti",

@@ -12,8 +12,14 @@ from .ui import esc, note_html, section, show
 
 
 @st.cache_data(show_spinner="Analizzo i giocatori…")
-def _schede(_ctx, mtime: float, stagione: str, sid: int) -> list[dict]:
+def _schede_calc(_ctx, mtime: float, stagione: str, sid: int) -> list[dict]:
     return SV.squadra(_ctx, sid)
+
+
+def _schede(_ctx, mtime: float, stagione: str, sid: int) -> list[dict]:
+    """Schede di sviluppo; le foto che mancavano (sito lento) si riprovano."""
+    from basket import scheda_giocatori as SG
+    return SG.completa_foto(_schede_calc(_ctx, mtime, stagione, sid))
 
 
 @st.cache_data(show_spinner="Preparo il PDF…")

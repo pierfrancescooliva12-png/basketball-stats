@@ -138,7 +138,8 @@ def render(a: App, sid: int, titolo: str, descrizione: str, tema=None, pdf=None,
     """Griglia di figurine dei giocatori di rotazione della squadra sid. Con pdf (funzione
     giocatore_id → (funzione che crea il PDF, nome del file)) ogni figurina è cliccabile e
     scarica il report individuale del giocatore."""
-    carte = _carte(a.ctx, a.mtime, a.stagione, int(sid))
+    from basket import scheda_giocatori as SG
+    carte = SG.completa_foto(_carte(a.ctx, a.mtime, a.stagione, int(sid)))
     if not carte:
         return
     nome = a.ctx.nomi_squadre.get(sid, "")
