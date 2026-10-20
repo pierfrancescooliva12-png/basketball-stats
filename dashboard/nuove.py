@@ -15,7 +15,7 @@ from basket.report_pdf import build_pdf, slug
 
 from . import analisi
 from .stato import App, partite_df, storico
-from .ui import (ARANCIO, BLU, GRIGIO, SUPERFICIE, TESTO, esc, hero, it, kpis, note_html, pills,
+from .ui import (ARANCIO, BLU, GRIGIO, SUPERFICIE, TESTO, esc, hero, it, kpis, note_html, pills, quadrante,
                  plot, section, short, show)
 
 
@@ -397,9 +397,9 @@ def render_anteprima(a: App):
     fis = analisi.fisico_prossima(a, ng) if ng and {ng["casa_id"], ng["ospite_id"]} == \
         {casa, ospite} else {}
     from . import previsioni_ui as PU
-    kpis([("Probabilità di vittoria", f"{100 * pv['prob_casa']:.0f}% – {100 * (1 - pv['prob_casa']):.0f}%",
-           f"casa – ospite · {PU.forbice(pv['prob_casa'])}"),
-          ("Punteggio atteso", f"{pv['punti_casa']:.0f}-{pv['punti_ospite']:.0f}",
+    st.markdown(quadrante(pv["prob_casa"], "Probabilità di vittoria", nomi[casa], nomi[ospite],
+                          f"{nomi[casa]}: forbice indicativa {PU.forbice(pv['prob_casa'])}"), unsafe_allow_html=True)
+    kpis([("Punteggio atteso", f"{pv['punti_casa']:.0f}-{pv['punti_ospite']:.0f}",
            f"margine {pv['margine']:+.1f}"),
           ("Possessi attesi", f"{pv['possessi']:.0f}", "ritmo medio delle due squadre"),
           ("Vantaggio campo", f"{ctx.hca(a.camp):+.1f}", "punti, dal campionato")]
