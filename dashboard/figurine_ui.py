@@ -117,16 +117,6 @@ def _carte(_ctx, mtime: float, stagione: str, sid: int) -> list[dict]:
     return FG.carte(_ctx, storico(mtime), sid)
 
 
-def tema_squadra(sid: int, nome: str):
-    """Colori della squadra dal suo logo (con le correzioni salvate); None se non disponibili."""
-    import json
-    from .stato import brand_club, tema_club
-    try:
-        return tema_club(int(sid), nome, json.dumps(brand_club(int(sid)), sort_keys=True))
-    except Exception:
-        return None
-
-
 def render(a: App, sid: int, titolo: str, descrizione: str, tema=None):
     """Griglia di figurine dei giocatori di rotazione della squadra sid."""
     carte = _carte(a.ctx, a.mtime, a.stagione, int(sid))

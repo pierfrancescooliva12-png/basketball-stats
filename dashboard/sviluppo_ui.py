@@ -91,8 +91,9 @@ def render(a: App):
     show(pd.DataFrame(righe), voci=[])
 
     from . import figurine_ui
+    from .stato import tema_squadra
     figurine_ui.render(a, sid, "La rosa in figurine", "rotazione per minuti · confronto con il ruolo",
-                       a.tema or figurine_ui.tema_squadra(sid, nome))
+                       a.tema or tema_squadra(sid, nome))
 
     from .schede import obiettivi_singoli
     obiettivi_singoli(a, sid, avversaria=False)

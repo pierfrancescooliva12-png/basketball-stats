@@ -15,7 +15,7 @@ from basket.report_pdf import build_pdf, slug
 
 from . import analisi
 from .stato import App, partite_df, storico
-from .ui import (ARANCIO, BLU, GRIGIO, SUPERFICIE, TESTO, esc, hero, it, kpis, note_html, pills, quadrante,
+from .ui import (ARANCIO, BLU, GRIGIO, SUPERFICIE, TESTO, esc, hero, kpis, note_html, pills, quadrante,
                  plot, section, short, show)
 
 
@@ -387,10 +387,11 @@ def render_anteprima(a: App):
     forze = ctx.forze(a.camp)
     pv = F.predict(
         forze, casa, ospite, ctx.hca(a.camp))
-    meta = ""
-    if ng and {ng["casa_id"], ng["ospite_id"]} == {casa, ospite}:
-        meta = f"{ng['giornata']}ª giornata · {esc(it(ng['data']))} {esc(ng['ora'] or '')}"
-    hero("Anteprima", f"{nomi[casa]} – {nomi[ospite]}", meta, small=True)
+    from . import locandina
+    vera = bool(ng and (ng["casa_id"], ng["ospite_id"]) == (casa, ospite))
+    locandina.render(a, casa, ospite, f"Anteprima · {config.CAMPIONATI.get(a.camp, '')}" if vera
+                     else "Anteprima · partita ipotetica",
+                     locandina.info_partita(ng) if vera else ["Scegli squadre e campo"])
     if config.LINK_LNP_PASS and ng and {ng["casa_id"], ng["ospite_id"]} == {casa, ospite} \
             and ng.get("stream_url"):
         st.link_button("▶ Diretta su LNP Pass", ng["stream_url"])
