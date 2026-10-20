@@ -21,6 +21,8 @@ header[data-testid="stHeader"] {display: none;}
 .accesso-hero::before {left: 84%; width: 16px; background: var(--accent);}
 .accesso-hero::after {left: calc(84% + 16px); right: -40%; background: var(--navy-2);}
 .accesso-hero > * {position: relative; z-index: 1;}
+.accesso-hero .campo-bg {position: absolute; right: 18%; bottom: -40px; width: 380px; height: auto;
+  opacity: .09; z-index: 0; pointer-events: none;}
 .accesso-hero svg {width: 64px; height: 64px; border-radius: 14px;}
 .accesso-hero .marchio {font: italic 700 3.4rem/1 var(--cond); letter-spacing: .06em; margin-top: 18px;
   text-transform: uppercase;}
@@ -50,16 +52,23 @@ PUNTI = ["Scouting dell'avversaria e report pre-partita in PDF e Word",
          "Previsioni e dati di Serie A2 e B Nazionale aggiornati ogni giorno"]
 
 
+# mezzo campo stilizzato, appena visibile sullo sfondo della testata
+CAMPO = ('<svg class="campo-bg" viewBox="0 0 300 280" fill="none" stroke="#ffffff" stroke-width="3" '
+         'aria-hidden="true"><path d="M0 2 H300"/><rect x="100" y="2" width="100" height="120"/>'
+         '<circle cx="150" cy="122" r="36"/><path d="M22 2 V60 A128 128 0 0 0 278 60 V2"/>'
+         '<circle cx="150" cy="30" r="9"/><path d="M128 18 H172"/></svg>')
+
+
 def _hero(tema=None):
     punti = "".join(f"<li>{esc(p)}</li>" for p in PUNTI)
     if tema is not None:
         logo = f'<img class="club-logo" src="{tema.logo}" alt="">' if tema.logo else ""
-        st.markdown(f'<div class="accesso-hero">{logo}<div class="marchio">{esc(tema.nome)}</div>'
+        st.markdown(f'<div class="accesso-hero">{CAMPO}{logo}<div class="marchio">{esc(tema.nome)}</div>'
                     f'<div class="slogan">Area staff · con {esc(config.BRAND)}</div><ul>{punti}</ul></div>',
                     unsafe_allow_html=True)
         return
     mark = (config.LOGO_DIR / "assist-mark.svg").read_text(encoding="utf-8")
-    st.markdown(f'<div class="accesso-hero">{mark}<div class="marchio">{esc(config.BRAND)}</div>'
+    st.markdown(f'<div class="accesso-hero">{CAMPO}{mark}<div class="marchio">{esc(config.BRAND)}</div>'
                 f'<div class="slogan">{esc(config.BRAND_TAGLINE)}</div><ul>{punti}</ul></div>',
                 unsafe_allow_html=True)
 
@@ -100,6 +109,8 @@ def login(utenti: dict, arch=None) -> None:
     """Mostra la schermata di accesso e ferma la pagina finché le credenziali non sono giuste."""
     st.markdown(CSS, unsafe_allow_html=True)
     tema = _tema_link()                   # pagina di accesso con il brand del club
+    from . import intro
+    intro.mostra(tema)                    # intro animata, una volta per sessione
     stato = st.session_state.setdefault("_accesso", {})
     c1, _, c2 = st.columns([1.25, 0.08, 1], vertical_alignment="center")
     with c1:
