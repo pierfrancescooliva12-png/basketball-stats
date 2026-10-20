@@ -46,6 +46,21 @@ def tema_squadra(squadra_id: int, nome: str):
         return None
 
 
+@st.cache_data(ttl=6 * 3600, show_spinner=False)
+def loghi_piccoli(squadre: tuple) -> dict:
+    """Loghi in miniatura per le tabelle, scaricati in parallelo (poi restano in cache)."""
+    from concurrent.futures import ThreadPoolExecutor
+    from basket import brand
+
+    def uno(sid):
+        try:
+            return sid, brand.miniatura(brand.logo(sid))
+        except Exception:
+            return sid, None
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        return dict(ex.map(uno, squadre))
+
+
 @st.cache_resource(show_spinner="Preparo le analisi…")
 def contesto(db_mtime: float, stagione: str) -> Contesto:
     ctx = Contesto(db.connect(config.DB_PATH, readonly=True), stagione)

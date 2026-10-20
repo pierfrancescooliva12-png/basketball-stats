@@ -25,6 +25,15 @@ PARTICELLE = {"de", "di", "da", "del", "della", "dalla", "dal", "dei", "degli", 
               "van", "von", "der", "den", "mc", "mac", "st.", "el", "al", "ben", "dos", "das", "du"}
 
 
+def maiuscole(nome):
+    """Nomi propri con le maiuscole giuste: "Andrea De nicolao" → "Andrea De Nicolao"."""
+    if not isinstance(nome, str):
+        return nome
+    parti = nome.split()
+    return " ".join(p[:1].upper() + p[1:] if p.islower() and (i == 0 or p not in PARTICELLE) else p
+                    for i, p in enumerate(parti))
+
+
 def dividi_nome(completo: str) -> tuple[str, str]:
     """Nome e cognome, con le particelle nel cognome: "Andrea De Nicolao" → ("Andrea", "De Nicolao")."""
     parti = str(completo).split()
@@ -54,7 +63,7 @@ def carte(ctx, hist: pd.DataFrame, sid: int, massimo: int = 8, minuti: float = 1
             continue
         r, ruolo = p["riga"], p["ruolo"]
         dims = {etichetta: p["dimensioni"].get(chiave) for chiave, etichetta in BARRE}
-        nome, cognome = dividi_nome(s["nome"])
+        nome, cognome = dividi_nome(maiuscole(s["nome"]))
         out.append({
             "giocatore_id": s["giocatore_id"], "nome": nome, "cognome": cognome, "maglia": s.get("maglia"),
             "ruolo_sito": s.get("ruolo"), "ruolo": ruolo, "sigla": SIGLA_RUOLO.get(ruolo, ruolo.upper()),

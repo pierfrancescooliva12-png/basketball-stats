@@ -67,3 +67,9 @@ def test_locandina():
     # stesso fondo per le due squadre (loghi mancanti): la seconda metà cambia colore
     col = LO._colori(None, None)
     assert col["c1"] != col["c2"]
+
+
+def test_maiuscole():
+    assert FG.maiuscole("Andrea De nicolao") == "Andrea De Nicolao"
+    assert FG.maiuscole("Cheick yaya Sissoko") == "Cheick Yaya Sissoko"
+    assert FG.maiuscole("Luca di Prima") == "Luca di Prima"

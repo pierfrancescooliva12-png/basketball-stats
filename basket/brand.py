@@ -61,6 +61,22 @@ def logo(squadra_id: int, url: str | None = None, timeout: float = 4.0) -> bytes
     return dati or None
 
 
+def miniatura(dati: bytes | None, lato: int = 44) -> str | None:
+    """Logo rimpicciolito (PNG con trasparenza) per le tabelle: pochi kB invece del file intero."""
+    if not dati:
+        return None
+    try:
+        import io
+        from PIL import Image
+        im = Image.open(io.BytesIO(dati)).convert("RGBA")
+        im.thumbnail((lato, lato))
+        out = io.BytesIO()
+        im.save(out, format="PNG", optimize=True)
+        return "data:image/png;base64," + base64.b64encode(out.getvalue()).decode()
+    except Exception:
+        return None
+
+
 def data_uri(dati: bytes | None) -> str | None:
     if not dati:
         return None
