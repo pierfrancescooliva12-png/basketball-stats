@@ -24,7 +24,8 @@ def _pdf(_ctx, mtime: float, stagione: str, sid: int) -> bytes:
 @st.cache_data(show_spinner=False, ttl=6 * 3600)
 def _pdf_giocatore(_ctx, mtime: float, stagione: str, sid: int, gid: str) -> bytes:
     from basket import report_giocatore as RG
-    return RG.build(_ctx, sid, gid, storico(mtime))
+    g = next((x for x in _schede(_ctx, mtime, stagione, sid) if x["giocatore_id"] == gid), None)
+    return RG.build(_ctx, sid, gid, storico(mtime), g=g)
 
 
 def _report(a: App, sid: int):
