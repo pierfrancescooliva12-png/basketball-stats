@@ -13,7 +13,7 @@ from basket import config
 
 from . import analisi, chiavi_ui, lavagna_ui, nuove, previsioni_ui, schede
 from .stato import App
-from .ui import (badge_pos, brand_hero, esc, frase, it, kpis, note_html, num, pills, section,
+from .ui import (badge_pos, brand_hero, esc, frase, it, kpis, note_html, num, pills, quadrante, section,
                  short, titolo_pagina)
 
 APP: App | None = None
@@ -145,9 +145,7 @@ def _home():
         pv = ng.get("previsione")
         prob = (pv["prob_casa"] if in_casa else 1 - pv["prob_casa"]) if pv else None
         fis = analisi.fisico_prossima(a, ng)
-        righe = [("Probabilità di vittoria",
-                  num(100 * prob, 0, suffix="%") if prob is not None else "–"),
-                 ("Punteggio atteso", f"{pv['punti_casa']:.0f}-{pv['punti_ospite']:.0f}"
+        righe = [("Punteggio atteso", f"{pv['punti_casa']:.0f}-{pv['punti_ospite']:.0f}"
                   if pv else "–")]
         if fis.get(mia, {}).get("giorni_riposo") is not None:
             righe.append(("Riposo", f"{fis[mia]['giorni_riposo']} giorni"))
@@ -168,7 +166,10 @@ def _home():
         cards.append(_card("Prossima partita", f"vs {esc(nome_avv)}",
                            f"{ng['giornata']}ª giornata · {data_it(ng['data'])} "
                            f"{esc(ng['ora'] or '')} · {'in casa' if in_casa else 'in trasferta'}"
-                           + chiave, righe))
+                           + chiave, righe,
+                           quadrante(prob, "Probabilità di vittoria", short(a.ctx.nomi_squadre.get(mia, "Voi")),
+                                     short(nome_avv), colore="var(--accent)", fondo="var(--line-2)")
+                           if prob is not None else ""))
     else:
         cards.append(_card("Prossima partita", "Calendario concluso", "", []))
     # ultima partita
@@ -229,11 +230,11 @@ def _home():
         pulsante(c[2], "Lavagna dell'avversaria →", "lavagna_avv", f_sq=avv)
 
 
-def _card(h: str, t: str, m: str, righe: list[tuple[str, str]]) -> str:
+def _card(h: str, t: str, m: str, righe: list[tuple[str, str]], extra: str = "") -> str:
     row = "".join(f"<div><small>{esc(k)}</small><span class='big' style='font-size:1.5rem'>"
                   f"{esc(it(v))}</span></div>" for k, v in righe)
     return (f'<div class="card"><div class="h">{esc(h)}</div><div class="t">{t}</div>'
-            f'<div class="m">{m}</div>' + (f'<div class="row">{row}</div>' if righe else "")
+            f'<div class="m">{m}</div>{extra}' + (f'<div class="row">{row}</div>' if righe else "")
             + "</div>")
 
 

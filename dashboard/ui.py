@@ -281,6 +281,67 @@ def inject_css():
     details.tip.legend > summary b {display: inline-flex; width: 15px; height: 15px;
       border-radius: 50%; align-items: center; justify-content: center; border: 1px solid currentColor;
       font-size: 10px;}
+    /* ------------------------------------------------------------ movimento: le tessere entrano
+       in sequenza all'apertura della pagina (solo "backwards": dopo resta lo stile normale) */
+    @keyframes as-su {from {opacity: 0; transform: translateY(14px);}}
+    @keyframes as-sx {from {opacity: 0; transform: translateX(-22px);}}
+    .hero {animation: as-sx .6s cubic-bezier(.2,.8,.2,1) backwards;}
+    .kpi, .card, .lcard, .frase, .quadrante {animation: as-su .5s cubic-bezier(.2,.8,.2,1) backwards;}
+    .kpis > :nth-child(2), .cards > :nth-child(2), .leaders > :nth-child(2) {animation-delay: .06s;}
+    .kpis > :nth-child(3), .cards > :nth-child(3), .leaders > :nth-child(3) {animation-delay: .12s;}
+    .kpis > :nth-child(4), .cards > :nth-child(4) {animation-delay: .18s;}
+    .kpis > :nth-child(5), .cards > :nth-child(5) {animation-delay: .24s;}
+    .kpis > :nth-child(6), .cards > :nth-child(6) {animation-delay: .30s;}
+    .kpis > :nth-child(n+7), .cards > :nth-child(n+7) {animation-delay: .36s;}
+
+    /* ------------------------------------------------------------ quadrante della probabilità */
+    @property --n {syntax: '<integer>'; inherits: false; initial-value: 0;}
+    .quadrante {background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+      box-shadow: var(--shadow); padding: 16px 18px 14px; margin: 6px 0 14px; display: flex;
+      align-items: center; gap: 22px; flex-wrap: wrap;}
+    .quadrante .q {position: relative; width: 220px; max-width: 100%; flex: none;}
+    .quadrante svg {display: block; width: 100%; height: auto;}
+    .quadrante .tr, .quadrante .fi {fill: none; stroke-width: 18;}
+    .quadrante .fi {stroke-dasharray: 100; animation: q-riempi 1.2s cubic-bezier(.2,.8,.2,1) .15s backwards;}
+    @keyframes q-riempi {from {stroke-dashoffset: 100;}}
+    .quadrante .qv {position: absolute; left: 0; right: 0; bottom: 2px; text-align: center;
+      font: 700 2.4rem/1 var(--cond); color: var(--text); counter-reset: n var(--n);
+      animation: q-conta 1.2s cubic-bezier(.2,.8,.2,1) .15s backwards;}
+    .quadrante .qv::after {content: counter(n) "%";}
+    @keyframes q-conta {from {--n: 0;}}
+    .quadrante .qt {font: 600 .7rem 'Barlow', sans-serif; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--muted);}
+    .quadrante .qs {display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1; max-width: 440px;}
+    .quadrante .qr {display: flex; align-items: center; gap: 8px; font-size: .95rem; color: var(--text);}
+    .quadrante .qr i {width: 12px; height: 12px; border-radius: 3px; flex: none; transform: skewX(-12deg);}
+    .quadrante .qr b {font: 700 1.3rem var(--cond); margin-left: auto;}
+    .quadrante .qn {color: var(--text-2); font-size: .82rem;}
+    .card .quadrante {box-shadow: none; border: 0; padding: 0; margin: 12px 0 0; gap: 14px;}
+    .card .quadrante .q {width: 150px;} .card .quadrante .qv {font-size: 1.7rem;}
+
+    /* ------------------------------------------------------------ caricamento: il pallone che
+       rimbalza al posto della rotellina */
+    [data-testid="stSpinnerIcon"], [data-testid="stStatusWidgetRunningIcon"] {
+      border: 0 !important; animation: none !important; position: relative; display: inline-block;
+      width: 22px !important; height: 26px !important; background: none !important;}
+    [data-testid="stSpinnerIcon"]::before, [data-testid="stStatusWidgetRunningIcon"]::before {
+      content: ""; position: absolute; left: 3px; top: 0; width: 16px; height: 16px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #ffb26b, var(--accent, #ff7a1a) 60%);
+      box-shadow: inset 0 0 0 1.5px rgba(11,18,32,.55);
+      animation: as-palla .7s cubic-bezier(.45,0,.55,1) infinite alternate;}
+    [data-testid="stSpinnerIcon"]::after, [data-testid="stStatusWidgetRunningIcon"]::after {
+      content: ""; position: absolute; left: 4px; bottom: 0; width: 14px; height: 3px; border-radius: 50%;
+      background: rgba(11,18,32,.25); animation: as-ombra .7s cubic-bezier(.45,0,.55,1) infinite alternate;}
+    @keyframes as-palla {from {transform: translateY(0) rotate(0);} to {transform: translateY(9px) rotate(140deg) scaleY(.9);}}
+    @keyframes as-ombra {from {transform: scaleX(.55); opacity: .5;} to {transform: scaleX(1); opacity: 1;}}
+    [data-testid="stStatusWidgetRunningIcon"] svg, [data-testid="stSpinnerIcon"] svg {display: none;}
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero, .kpi, .card, .lcard, .frase, .quadrante, .quadrante .fi, .quadrante .qv {animation: none;}
+      [data-testid="stSpinnerIcon"]::before, [data-testid="stSpinnerIcon"]::after,
+      [data-testid="stStatusWidgetRunningIcon"]::before, [data-testid="stStatusWidgetRunningIcon"]::after
+        {animation-duration: 1.6s;}
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -534,6 +595,21 @@ def hero(eyebrow: str, title: str, meta: str = "", small: bool = False):
     st.markdown(f'<div class="hero"{pad}>{COURT_SVG}<div class="eyebrow">{esc(eyebrow)}</div>'
                 f'<div class="title"{size}>{esc(title)}</div><div class="meta">{meta}</div></div>',
                 unsafe_allow_html=True)
+
+
+def quadrante(p: float, titolo: str, sx: str, dx: str, nota: str = "",
+              colore: str = "var(--navy)", fondo: str = "var(--accent)") -> str:
+    """Probabilità come quadrante semicircolare che si riempie: p (0-1) è la quota di sx."""
+    v = int(round(100 * max(0.0, min(1.0, float(p)))))
+    arco = "M14 100 A86 86 0 0 1 186 100"
+    return (f'<div class="quadrante"><div class="q"><svg viewBox="0 0 200 108" aria-hidden="true">'
+            f'<path class="tr" d="{arco}" pathLength="100" style="stroke:{fondo}"/>'
+            f'<path class="fi" d="{arco}" pathLength="100" style="stroke:{colore};stroke-dashoffset:{100 - v}"/>'
+            f'</svg><div class="qv" style="--n:{v}" aria-label="{v}%"></div></div>'
+            f'<div class="qs"><div class="qt">{esc(titolo)}</div>'
+            f'<div class="qr"><i style="background:{colore}"></i>{esc(sx)}<b>{v}%</b></div>'
+            f'<div class="qr"><i style="background:{fondo}"></i>{esc(dx)}<b>{100 - v}%</b></div>'
+            + (f'<div class="qn">{esc(nota)}</div>' if nota else "") + '</div></div>')
 
 
 def note_html(text: str, key: str | None = None):
