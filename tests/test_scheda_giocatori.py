@@ -118,3 +118,11 @@ def test_impatto_obiettivo_dai_dati():
     punti = next(v for v in voci if v["colonna"] == "punti")
     assert punti["soglia"] == 14 and punti["partite_sopra"] == 5 and 0 < punti["effetto"] < 12
     assert not any(v["colonna"] == "assist" for v in voci)          # soglia troppo bassa: nessun obiettivo
+
+
+def test_foto_url_con_anagrafica_mancante():
+    from basket import scheda_giocatori as SG
+    schema = "http://lnp.webpont.com/team/images/player/x2627/A1.jpg"
+    assert SG.foto_url("A1", {"foto_url": float("nan")}, "x2627") == schema
+    assert SG.foto_url("A1", {}, "x2627") == schema
+    assert SG.foto_url("A1", {"foto_url": " http://x/y.jpeg "}, "x2627") == "http://x/y.jpeg"
