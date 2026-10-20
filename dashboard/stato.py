@@ -7,7 +7,7 @@ import streamlit as st
 
 from basket import config, db, mercato
 from basket.contesto import Contesto
-from basket.note import Archivio
+from basket.note import Archivio, normalizza_url
 
 
 def secrets() -> dict:
@@ -60,18 +60,6 @@ def archivio_url() -> str:
         return normalizza_url(s["database"]["url"])
     except (KeyError, TypeError):
         return f"sqlite:///{config.ROOT / 'data' / 'note_locali.sqlite'}"
-
-
-def normalizza_url(url: str) -> str:
-    """Accetta la connection string così come la dà Neon o Supabase ("postgresql://..." o
-    "postgres://...", anche con "psql '...'" davanti) e la adatta al driver psycopg2."""
-    u = str(url).strip().strip("'\"")
-    if u.startswith("psql "):
-        u = u[5:].strip().strip("'\"")
-    for prefisso in ("postgresql://", "postgres://"):
-        if u.startswith(prefisso):
-            return "postgresql+psycopg2://" + u[len(prefisso):]
-    return u
 
 
 def stagioni_disponibili() -> list[str]:

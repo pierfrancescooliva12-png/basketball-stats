@@ -66,7 +66,10 @@ def meta(g: dict, extra=()) -> str:
 
 def foto_url(gid: str, info: dict, stagione: str) -> str:
     """Indirizzo della foto: quello letto dalla pagina del giocatore o lo schema del sito."""
-    return info.get("foto_url") or f"http://lnp.webpont.com/team/images/player/{stagione}/{gid}.jpg"
+    url = info.get("foto_url")
+    if isinstance(url, str) and url.strip():     # NaN dei giocatori non ancora riscaricati: schema
+        return url.strip()
+    return f"http://lnp.webpont.com/team/images/player/{stagione}/{gid}.jpg"
 
 
 def _scarica(url: str, timeout: float) -> bytes:

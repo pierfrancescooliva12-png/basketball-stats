@@ -95,7 +95,7 @@ def test_regole_nuova_password_e_brand():
 
 
 def test_connection_string_incollata_com_e():
-    from dashboard.stato import normalizza_url
+    from basket.note import normalizza_url
     neon = "postgresql://u:p@ep-x.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
     assert normalizza_url(neon) == neon.replace("postgresql://", "postgresql+psycopg2://")
     assert normalizza_url(" postgres://u:p@h/db ") == "postgresql+psycopg2://u:p@h/db"
