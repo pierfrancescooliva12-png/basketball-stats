@@ -66,6 +66,21 @@ CSS = """
 .fig .stats span {font: 600 2.8cqw 'Barlow', sans-serif; letter-spacing: .16em; color: var(--tn);}
 .fig .piede {position: absolute; left: 6.3cqw; right: 6.3cqw; bottom: 2.8cqw; font-size: 2.7cqw; color: var(--tn);
   text-align: center; line-height: 1.3;}
+.fig .pdf {position: absolute; right: 6.3cqw; top: 6.3cqw; z-index: 3; font: 700 3cqw 'Barlow', sans-serif;
+  letter-spacing: .08em; text-transform: uppercase; background: var(--ac); color: var(--ta); padding: 1.2cqw 2.4cqw;
+  border-radius: 1.4cqw; box-shadow: 0 1.5cqw 4cqw rgba(0,0,0,.3); transition: transform .2s ease;}
+.fig .pdf + .avviso {top: 15cqw;}
+/* figurina cliccabile: il pulsante di download copre tutta la carta (trasparente) */
+[class*="st-key-figpdf_"] {position: relative;}
+[class*="st-key-figpdf_"] [data-testid="stElementContainer"]:has([data-testid="stDownloadButton"]) {
+  position: absolute; inset: 0; z-index: 5; margin: 0;}
+[class*="st-key-figpdf_"] [data-testid="stDownloadButton"], [class*="st-key-figpdf_"] [data-testid="stDownloadButton"] button {
+  width: 100%; height: 100%;}
+[class*="st-key-figpdf_"] [data-testid="stDownloadButton"] button {opacity: 0; cursor: pointer;}
+[class*="st-key-figpdf_"]:hover .fig {transform: translateY(-4px) rotate(-.6deg); box-shadow: 0 24px 54px rgba(11,18,32,.36);}
+[class*="st-key-figpdf_"]:hover .fig .pdf {transform: scale(1.08);}
+[class*="st-key-figpdf_"]:has(button:focus-visible) .fig {outline: 3px solid var(--ac); outline-offset: 3px;}
+.figurine.uno {grid-template-columns: 1fr; margin: 0 0 6px;}
 .fig .avviso {position: absolute; right: 6.3cqw; top: 6.3cqw; z-index: 3; font: 600 2.7cqw 'Barlow', sans-serif;
   letter-spacing: .1em; text-transform: uppercase; background: rgba(0,0,0,.45); color: #f3c77a; padding: 1cqw 2cqw;
   border-radius: 1cqw;}
@@ -89,7 +104,7 @@ def _livello(v) -> str:
     return "basso" if v is None or pd.isna(v) or v < 50 else ("medio" if v < 80 else "alto")
 
 
-def carta(c: dict, squadra: str, i: int = 0) -> str:
+def carta(c: dict, squadra: str, i: int = 0, pdf: bool = False) -> str:
     if c.get("foto"):
         foto = f'<img src="data:image/jpeg;base64,{base64.b64encode(c["foto"]).decode()}" alt="">'
     else:
@@ -102,6 +117,8 @@ def carta(c: dict, squadra: str, i: int = 0) -> str:
     stats = "".join(f'<div><b>{esc(v)}</b><span>{esc(k)}</span></div>' for k, v in c["numeri"])
     imp = c.get("impatto")
     avviso = '<div class="avviso">pochi dati</div>' if c.get("pochi_dati") else ""
+    if pdf:
+        avviso = '<div class="pdf">⬇ Report PDF</div>' + avviso
     return (f'<div class="fig" style="animation-delay:{0.06 * i:.2f}s"><div class="diag"></div>{avviso}'
             f'<div class="ovr"><b>{"–" if imp is None or pd.isna(imp) else int(round(imp))}</b><span>impatto</span>'
             f'<div><span class="pos">{esc(c["sigla"])}</span></div></div>'
@@ -117,16 +134,34 @@ def _carte(_ctx, mtime: float, stagione: str, sid: int) -> list[dict]:
     return FG.carte(_ctx, storico(mtime), sid)
 
 
-def render(a: App, sid: int, titolo: str, descrizione: str, tema=None):
-    """Griglia di figurine dei giocatori di rotazione della squadra sid."""
+def render(a: App, sid: int, titolo: str, descrizione: str, tema=None, pdf=None, per_riga: int = 4):
+    """Griglia di figurine dei giocatori di rotazione della squadra sid. Con pdf (funzione
+    giocatore_id → (funzione che crea il PDF, nome del file)) ogni figurina è cliccabile e
+    scarica il report individuale del giocatore."""
     carte = _carte(a.ctx, a.mtime, a.stagione, int(sid))
     if not carte:
         return
     nome = a.ctx.nomi_squadre.get(sid, "")
     section(titolo, descrizione, key=None)
     breve = short(nome)
-    st.markdown(CSS + f'<div class="figurine" style="{_colori(tema)}">'
-                + "".join(carta(c, breve, i) for i, c in enumerate(carte)) + "</div>", unsafe_allow_html=True)
+    colori = _colori(tema)
+    if pdf is None:
+        st.markdown(CSS + f'<div class="figurine" style="{colori}">'
+                    + "".join(carta(c, breve, i) for i, c in enumerate(carte)) + "</div>", unsafe_allow_html=True)
+    else:
+        st.markdown(CSS, unsafe_allow_html=True)
+        for r in range(0, len(carte), per_riga):
+            cols = st.columns(per_riga, gap="medium")
+            for j, c in enumerate(carte[r:r + per_riga]):
+                crea, file = pdf(c["giocatore_id"])
+                with cols[j], st.container(key=f"figpdf_{c['giocatore_id']}"):
+                    st.markdown(f'<div class="figurine uno" style="{colori}">{carta(c, breve, r + j, pdf=True)}'
+                                '</div>', unsafe_allow_html=True)
+                    st.download_button(f"Scarica il report PDF di {c['nome']} {c['cognome']}".replace("  ", " "),
+                                       crea, file_name=file, mime="application/pdf", on_click="ignore",
+                                       key=f"figdl_{c['giocatore_id']}")
     note_html("Il numero grande è l'impatto: in percentuale, quanti giocatori dello stesso ruolo e campionato "
               "fanno meno. Le barre confrontano ogni voce con lo stesso gruppo: piena e accesa è un punto di "
-              "forza. Con «pochi dati» (meno di 150 minuti giocati) i valori vanno confermati.")
+              "forza. Con «pochi dati» (meno di 150 minuti giocati) i valori vanno confermati."
+              + (" Clic su una figurina: scarica il report PDF di quel giocatore, da consegnare o inoltrare."
+                 if pdf is not None else ""))

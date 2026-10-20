@@ -7,7 +7,7 @@ import streamlit as st
 from basket import sviluppo as SV
 from basket.report_pdf import build_sviluppo, slug
 
-from .stato import App
+from .stato import App, storico
 from .ui import esc, note_html, section, show
 
 
@@ -19,6 +19,22 @@ def _schede(_ctx, mtime: float, stagione: str, sid: int) -> list[dict]:
 @st.cache_data(show_spinner="Preparo il PDF…")
 def _pdf(_ctx, mtime: float, stagione: str, sid: int) -> bytes:
     return build_sviluppo(_ctx, sid)
+
+
+@st.cache_data(show_spinner=False, ttl=6 * 3600)
+def _pdf_giocatore(_ctx, mtime: float, stagione: str, sid: int, gid: str) -> bytes:
+    from basket import report_giocatore as RG
+    return RG.build(_ctx, sid, gid, storico(mtime))
+
+
+def _report(a: App, sid: int):
+    """Funzione per le figurine: giocatore → (crea il PDF al clic, nome del file)."""
+    from basket import report_giocatore as RG
+    nomi = a.ctx.nomi_giocatori
+
+    def per(gid):
+        return (lambda: _pdf_giocatore(a.ctx, a.mtime, a.stagione, sid, gid)), RG.nome_file(nomi.get(gid, gid))
+    return per
 
 
 def _lista(voci, segno, colore, vuoto):
@@ -92,13 +108,14 @@ def render(a: App):
 
     from . import figurine_ui
     from .stato import tema_squadra
-    figurine_ui.render(a, sid, "La rosa in figurine", "rotazione per minuti · confronto con il ruolo",
-                       a.tema or tema_squadra(sid, nome))
+    figurine_ui.render(a, sid, "La rosa in figurine", "clic su un giocatore: il suo report PDF da inoltrare",
+                       a.tema or tema_squadra(sid, nome), pdf=_report(a, sid))
 
     from .schede import obiettivi_singoli
     obiettivi_singoli(a, sid, avversaria=False)
 
     section("I giocatori", "cosa fanno bene, cosa fanno male, dove migliorare", key=None)
+    report = _report(a, sid)
     nomi = ["Tutti"] + [g["nome"] for g in giocatori]
     scelta = st.selectbox("Giocatore", nomi, key="sviluppo_giocatore")
     for g in giocatori:
@@ -108,6 +125,9 @@ def render(a: App):
             c0, c1 = st.columns([1, 6])
             with c0:
                 _foto(g)
+                crea, file = report(g["giocatore_id"])
+                st.download_button("⬇ PDF", crea, file_name=file, mime="application/pdf", on_click="ignore",
+                                   key=f"svdl_{g['giocatore_id']}", help="Report individuale da inoltrare al giocatore")
             with c1:
                 meta = [x for x in (f"#{g['maglia']}" if g.get("maglia") else None, g.get("ruolo"),
                                     f"{g['altezza']} cm" if g.get("altezza") else None,
