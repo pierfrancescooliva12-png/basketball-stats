@@ -81,7 +81,8 @@ def _scarica(url: str, timeout: float) -> bytes:
             with urlopen(Request(u, headers={"User-Agent": "Mozilla/5.0 (ASSIST scouting)"}),
                          timeout=timeout) as r:
                 dati = r.read(2_000_000)
-            if dati[:3] == b"\xff\xd8\xff" or dati[:8] == b"\x89PNG\r\n\x1a\n":
+            if dati[:3] == b"\xff\xd8\xff" or dati[:8] == b"\x89PNG\r\n\x1a\n" or dati[:4] == b"GIF8" \
+                    or (dati[:4] == b"RIFF" and dati[8:12] == b"WEBP"):
                 return dati
             return b""
         except HTTPError as exc:

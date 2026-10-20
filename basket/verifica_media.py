@@ -37,9 +37,18 @@ def main(argv=None) -> int:
     righe = ["## Loghi", "", "| Campionato | Squadra | id | Logo |", "|---|---|---|---|"]
     senza_logo = []
     for r in squadre.itertuples():
-        esiti = [_prova(c.format(id=int(r.squadra_id))) for c in brand.CANDIDATI]
-        esito = "ok" if "ok" in esiti else esiti[0]
-        if esito != "ok":
+        esito, trovato = "manca", ""
+        for c in brand.CANDIDATI:              # si ferma al primo indirizzo che funziona
+            url = c.format(id=int(r.squadra_id))
+            e = _prova(url)
+            if e == "ok":
+                esito, trovato = "ok", url.rsplit("/", 1)[-1]
+                break
+            if e != "manca":
+                esito = e
+            time.sleep(0.5)
+        esito = f"{esito} {trovato}".strip()
+        if not esito.startswith("ok"):
             senza_logo.append(r.squadra)
         righe.append(f"| {r.campionato_id} | {r.squadra} | {r.squadra_id} | {esito} |")
         print(f"LOGO  {r.campionato_id:8s} {r.squadra:40s} {r.squadra_id:>9} {esito}")

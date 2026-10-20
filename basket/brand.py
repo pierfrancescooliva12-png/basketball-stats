@@ -22,10 +22,10 @@ from . import config
 from .scheda_giocatori import _scarica
 
 CACHE_LOGHI = config.ROOT / ".cache" / "loghi"
-CANDIDATI = (
-    "https://static.legapallacanestro.com/sites/default/files/team_logo/{id}.png",
-    "https://static.legapallacanestro.com/sites/default/files/styles/255_x/public/team_logo/{id}.png",
-)
+# il logo è quasi sempre PNG, ma alcune squadre l'hanno caricato in un altro formato
+CANDIDATI = tuple(f"https://static.legapallacanestro.com/sites/default/files/{cartella}team_logo/{{id}}.{ext}"
+                  for ext in ("png", "jpg", "jpeg", "webp", "gif")
+                  for cartella in ("", "styles/255_x/public/"))
 NAVY, ARANCIO, SFONDO = "#0b1220", "#ff7a1a", "#f4f6fa"
 
 
@@ -93,7 +93,8 @@ def miniatura(dati: bytes | None, lato: int = 44) -> str | None:
 def data_uri(dati: bytes | None) -> str | None:
     if not dati:
         return None
-    tipo = "image/png" if dati[:8] == b"\x89PNG\r\n\x1a\n" else "image/jpeg"
+    tipo = ("image/png" if dati[:8] == b"\x89PNG\r\n\x1a\n" else "image/gif" if dati[:4] == b"GIF8"
+            else "image/webp" if dati[:4] == b"RIFF" else "image/jpeg")
     return f"data:{tipo};base64,{base64.b64encode(dati).decode()}"
 
 
