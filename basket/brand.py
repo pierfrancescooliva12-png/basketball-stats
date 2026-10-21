@@ -21,11 +21,12 @@ from dataclasses import dataclass
 from . import config
 from .scheda_giocatori import _scarica
 
-CACHE_LOGHI = config.ROOT / ".cache" / "loghi"
-CANDIDATI = (
-    "https://static.legapallacanestro.com/sites/default/files/team_logo/{id}.png",
-    "https://static.legapallacanestro.com/sites/default/files/styles/255_x/public/team_logo/{id}.png",
-)
+# "loghi2": i vecchi file "nessun logo" (si cercavano solo i PNG) non valgono più
+CACHE_LOGHI = config.ROOT / ".cache" / "loghi2"
+# il logo è quasi sempre PNG, ma alcune squadre l'hanno caricato in un altro formato
+CANDIDATI = tuple(f"https://static.legapallacanestro.com/sites/default/files/{cartella}team_logo/{{id}}.{ext}"
+                  for ext in ("png", "jpg", "jpeg", "webp", "gif")
+                  for cartella in ("", "styles/255_x/public/"))
 NAVY, ARANCIO, SFONDO = "#0b1220", "#ff7a1a", "#f4f6fa"
 
 
@@ -37,11 +38,22 @@ def slug(nome: str) -> str:
 
 # ------------------------------------------------------------------ logo
 
-def logo(squadra_id: int, url: str | None = None, timeout: float = 4.0) -> bytes | None:
-    """Logo della squadra (in cache locale); None se non c'è o il sito non risponde."""
-    path = CACHE_LOGHI / f"{int(squadra_id)}.png"
-    if path.exists():
+_FALLITI: dict[int, float] = {}
+
+
+def logo(squadra_id: int, url: str | None = None, timeout: float = 8.0) -> bytes | None:
+    """Logo della squadra (in cache locale); None se non c'è o il sito non risponde. Se il
+    sito non risponde si riprova dopo qualche minuto; se il logo non c'è, dopo qualche giorno."""
+    import time
+    from .scheda_giocatori import RIPROVA_RETE, vuota_scaduta
+    import hashlib
+    # con un indirizzo alternativo (dall'Amministrazione) il file in cache è un altro
+    extra = "_" + hashlib.md5(url.encode()).hexdigest()[:8] if url else ""
+    path = CACHE_LOGHI / f"{int(squadra_id)}{extra}.png"
+    if path.exists() and not vuota_scaduta(path):
         return path.read_bytes() or None
+    if time.time() - _FALLITI.get(int(squadra_id), 0) < RIPROVA_RETE:
+        return None
     dati, rete_ok = b"", False
     for u in ([url] if url else []) + [c.format(id=int(squadra_id)) for c in CANDIDATI]:
         try:
@@ -52,7 +64,9 @@ def logo(squadra_id: int, url: str | None = None, timeout: float = 4.0) -> bytes
         if dati:
             break
     if not rete_ok:
-        return None                       # errore di rete: si riprova la prossima volta
+        _FALLITI[int(squadra_id)] = time.time()     # errore di rete: si riprova tra qualche minuto
+        return None
+    _FALLITI.pop(int(squadra_id), None)
     try:
         CACHE_LOGHI.mkdir(parents=True, exist_ok=True)
         path.write_bytes(dati)            # anche vuoto: "nessun logo", non si richiede ancora
@@ -80,7 +94,8 @@ def miniatura(dati: bytes | None, lato: int = 44) -> str | None:
 def data_uri(dati: bytes | None) -> str | None:
     if not dati:
         return None
-    tipo = "image/png" if dati[:8] == b"\x89PNG\r\n\x1a\n" else "image/jpeg"
+    tipo = ("image/png" if dati[:8] == b"\x89PNG\r\n\x1a\n" else "image/gif" if dati[:4] == b"GIF8"
+            else "image/webp" if dati[:4] == b"RIFF" else "image/jpeg")
     return f"data:{tipo};base64,{base64.b64encode(dati).decode()}"
 
 
