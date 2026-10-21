@@ -17,11 +17,13 @@ from basket import accesso, brand, config
 from .stato import App, brand_club, secrets, tema_club
 from .ui import esc, note_html, section, show
 
-PASSI_SECRETS = ("Apri share.streamlit.io › la tua app › Settings › Secrets.",
-                 "Incolla il blocco in fondo, sotto gli utenti già presenti, e salva.")
+PASSI_SECRETS = (("Apri dashboard.render.com › il servizio ASSIST › Environment › Secret Files › secrets.toml."
+                  if config.SU_RENDER else "Apri share.streamlit.io › la tua app › Settings › Secrets."),
+                 "Incolla il blocco in fondo, sotto gli utenti già presenti, e salva"
+                 + (" (Render riavvia il servizio da solo)." if config.SU_RENDER else "."))
 CONSEGNA = ("Comunica al club utente e password per un canale riservato (telefono o di persona, "
             "meglio non nella stessa email). Al primo accesso il sito chiede di sceglierne una nuova.")
-SITO = "https://assist-scouting.streamlit.app"
+SITO = config.APP_URL
 
 
 def _sito() -> str:
