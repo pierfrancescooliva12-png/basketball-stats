@@ -15,6 +15,9 @@ BRAND = "ASSIST"
 BRAND_TAGLINE = "Analisi Statistica e Scouting Integrato per Staff Tecnici"
 SITO = "assistscouting.com"
 CONTATTO = "info@assistscouting.com"      # contatti dei club e risposte alle mail automatiche
+# indirizzo della piattaforma (su Render: APP_URL=https://app.assistscouting.com) e dove sono i Secrets
+APP_URL = os.environ.get("APP_URL", "https://assist-scouting.streamlit.app").rstrip("/")
+SU_RENDER = bool(os.environ.get("RENDER"))      # Render imposta RENDER=true nei suoi servizi
 LOGO_DIR = ROOT / "assets" / "logo"
 
 STAGIONE = "x2627"

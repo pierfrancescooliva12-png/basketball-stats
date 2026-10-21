@@ -156,8 +156,9 @@ def primo_accesso() -> None:
     with st.expander("Amministratore · crea le credenziali di accesso"):
         st.markdown('<div class="note">Il sito è aperto a tutti finché nei <b>Secrets</b> di '
                     'Streamlit non c\'è almeno un utente. Scegli utente e password: qui sotto '
-                    'compare il testo da incollare in <b>share.streamlit.io › la tua app › '
-                    'Settings › Secrets</b>. Contiene solo l\'impronta cifrata della password, '
+                    'compare il testo da incollare in <b>'
+                    + ('Render › il servizio › Environment › Secret Files › secrets.toml' if config.SU_RENDER
+                       else 'share.streamlit.io › la tua app › Settings › Secrets') + '</b>. Contiene solo l\'impronta cifrata della password, '
                     'non la password. Dopo il salvataggio il sito chiede l\'accesso.</div>',
                     unsafe_allow_html=True)
         with st.form("primo_accesso", clear_on_submit=True):

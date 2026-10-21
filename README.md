@@ -166,6 +166,15 @@ Connect to Git > questo repository; branch di produzione `main`, nessun comando 
 cartella di output `sito`. Poi Custom domains: `assistscouting.com` e `www.assistscouting.com`.
 Ogni modifica a `sito/` su `main` si pubblica da sola.
 
+## Piattaforma su app.assistscouting.com (Render)
+
+1. dashboard.render.com › New › Blueprint › questo repository: `render.yaml` crea il servizio
+   (Francoforte, avvio con `render_start.sh`, controllo `/_stcore/health`).
+2. Environment › Secret Files › nome `secrets.toml`: lo stesso contenuto dei Secrets di Streamlit.
+3. Settings › Custom Domains › `app.assistscouting.com`; su Cloudflare un record CNAME `app`
+   verso l'indirizzo `.onrender.com` del servizio, con il proxy disattivato (nuvola grigia).
+4. Ogni push su `main`, compreso l'aggiornamento quotidiano dei dati, ripubblica il servizio.
+
 ## Configurazione per l'uso commerciale
 
 ### Accessi per club
