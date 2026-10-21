@@ -109,6 +109,8 @@ def login(utenti: dict, arch=None) -> None:
     """Mostra la schermata di accesso e ferma la pagina finché le credenziali non sono giuste."""
     st.markdown(CSS, unsafe_allow_html=True)
     tema = _tema_link()                   # pagina di accesso con il brand del club
+    from . import icona_app
+    icona_app.imposta(tema)               # "Aggiungi a Home" dal link del club: il suo logo
     from . import intro
     intro.mostra(tema)                    # intro animata, una volta per sessione
     stato = st.session_state.setdefault("_accesso", {})
@@ -211,6 +213,8 @@ def cambio_obbligatorio(utente: dict, arch) -> None:
     st.markdown(CSS, unsafe_allow_html=True)
     from basket import brand
     tema = _tema_link(brand.slug(utente["club"])) if utente.get("club") else None
+    from . import icona_app
+    icona_app.imposta(tema)
     c1, _, c2 = st.columns([1.25, 0.08, 1], vertical_alignment="center")
     with c1:
         _hero(tema)
