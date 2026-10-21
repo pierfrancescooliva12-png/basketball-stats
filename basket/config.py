@@ -13,6 +13,8 @@ REPORTS_DIR = ROOT / "reports"
 
 BRAND = "ASSIST"
 BRAND_TAGLINE = "Analisi Statistica e Scouting Integrato per Staff Tecnici"
+SITO = "assistscouting.com"
+CONTATTO = "info@assistscouting.com"      # contatti dei club e risposte alle mail automatiche
 LOGO_DIR = ROOT / "assets" / "logo"
 
 STAGIONE = "x2627"

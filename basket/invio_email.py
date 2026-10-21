@@ -100,6 +100,7 @@ def send(msgs: list[tuple[str, str, str, list[tuple[bytes, str]]]]):
         for to, oggetto, testo, allegati in msgs:
             m = EmailMessage()
             m["From"], m["To"], m["Subject"] = mittente, to, oggetto
+            m["Reply-To"] = os.environ.get("RISPONDI_A", config.CONTATTO)   # le risposte arrivano a info@
             m.set_content(testo)
             for pdf, nome in allegati:
                 m.add_attachment(pdf, maintype="application", subtype="pdf", filename=nome)
