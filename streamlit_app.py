@@ -180,6 +180,9 @@ if tema is not None:
     _tt.update(accent=tema.accento, navy=tema.fondo, navy2=brand.mescola(tema.fondo, "#ffffff", 0.82),
                mia=brand.mescola(tema.accento, "#ffffff", 0.12))
 st.session_state["_tema_tabelle"] = _tt
+# icona sulla schermata Home di iPhone e Android: il logo del club (o il marchio ASSIST)
+from dashboard import icona_app
+icona_app.imposta(tema)
 
 a = App(ctx=ctx, mtime=mtime, stagione=stagione, camp=camp, sq=sq, gsel=gsel, utente=utente,
         archivio=arch, players=players, profile=profile,

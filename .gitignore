@@ -7,3 +7,4 @@ reports/pdf/
 data/note_locali.sqlite
 .streamlit/secrets.toml
 .cache/
+static/club/
