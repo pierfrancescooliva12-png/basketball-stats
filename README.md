@@ -158,6 +158,14 @@ La dashboard si aggiorna da sola a ogni commit del workflow.
 
 ---
 
+## Pagina pubblica (assistscouting.com)
+
+La cartella `sito/` è la pagina di presentazione pubblica: HTML statico, nessun dato dei club,
+nessun prezzo. Si pubblica gratis con Cloudflare Pages: Workers & Pages > Create > Pages >
+Connect to Git > questo repository; branch di produzione `main`, nessun comando di build,
+cartella di output `sito`. Poi Custom domains: `assistscouting.com` e `www.assistscouting.com`.
+Ogni modifica a `sito/` su `main` si pubblica da sola.
+
 ## Configurazione per l'uso commerciale
 
 ### Accessi per club

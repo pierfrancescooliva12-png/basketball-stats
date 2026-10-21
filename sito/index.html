@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASSIST · Scouting e analisi per Serie A2 e B Nazionale</title>
+<meta name="description" content="ASSIST è la piattaforma di scouting e analisi statistica per gli staff tecnici di Serie A2 e B Nazionale: scouting dell'avversaria, chiavi per vincere, sviluppo dei giocatori, mercato e report pronti per la riunione tecnica.">
+<meta property="og:title" content="ASSIST · Scouting e analisi per gli staff tecnici">
+<meta property="og:description" content="Preparate la partita in meno tempo, con i numeri che contano e nel formato che lo staff usa davvero.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://assistscouting.com/">
+<meta property="og:image" content="https://assistscouting.com/condivisione.png">
+<meta name="theme-color" content="#0b1220">
+<script>document.documentElement.className = "js";</script>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="icona-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:ital,wght@0,600;0,700;1,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0b1220; --navy-2: #13213b; --navy-3: #1b2b4a; --accent: #ff7a1a; --accent-2: #ffb26b;
+  --blu: #2a78d6; --text: #1a2233; --text-2: #4a5468; --muted: #6b7489; --on-navy: #c9d1e0;
+  --line: #e3e8f0; --surface: #ffffff; --bg: #f4f6fa; --r: 14px;
+  --cond: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+}
+* {box-sizing: border-box;}
+html {scroll-behavior: smooth;}
+body {margin: 0; background: var(--bg); color: var(--text); font: 400 17px/1.6 'Barlow', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;}
+a {color: inherit;}
+img, svg {display: block; max-width: 100%;}
+.wrap {max-width: 1180px; margin: 0 auto; padding: 0 24px;}
+@media (max-width: 600px) {.wrap {padding: 0 16px;}}
+
+/* ------------------------------------------------------------ barra in alto */
+.nav {position: sticky; top: 0; z-index: 20; background: rgba(11,18,32,.92); backdrop-filter: blur(8px);
+  border-bottom: 3px solid var(--accent);}
+.nav .wrap {display: flex; align-items: center; gap: 28px; height: 64px;}
+.marchio {display: flex; align-items: center; gap: 10px; text-decoration: none; color: #fff;}
+.marchio svg {width: 34px; height: 34px;}
+.marchio b {font: italic 700 26px/1 var(--cond); letter-spacing: .06em;}
+.nav nav {display: flex; gap: 24px; margin-left: auto;}
+.nav nav a {color: var(--on-navy); text-decoration: none; font-weight: 600; font-size: 15px;}
+.nav nav a:hover {color: #fff;}
+.btn {display: inline-flex; align-items: center; gap: 8px; border-radius: 10px; padding: 12px 20px;
+  font: 700 15px 'Barlow', sans-serif; text-decoration: none; transition: transform .15s ease, background .15s ease;
+  white-space: nowrap;}
+.btn:hover {transform: translateY(-1px);}
+.btn.pieno {background: var(--accent); color: var(--navy);}
+.btn.pieno:hover {background: var(--accent-2);}
+.btn.vuoto {border: 1px solid rgba(255,255,255,.3); color: #fff;}
+.btn.vuoto:hover {border-color: #fff;}
+.btn.piccolo {padding: 8px 14px; font-size: 14px;}
+@media (max-width: 860px) {.nav nav {display: none;} .nav .btn {margin-left: auto;}}
+
+/* ------------------------------------------------------------ testata */
+.hero {position: relative; overflow: hidden; background: var(--navy); color: #fff; padding: 84px 0 120px;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 56px), 0 100%);}
+.hero::before, .hero::after {content: ""; position: absolute; top: -10%; bottom: -10%; transform: skewX(-22deg);}
+.hero::before {left: 74%; width: 22px; background: var(--accent);}
+.hero::after {left: calc(74% + 22px); right: -40%; background: var(--navy-2);}
+.hero .wrap {position: relative; z-index: 1; display: grid; grid-template-columns: 1.15fr .85fr; gap: 48px;
+  align-items: center;}
+.occhiello {font: 600 13px 'Barlow', sans-serif; letter-spacing: .2em; text-transform: uppercase; color: var(--accent);}
+.hero h1 {font: italic 700 clamp(44px, 6.4vw, 84px)/.95 var(--cond); text-transform: uppercase; letter-spacing: .01em;
+  margin: 16px 0 22px;}
+.hero h1 em {font-style: inherit; color: var(--accent);}
+.hero p.lead {font-size: 20px; color: var(--on-navy); max-width: 560px; margin: 0 0 32px;}
+.hero .azioni {display: flex; gap: 14px; flex-wrap: wrap;}
+.hero .temi {display: flex; gap: 10px; flex-wrap: wrap; margin-top: 34px;}
+.hero .temi span {font: 600 13px 'Barlow', sans-serif; letter-spacing: .08em; text-transform: uppercase;
+  border: 1px solid rgba(255,255,255,.18); border-radius: 999px; padding: 6px 14px; color: var(--on-navy);}
+@media (max-width: 960px) {.hero .wrap {grid-template-columns: 1fr;} .hero::before {left: 88%;}
+  .hero::after {left: calc(88% + 22px);} .hero .vetrina {max-width: 380px;}}
+@media (max-width: 600px) {.hero {padding: 56px 0 96px;} .hero p.lead {font-size: 18px;}}
+
+/* figurina di esempio */
+.vetrina {position: relative; justify-self: center; width: 100%; max-width: 340px;}
+.fig {container-type: inline-size; position: relative; aspect-ratio: 380 / 560; border-radius: 6% / 4%;
+  overflow: hidden; background: linear-gradient(160deg, #13213b 0%, #0b1220 60%);
+  box-shadow: 0 30px 70px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+  transform: rotate(3deg); animation: entra .9s cubic-bezier(.2,.8,.2,1) .2s backwards;}
+@keyframes entra {from {opacity: 0; transform: translateY(30px) rotate(8deg);}}
+.fig .diag {position: absolute; top: -10cqw; right: -16cqw; width: 40cqw; height: 88cqw; transform: skewX(-22deg);
+  background: var(--accent);}
+.fig .ovr {position: absolute; left: 7cqw; top: 6cqw;}
+.fig .ovr b {display: block; font: italic 700 20cqw/.9 var(--cond); color: var(--accent);}
+.fig .ovr span {font: 600 3cqw 'Barlow', sans-serif; letter-spacing: .2em; text-transform: uppercase; color: #8e9ab0;}
+.fig .ovr i {display: inline-block; margin-top: 2.6cqw; font: italic 700 4.8cqw var(--cond); font-style: normal;
+  background: var(--accent); color: var(--navy); padding: .8cqw 2.6cqw .5cqw; border-radius: 1cqw; transform: skewX(-10deg);}
+.fig .sil {position: absolute; left: 50%; top: 18cqw; transform: translateX(-50%); width: 58cqw;}
+.fig .nome {position: absolute; left: 7cqw; right: 7cqw; top: 82cqw; font: italic 700 12cqw/.95 var(--cond);
+  text-transform: uppercase;}
+.fig .nome small {display: block; font: 600 3.8cqw 'Barlow', sans-serif; letter-spacing: .18em; color: var(--accent);}
+.fig .barre {position: absolute; left: 7cqw; right: 7cqw; top: 104cqw; display: grid; grid-template-columns: 1fr 1fr;
+  gap: 2.6cqw 5cqw;}
+.fig .barre div {font: 600 3cqw 'Barlow', sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #d5dbe6;}
+.fig .barre div b {float: right; font: italic 700 4.4cqw var(--cond); color: #fff;}
+.fig .barre div i {display: block; clear: both; height: 1.3cqw; border-radius: 1cqw; background: rgba(255,255,255,.12);
+  margin-top: .8cqw; overflow: hidden;}
+.fig .barre div i::after {content: ""; display: block; height: 100%; width: var(--v); background: var(--accent);
+  border-radius: 1cqw; animation: barra 1.2s cubic-bezier(.2,.8,.2,1) .8s backwards; transform-origin: left;}
+@keyframes barra {from {transform: scaleX(0);}}
+.fig .esempio {position: absolute; right: 7cqw; bottom: 5cqw; font: 600 2.8cqw 'Barlow', sans-serif; letter-spacing: .14em;
+  text-transform: uppercase; color: #8e9ab0;}
+.vetrina .pdf {position: absolute; left: -26px; bottom: -22px; background: #fff; color: var(--text); border-radius: 12px;
+  padding: 12px 16px; box-shadow: 0 18px 40px rgba(0,0,0,.35); font-size: 14px; line-height: 1.3;
+  animation: entra .9s cubic-bezier(.2,.8,.2,1) .5s backwards;}
+.vetrina .pdf b {display: block; font: 700 18px var(--cond); text-transform: uppercase;}
+@media (max-width: 600px) {.vetrina .pdf {left: 8px;}}
+
+/* ------------------------------------------------------------ sezioni */
+section.blocco {padding: 84px 0 20px;}
+.titolo {display: flex; flex-direction: column; gap: 6px; margin-bottom: 34px;}
+.titolo h2 {font: italic 700 clamp(34px, 4.6vw, 54px)/1 var(--cond); text-transform: uppercase; margin: 0;}
+.titolo p {color: var(--text-2); font-size: 18px; margin: 6px 0 0; max-width: 720px;}
+.griglia {display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px;}
+@media (max-width: 760px) {.griglia {grid-template-columns: 1fr;}}
+.carta {position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 28px 28px 24px; box-shadow: 0 10px 30px rgba(11,18,32,.05); overflow: hidden;}
+.carta::before {content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--accent);}
+.carta .n {font: italic 700 44px/1 var(--cond); color: var(--accent);}
+.carta h3 {font: 700 26px/1.1 var(--cond); text-transform: uppercase; margin: 10px 0 8px;}
+.carta p {color: var(--text-2); margin: 0 0 12px;}
+.carta ul {margin: 0; padding: 0; list-style: none;}
+.carta li {position: relative; padding-left: 18px; margin: 6px 0; color: var(--text);}
+.carta li::before {content: ""; position: absolute; left: 0; top: .62em; width: 8px; height: 8px; background: var(--accent);
+  transform: skewX(-14deg);}
+
+/* settimana tipo */
+.settimana {display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px;}
+@media (max-width: 960px) {.settimana {grid-template-columns: repeat(3, 1fr);}}
+@media (max-width: 520px) {.settimana {grid-template-columns: repeat(2, 1fr);}}
+.giorno {background: var(--navy); color: #fff; border-radius: var(--r); padding: 20px 18px; position: relative; overflow: hidden;}
+.giorno .g {font: italic 700 30px/1 var(--cond); color: var(--accent);}
+.giorno h4 {font: 700 20px/1.1 var(--cond); text-transform: uppercase; margin: 10px 0 6px;}
+.giorno p {margin: 0; color: var(--on-navy); font-size: 15px; line-height: 1.45;}
+.giorno.gara {background: var(--accent); color: var(--navy);} .giorno.gara .g {color: var(--navy);}
+.giorno.gara p {color: var(--navy);}
+
+/* numeri */
+.numeri {display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px;}
+@media (max-width: 860px) {.numeri {grid-template-columns: repeat(2, 1fr);}}
+.numero {background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 22px;
+  border-top: 4px solid var(--navy);}
+.numero b {display: block; font: 700 46px/1 var(--cond); color: var(--navy);}
+.numero span {color: var(--text-2); font-size: 15px;}
+
+/* club */
+.club {background: var(--navy); color: #fff; border-radius: 22px; padding: 44px; display: grid;
+  grid-template-columns: 1fr 1fr; gap: 36px; position: relative; overflow: hidden;}
+.club::after {content: ""; position: absolute; top: -20%; bottom: -20%; right: -6%; width: 26%; transform: skewX(-22deg);
+  background: var(--navy-2); border-left: 18px solid var(--accent);}
+.club > * {position: relative; z-index: 1;}
+.club h2 {font: italic 700 clamp(32px, 4vw, 48px)/1 var(--cond); text-transform: uppercase; margin: 8px 0 16px;}
+.club p {color: var(--on-navy); margin: 0;}
+.club ul {list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; align-content: center;}
+.club li {background: #15223b; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; padding: 14px 16px;}
+.club li b {display: block; font: 700 19px var(--cond); text-transform: uppercase; color: #fff;}
+.club li span {color: var(--on-navy); font-size: 15px;}
+@media (max-width: 860px) {.club {grid-template-columns: 1fr; padding: 30px 22px;} .club::after {display: none;}}
+
+/* come partire */
+.passi {display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;}
+@media (max-width: 860px) {.passi {grid-template-columns: 1fr;}}
+.cta {margin: 84px 0 0; background: var(--accent); color: var(--navy); padding: 64px 0;
+  clip-path: polygon(0 40px, 100% 0, 100% 100%, 0 100%);}
+.cta .wrap {display: flex; align-items: center; justify-content: space-between; gap: 30px; flex-wrap: wrap;}
+.cta h2 {font: italic 700 clamp(36px, 5vw, 64px)/1 var(--cond); text-transform: uppercase; margin: 0;}
+.cta p {margin: 8px 0 0; font-size: 18px; font-weight: 500;}
+.cta .btn {background: var(--navy); color: #fff;}
+.cta .btn:hover {background: var(--navy-2);}
+.cta .mail {font: 700 22px 'Barlow', sans-serif; text-decoration: none; display: block; margin-top: 12px;}
+footer {background: var(--navy); color: var(--on-navy); padding: 34px 0; font-size: 14px;}
+footer .wrap {display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; align-items: center;}
+footer a {color: #fff; text-decoration: none;}
+.nota {color: var(--muted); font-size: 14px; margin-top: 14px;}
+
+/* comparsa al passaggio */
+.js .appare {opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.8,.2,1);}
+.js .appare.visto {opacity: 1; transform: none;}
+@media (prefers-reduced-motion: reduce) {
+  html {scroll-behavior: auto;} .js .appare {opacity: 1; transform: none; transition: none;}
+  .fig, .vetrina .pdf, .fig .barre div i::after {animation: none;}
+}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="marchio" href="#" aria-label="ASSIST">
+      <svg viewBox="0 0 128 128" aria-hidden="true"><rect width="128" height="128" rx="30" fill="#13213b"/><path d="M30 104 L60 26 Q64 18 68 26 L98 104" fill="none" stroke="#f2f4f8" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/><circle cx="21.0" cy="88.7" r="1.90" fill="#ff7a1a"/><circle cx="31.8" cy="78.2" r="2.23" fill="#ff7a1a"/><circle cx="42.4" cy="69.8" r="2.57" fill="#ff7a1a"/><circle cx="52.8" cy="63.3" r="2.90" fill="#ff7a1a"/><circle cx="63.1" cy="58.9" r="3.23" fill="#ff7a1a"/><circle cx="73.2" cy="56.5" r="3.57" fill="#ff7a1a"/><circle cx="83.2" cy="56.1" r="3.90" fill="#ff7a1a"/><circle cx="101" cy="55" r="13" fill="#ff7a1a" stroke="#13213b" stroke-width="3"/><path d="M88 55 H114 M101 42 V68 M93 45 Q98 55 93 65 M109 45 Q104 55 109 65" fill="none" stroke="#13213b" stroke-width="2" stroke-linecap="round"/></svg>
+      <b>ASSIST</b>
+    </a>
+    <nav aria-label="Sezioni">
+      <a href="#cosa-fa">Cosa fa</a><a href="#settimana">La settimana</a><a href="#club">Per il club</a><a href="#partire">Come partire</a>
+    </nav>
+    <a class="btn vuoto piccolo" href="https://assist-scouting.streamlit.app" rel="noopener">Area staff</a>
+  </div>
+</header>
+
+<main>
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <div class="occhiello">Per gli staff tecnici di Serie A2 e B Nazionale</div>
+      <h1>Preparate la partita in <em>meno tempo</em></h1>
+      <p class="lead">Con i numeri che contano e nel formato che lo staff usa davvero: lo scouting della prossima avversaria,
+        le chiavi per vincere, lo sviluppo dei giocatori e il mercato, aggiornati ogni giorno.</p>
+      <div class="azioni">
+        <a class="btn pieno" href="mailto:info@assistscouting.com?subject=Demo%20ASSIST">Richiedi una demo</a>
+        <a class="btn vuoto" href="#cosa-fa">Cosa fa ASSIST</a>
+      </div>
+      <div class="temi"><span>Scouting</span><span>Post-partita</span><span>Sviluppo giocatori</span><span>Mercato</span></div>
+    </div>
+    <div class="vetrina" aria-hidden="true">
+      <div class="fig">
+        <div class="diag"></div>
+        <div class="ovr"><b>87</b><span>impatto</span><div><i>ALA</i></div></div>
+        <svg class="sil" viewBox="0 0 200 220"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".32"/><stop offset="1" stop-color="#fff" stop-opacity=".05"/></linearGradient></defs><circle cx="100" cy="72" r="40" fill="url(#g)"/><path d="M28 220 C30 150 62 126 100 126 C138 126 170 150 172 220 Z" fill="url(#g)"/></svg>
+        <div class="nome"><small>Il vostro</small>Giocatore</div>
+        <div class="barre">
+          <div>Realizzazione <b>84</b><i style="--v:84%"></i></div><div>Creazione <b>61</b><i style="--v:61%"></i></div>
+          <div>Tiro da fuori <b>92</b><i style="--v:92%"></i></div><div>Rimbalzo <b>48</b><i style="--v:48%"></i></div>
+          <div>Difesa <b>70</b><i style="--v:70%"></i></div><div>Impatto <b>87</b><i style="--v:87%"></i></div>
+        </div>
+        <div class="esempio">Esempio</div>
+      </div>
+      <div class="pdf"><b>Report PDF</b>pronto per la riunione tecnica</div>
+    </div>
+  </div>
+</section>
+
+<section class="blocco" id="cosa-fa">
+  <div class="wrap">
+    <div class="titolo appare"><div class="occhiello">Cosa fa ASSIST</div><h2>Quattro lavori, una piattaforma</h2>
+      <p>Box score, cronache e classifiche diventano ogni notte report e indicazioni per tutte le squadre del campionato.</p></div>
+    <div class="griglia">
+      <div class="carta appare"><div class="n">01</div><h3>Preparare la partita</h3>
+        <p>Lo scouting si apre già sulla prossima avversaria.</p>
+        <ul><li>Chiavi per vincere con obiettivi numerici su tiro, palle perse, rimbalzi e liberi</li>
+          <li>Obiettivi sui singoli: chi limitare e sotto quale soglia</li>
+          <li>Report PDF e Word modificabile per la riunione tecnica</li></ul></div>
+      <div class="carta appare"><div class="n">02</div><h3>Rivedere la partita</h3>
+        <p>Il post-partita mette la vigilia contro il campo.</p>
+        <ul><li>Ogni chiave: obiettivo, valore in partita, raggiunta o mancata</li>
+          <li>Quanti punti ha spostato sul margine finale</li>
+          <li>Chi ha giocato sopra o sotto la sua media</li></ul></div>
+      <div class="carta appare"><div class="n">03</div><h3>Far crescere i giocatori</h3>
+        <p>Ogni giocatore confrontato con il suo ruolo nel campionato.</p>
+        <ul><li>Cosa fa bene, dove può crescere, con l'obiettivo e i punti in gioco</li>
+          <li>Le prestazioni che spostano il risultato della squadra</li>
+          <li>Report individuale di una pagina, da consegnare al giocatore</li></ul></div>
+      <div class="carta appare"><div class="n">04</div><h3>Costruire la squadra</h3>
+        <p>Il mercato con i numeri, su A2 e B Nazionale.</p>
+        <ul><li>Filtri combinabili: "più di 5 assist e meno di 2 palle perse"</li>
+          <li>I fabbisogni della vostra rosa e i candidati che li coprono</li>
+          <li>Giocatori simili e quanto renderebbe chi sale dalla B all'A2</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="blocco" id="settimana">
+  <div class="wrap">
+    <div class="titolo appare"><div class="occhiello">Come si usa</div><h2>La settimana tipo</h2>
+      <p>Ogni pagina si apre già sulla vostra squadra e sulla prossima avversaria.</p></div>
+    <div class="settimana">
+      <div class="giorno appare"><div class="g">LUN</div><h4>Post-partita</h4><p>Report della gara e verifica delle chiavi della vigilia.</p></div>
+      <div class="giorno appare"><div class="g">MAR</div><h4>Sviluppo</h4><p>Aree di miglioramento e obiettivi individuali per l'allenamento.</p></div>
+      <div class="giorno appare"><div class="g">MER</div><h4>Scouting</h4><p>La prossima avversaria in 30 secondi, PDF e Word per la riunione.</p></div>
+      <div class="giorno appare"><div class="g">GIO</div><h4>Lavagna</h4><p>I giochi dell'avversaria e i vostri, fase per fase, anche in 3D.</p></div>
+      <div class="giorno appare"><div class="g">VEN</div><h4>Anteprima</h4><p>Probabilità di vittoria e le chiavi da portare nello spogliatoio.</p></div>
+      <div class="giorno gara appare"><div class="g">GARA</div><h4>Live</h4><p>Punteggio, falli, bonus e suggerimenti in diretta per lo staff.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="blocco">
+  <div class="wrap">
+    <div class="titolo appare"><div class="occhiello">La base dati</div><h2>I numeri dietro ASSIST</h2></div>
+    <div class="numeri">
+      <div class="numero appare"><b>2.234</b><span>partite analizzate con box score e cronaca</span></div>
+      <div class="numero appare"><b>56</b><span>squadre: Serie A2 e i due gironi di B Nazionale</span></div>
+      <div class="numero appare"><b>3</b><span>stagioni: 2024/25, 2025/26 e quella in corso</span></div>
+      <div class="numero appare"><b>Ogni giorno</b><span>aggiornamento automatico, senza lavoro per lo staff</span></div>
+    </div>
+    <p class="nota">Dati della piattaforma, ottobre 2026. Le previsioni sono probabilità, non certezze: uno strumento per lo staff tecnico.</p>
+  </div>
+</section>
+
+<section class="blocco" id="club">
+  <div class="wrap">
+    <div class="club appare">
+      <div><div class="occhiello">Su misura per il club</div><h2>La vostra piattaforma</h2>
+        <p>Ogni club entra dal proprio link, con il proprio logo e i propri colori. Le indicazioni le decide lo staff:
+          ASSIST dà i dati, non istruzioni preconfezionate.</p></div>
+      <ul>
+        <li><b>Accesso riservato</b><span>Ogni membro dello staff con la sua password.</span></li>
+        <li><b>Logo e colori del club</b><span>La piattaforma e la pagina di accesso con il vostro brand.</span></li>
+        <li><b>Dati privati</b><span>Note, obiettivi, osservati e giochi li vede solo il vostro club.</span></li>
+        <li><b>Ovunque</b><span>iPad in panchina, computer in ufficio, telefono in trasferta.</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="blocco" id="partire">
+  <div class="wrap">
+    <div class="titolo appare"><div class="occhiello">Come partire</div><h2>Proviamola sulla vostra squadra</h2></div>
+    <div class="passi">
+      <div class="carta appare"><div class="n">1</div><h3>Demo di 30 minuti</h3><p>Sulla vostra squadra e sulla vostra prossima avversaria.</p></div>
+      <div class="carta appare"><div class="n">2</div><h3>Accesso di prova</h3><p>Per lo staff, con logo e colori del club, per qualche settimana di campionato.</p></div>
+      <div class="carta appare"><div class="n">3</div><h3>Abbonamento stagionale</h3><p>Accessi per tutto lo staff, aggiornamenti e assistenza inclusi. Proposta su misura per campionato e accessi.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="wrap">
+    <div><h2>Scriveteci</h2><p>Vi mostriamo ASSIST sulla vostra prossima partita.</p>
+      <a class="mail" href="mailto:info@assistscouting.com">info@assistscouting.com</a></div>
+    <a class="btn" href="mailto:info@assistscouting.com?subject=Demo%20ASSIST">Richiedi una demo</a>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span><b style="color:#fff">ASSIST</b> · Analisi Statistica e Scouting Integrato per Staff Tecnici · © 2026</span>
+    <span><a href="mailto:info@assistscouting.com">info@assistscouting.com</a> · <a href="https://assist-scouting.streamlit.app" rel="noopener">Area staff</a></span>
+  </div>
+</footer>
+
+<script>
+// le sezioni compaiono al passaggio; senza JavaScript (o con il movimento ridotto) sono già visibili
+(function () {
+  var el = document.querySelectorAll(".appare");
+  if (!("IntersectionObserver" in window) || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    el.forEach(function (e) { e.classList.add("visto"); }); return;
+  }
+  var io = new IntersectionObserver(function (voci) {
+    voci.forEach(function (v) { if (v.isIntersecting) { v.target.classList.add("visto"); io.unobserve(v.target); } });
+  }, {rootMargin: "0px 0px -8% 0px"});
+  el.forEach(function (e, i) { e.style.transitionDelay = (i % 4) * 60 + "ms"; io.observe(e); });
+})();
+</script>
+</body>
+</html>
