@@ -145,7 +145,8 @@ def login(utenti: dict, arch=None) -> None:
         elif attesa:
             st.warning(f"Troppi tentativi sbagliati: riprova tra {attesa} secondi.")
         st.markdown('<div class="accesso-piede">Credenziali personali e non cedibili. '
-                    'Per un nuovo accesso contatta l\'amministratore.</div>', unsafe_allow_html=True)
+                    f'Per un nuovo accesso scrivi a <a href="mailto:{config.CONTATTO}">{config.CONTATTO}</a>.</div>',
+                    unsafe_allow_html=True)
     st.stop()
 
 
