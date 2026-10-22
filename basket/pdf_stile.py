@@ -111,10 +111,15 @@ class Intestazione(Flowable):
         c.drawString(0, y - 6, self.eyebrow.upper())
         c.setFillColor(colors.white)
         c.setFont("Condensed", 15 if self.grande else 12)
+        logo = False
         if self.marchio == "ASSIST":               # il logo: la scritta ΛSSIST come tracciato
-            from .logo import disegna_pdf
-            disegna_pdf(c, self.w, y - (12 if self.grande else 10), 10 if self.grande else 8, colors.white)
-        else:
+            try:
+                from .logo import disegna_pdf
+                disegna_pdf(c, self.w, y - (12 if self.grande else 10), 10 if self.grande else 8, colors.white)
+                logo = True
+            except Exception:                      # senza il logo il PDF esce comunque, con la scritta
+                pass
+        if not logo:
             c.saveState()
             c.translate(self.w, y - (12 if self.grande else 10))
             c.skew(0, 10)
