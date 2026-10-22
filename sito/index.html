@@ -10,340 +10,388 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://assistscouting.com/">
 <meta property="og:image" content="https://assistscouting.com/condivisione.png">
-<meta name="theme-color" content="#0b1220">
+<meta name="theme-color" content="#faf9f5">
 <script>document.documentElement.className = "js";</script>
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="icona-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:ital,wght@0,600;0,700;1,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --navy: #0b1220; --navy-2: #13213b; --navy-3: #1b2b4a; --accent: #ff7a1a; --accent-2: #ffb26b;
-  --blu: #2a78d6; --text: #1a2233; --text-2: #4a5468; --muted: #6b7489; --on-navy: #c9d1e0;
-  --line: #e3e8f0; --surface: #ffffff; --bg: #f4f6fa; --r: 14px;
-  --cond: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --bg: #faf9f5; --pannello: #f3f1ea; --carta: #f5f4ed; --pill: #f0eee6; --linea: #e3e0d4; --linea-2: #d6d2c4;
+  --ink: #141413; --ink-2: #3d3d3a; --muted: #6f6d66; --accent: #e8631c; --accent-tinta: #f3d9c2; --sabbia: #e9dfc4;
+  --sans: 'Instrument Sans', system-ui, sans-serif; --serif: 'Newsreader', Georgia, serif;
 }
 * {box-sizing: border-box;}
 html {scroll-behavior: smooth;}
-body {margin: 0; background: var(--bg); color: var(--text); font: 400 17px/1.6 'Barlow', system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;}
+body {margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); -webkit-font-smoothing: antialiased;}
 a {color: inherit;}
-img, svg {display: block; max-width: 100%;}
-.wrap {max-width: 1180px; margin: 0 auto; padding: 0 24px;}
-@media (max-width: 600px) {.wrap {padding: 0 16px;}}
+svg {display: block;}
+.wrap {max-width: 1280px; margin: 0 auto; padding: 0 48px;}
+@media (max-width: 760px) {.wrap {padding: 0 16px;}}
 
-/* ------------------------------------------------------------ barra in alto */
-.nav {position: sticky; top: 0; z-index: 20; background: rgba(11,18,32,.92); backdrop-filter: blur(8px);
-  border-bottom: 3px solid var(--accent);}
-.nav .wrap {display: flex; align-items: center; gap: 28px; height: 64px;}
-.marchio {display: flex; align-items: center; gap: 10px; text-decoration: none; color: #fff;}
-.marchio svg {width: 34px; height: 34px;}
-.marchio b {font: italic 700 26px/1 var(--cond); letter-spacing: .06em;}
-.nav nav {display: flex; gap: 24px; margin-left: auto;}
-.nav nav a {color: var(--on-navy); text-decoration: none; font-weight: 600; font-size: 15px;}
-.nav nav a:hover {color: #fff;}
-.btn {display: inline-flex; align-items: center; gap: 8px; border-radius: 10px; padding: 12px 20px;
-  font: 700 15px 'Barlow', sans-serif; text-decoration: none; transition: transform .15s ease, background .15s ease;
-  white-space: nowrap;}
-.btn:hover {transform: translateY(-1px);}
-.btn.pieno {background: var(--accent); color: var(--navy);}
-.btn.pieno:hover {background: var(--accent-2);}
-.btn.vuoto {border: 1px solid rgba(255,255,255,.3); color: #fff;}
-.btn.vuoto:hover {border-color: #fff;}
-.btn.piccolo {padding: 8px 14px; font-size: 14px;}
-@media (max-width: 860px) {.nav nav {display: none;} .nav .btn {margin-left: auto;}}
+/* ------------------------------------------------------------ barra */
+.nav {position: sticky; top: 0; z-index: 30; background: rgba(250,249,245,.92); backdrop-filter: blur(8px);}
+.nav .wrap {display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; height: 76px; gap: 16px;}
+.pills {display: flex; gap: 8px; flex-wrap: nowrap;}
+.pills.dx {justify-content: flex-end;}
+.pill {display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 14px; border-radius: 999px;
+  background: var(--pill); border: 1px solid var(--linea); font: 500 14px var(--sans); text-decoration: none; color: var(--ink);
+  white-space: nowrap; transition: background .15s ease, border-color .15s ease;}
+.pill:hover {background: #e8e5da; border-color: var(--linea-2);}
+.pill.scura {background: var(--ink); color: var(--bg); border-color: var(--ink);}
+.pill.scura:hover {background: #2b2b29;}
+.pill svg {width: 11px; height: 11px;}
+.marchio {display: flex; align-items: center; gap: 10px; text-decoration: none;}
+.marchio svg {width: 28px; height: 28px;}
+.marchio b {font: 600 24px/1 var(--sans); letter-spacing: .14em;}
+@media (max-width: 960px) {.nav .wrap {grid-template-columns: auto 1fr;} .pills.sx {display: none;} .marchio {order: -1;}}
+@media (max-width: 520px) {.pills.dx .pill:not(.scura) {display: none;}}
 
-/* ------------------------------------------------------------ testata */
-.hero {position: relative; overflow: hidden; background: var(--navy); color: #fff; padding: 84px 0 120px;
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 56px), 0 100%);}
-.hero::before, .hero::after {content: ""; position: absolute; top: -10%; bottom: -10%; transform: skewX(-22deg);}
-.hero::before {left: 74%; width: 22px; background: var(--accent);}
-.hero::after {left: calc(74% + 22px); right: -40%; background: var(--navy-2);}
-.hero .wrap {position: relative; z-index: 1; display: grid; grid-template-columns: 1.15fr .85fr; gap: 48px;
-  align-items: center;}
-.occhiello {font: 600 13px 'Barlow', sans-serif; letter-spacing: .2em; text-transform: uppercase; color: var(--accent);}
-.hero h1 {font: italic 700 clamp(44px, 6.4vw, 84px)/.95 var(--cond); text-transform: uppercase; letter-spacing: .01em;
-  margin: 16px 0 22px;}
-.hero h1 em {font-style: inherit; color: var(--accent);}
-.hero p.lead {font-size: 20px; color: var(--on-navy); max-width: 560px; margin: 0 0 32px;}
-.hero .azioni {display: flex; gap: 14px; flex-wrap: wrap;}
-.hero .temi {display: flex; gap: 10px; flex-wrap: wrap; margin-top: 34px;}
-.hero .temi span {font: 600 13px 'Barlow', sans-serif; letter-spacing: .08em; text-transform: uppercase;
-  border: 1px solid rgba(255,255,255,.18); border-radius: 999px; padding: 6px 14px; color: var(--on-navy);}
-@media (max-width: 960px) {.hero .wrap {grid-template-columns: 1fr;} .hero::before {left: 88%;}
-  .hero::after {left: calc(88% + 22px);} .hero .vetrina {max-width: 380px;}}
-@media (max-width: 600px) {.hero {padding: 56px 0 96px;} .hero p.lead {font-size: 18px;}}
+/* ------------------------------------------------------------ apertura */
+.apertura {padding: 64px 0 56px;}
+.apertura h1 {margin: 0; max-width: 1220px; font: 400 clamp(32px, 4.1vw, 56px)/1.16 var(--serif); letter-spacing: -.012em;}
+.apertura h1 b {font: 600 1em/1.16 var(--sans); letter-spacing: -.025em;}
+@media (max-width: 760px) {.apertura {padding: 36px 0 32px;}}
 
-/* figurina di esempio */
-.vetrina {position: relative; justify-self: center; width: 100%; max-width: 340px;}
-.fig {container-type: inline-size; position: relative; aspect-ratio: 380 / 560; border-radius: 6% / 4%;
-  overflow: hidden; background: linear-gradient(160deg, #13213b 0%, #0b1220 60%);
-  box-shadow: 0 30px 70px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.08);
-  transform: rotate(3deg); animation: entra .9s cubic-bezier(.2,.8,.2,1) .2s backwards;}
-@keyframes entra {from {opacity: 0; transform: translateY(30px) rotate(8deg);}}
-.fig .diag {position: absolute; top: -10cqw; right: -16cqw; width: 40cqw; height: 88cqw; transform: skewX(-22deg);
-  background: var(--accent);}
-.fig .ovr {position: absolute; left: 7cqw; top: 6cqw;}
-.fig .ovr b {display: block; font: italic 700 20cqw/.9 var(--cond); color: var(--accent);}
-.fig .ovr span {font: 600 3cqw 'Barlow', sans-serif; letter-spacing: .2em; text-transform: uppercase; color: #8e9ab0;}
-.fig .ovr i {display: inline-block; margin-top: 2.6cqw; font: italic 700 4.8cqw var(--cond); font-style: normal;
-  background: var(--accent); color: var(--navy); padding: .8cqw 2.6cqw .5cqw; border-radius: 1cqw; transform: skewX(-10deg);}
-.fig .sil {position: absolute; left: 50%; top: 18cqw; transform: translateX(-50%); width: 58cqw;}
-.fig .nome {position: absolute; left: 7cqw; right: 7cqw; top: 82cqw; font: italic 700 12cqw/.95 var(--cond);
-  text-transform: uppercase;}
-.fig .nome small {display: block; font: 600 3.8cqw 'Barlow', sans-serif; letter-spacing: .18em; color: var(--accent);}
-.fig .barre {position: absolute; left: 7cqw; right: 7cqw; top: 104cqw; display: grid; grid-template-columns: 1fr 1fr;
-  gap: 2.6cqw 5cqw;}
-.fig .barre div {font: 600 3cqw 'Barlow', sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #d5dbe6;}
-.fig .barre div b {float: right; font: italic 700 4.4cqw var(--cond); color: #fff;}
-.fig .barre div i {display: block; clear: both; height: 1.3cqw; border-radius: 1cqw; background: rgba(255,255,255,.12);
-  margin-top: .8cqw; overflow: hidden;}
-.fig .barre div i::after {content: ""; display: block; height: 100%; width: var(--v); background: var(--accent);
-  border-radius: 1cqw; animation: barra 1.2s cubic-bezier(.2,.8,.2,1) .8s backwards; transform-origin: left;}
-@keyframes barra {from {transform: scaleX(0);}}
-.fig .esempio {position: absolute; right: 7cqw; bottom: 5cqw; font: 600 2.8cqw 'Barlow', sans-serif; letter-spacing: .14em;
-  text-transform: uppercase; color: #8e9ab0;}
-.vetrina .pdf {position: absolute; left: -26px; bottom: -22px; background: #fff; color: var(--text); border-radius: 12px;
-  padding: 12px 16px; box-shadow: 0 18px 40px rgba(0,0,0,.35); font-size: 14px; line-height: 1.3;
-  animation: entra .9s cubic-bezier(.2,.8,.2,1) .5s backwards;}
-.vetrina .pdf b {display: block; font: 700 18px var(--cond); text-transform: uppercase;}
-@media (max-width: 600px) {.vetrina .pdf {left: 8px;}}
+/* ------------------------------------------------------------ riquadro in evidenza */
+.evidenza {background: var(--pannello); margin: 0 32px; border-radius: 4px; padding: 72px 24px 64px; position: relative;}
+@media (max-width: 760px) {.evidenza {margin: 0; padding: 40px 16px 48px;}}
+.giostra {max-width: 460px; margin: 0 auto; position: relative;}
+.scena {display: none;}
+.scena.attiva {display: block; animation: dissolvi .7s ease;}
+@keyframes dissolvi {from {opacity: 0;}}
+.scena .figura {aspect-ratio: 1; width: 100%; overflow: hidden;}
+.scena .figura svg {width: 100%; height: 100%;}
+.didascalia {background: #fff; border: 1px solid var(--linea); border-radius: 4px; padding: 14px 18px 16px; margin-top: 10px;}
+.didascalia small {font: 500 13px var(--sans); color: var(--muted);}
+.didascalia small b {font-weight: 500; color: var(--ink-2); margin-right: 4px;}
+.didascalia div {font: 400 32px/1.15 var(--serif); margin-top: 2px;}
+.puntini {display: flex; justify-content: center; gap: 8px; margin-top: 22px;}
+.puntini button {width: 8px; height: 8px; border-radius: 50%; border: 0; padding: 0; background: var(--linea-2); cursor: pointer;}
+.puntini button[aria-current="true"] {background: var(--ink);}
+.pausa {position: absolute; right: 22px; bottom: 22px; width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--linea-2);
+  background: var(--bg); cursor: pointer; display: grid; place-items: center;}
+.pausa svg {width: 12px; height: 12px;}
 
-/* ------------------------------------------------------------ sezioni */
-section.blocco {padding: 84px 0 20px;}
-.titolo {display: flex; flex-direction: column; gap: 6px; margin-bottom: 34px;}
-.titolo h2 {font: italic 700 clamp(34px, 4.6vw, 54px)/1 var(--cond); text-transform: uppercase; margin: 0;}
-.titolo p {color: var(--text-2); font-size: 18px; margin: 6px 0 0; max-width: 720px;}
-.griglia {display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px;}
-@media (max-width: 760px) {.griglia {grid-template-columns: 1fr;}}
-.carta {position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r);
-  padding: 28px 28px 24px; box-shadow: 0 10px 30px rgba(11,18,32,.05); overflow: hidden;}
-.carta::before {content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--accent);}
-.carta .n {font: italic 700 44px/1 var(--cond); color: var(--accent);}
-.carta h3 {font: 700 26px/1.1 var(--cond); text-transform: uppercase; margin: 10px 0 8px;}
-.carta p {color: var(--text-2); margin: 0 0 12px;}
-.carta ul {margin: 0; padding: 0; list-style: none;}
-.carta li {position: relative; padding-left: 18px; margin: 6px 0; color: var(--text);}
-.carta li::before {content: ""; position: absolute; left: 0; top: .62em; width: 8px; height: 8px; background: var(--accent);
-  transform: skewX(-14deg);}
+/* ------------------------------------------------------------ schede */
+section.blocco {padding: 72px 0 0;}
+.schede {display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;}
+@media (max-width: 1000px) {.schede {grid-template-columns: 1fr;}}
+.scheda {background: var(--carta); border-radius: 12px; padding: 28px 30px 30px; display: flex; flex-direction: column;}
+.scheda .tag {display: flex; align-items: center; gap: 12px; font: 500 13px var(--sans); color: var(--muted);}
+.scheda .tag i {font-style: normal; background: #e7e4d9; border-radius: 999px; padding: 1px 9px; color: var(--ink-2); letter-spacing: .04em;}
+.scheda h3 {font: 600 23px/1.2 var(--sans); letter-spacing: -.01em; margin: 18px 0 8px;}
+.scheda p {margin: 0 0 26px; color: var(--ink-2); font-size: 15.5px;}
+.scheda .righe {margin-top: auto; border-top: 1px solid var(--linea);}
+.scheda .riga {display: flex; justify-content: space-between; gap: 12px; padding: 11px 2px; border-bottom: 1px solid var(--linea);
+  font-size: 15px;}
+.scheda .riga span:last-child {color: var(--muted);}
+.scheda .bottone {margin-top: 16px; display: flex; justify-content: center; align-items: center; gap: 8px; height: 40px;
+  border-radius: 8px; background: #e7e4d9; text-decoration: none; font: 500 16px var(--sans); transition: background .15s ease;}
+.scheda .bottone:hover {background: #dcd8cb;}
 
-/* settimana tipo */
-.settimana {display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px;}
-@media (max-width: 960px) {.settimana {grid-template-columns: repeat(3, 1fr);}}
-@media (max-width: 520px) {.settimana {grid-template-columns: repeat(2, 1fr);}}
-.giorno {background: var(--navy); color: #fff; border-radius: var(--r); padding: 20px 18px; position: relative; overflow: hidden;}
-.giorno .g {font: italic 700 30px/1 var(--cond); color: var(--accent);}
-.giorno h4 {font: 700 20px/1.1 var(--cond); text-transform: uppercase; margin: 10px 0 6px;}
-.giorno p {margin: 0; color: var(--on-navy); font-size: 15px; line-height: 1.45;}
-.giorno.gara {background: var(--accent); color: var(--navy);} .giorno.gara .g {color: var(--navy);}
-.giorno.gara p {color: var(--navy);}
+/* ------------------------------------------------------------ elenchi a righe */
+.titoletto {font: 600 15px var(--sans); padding: 18px 0; border-top: 1px solid var(--linea-2); border-bottom: 1px solid var(--linea-2);
+  margin: 0;}
+.elenco {list-style: none; margin: 0; padding: 0;}
+.elenco li {display: grid; grid-template-columns: 110px 1fr 1.4fr; gap: 24px; padding: 22px 0; border-bottom: 1px solid var(--linea);
+  align-items: baseline;}
+.elenco .g {font: 500 14px var(--sans); color: var(--accent); letter-spacing: .08em;}
+.elenco h4 {margin: 0; font: 400 26px/1.2 var(--serif);}
+.elenco p {margin: 0; color: var(--ink-2);}
+@media (max-width: 760px) {.elenco li {grid-template-columns: 1fr; gap: 4px; padding: 18px 0;}}
 
 /* numeri */
-.numeri {display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px;}
-@media (max-width: 860px) {.numeri {grid-template-columns: repeat(2, 1fr);}}
-.numero {background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 22px;
-  border-top: 4px solid var(--navy);}
-.numero b {display: block; font: 700 46px/1 var(--cond); color: var(--navy);}
-.numero span {color: var(--text-2); font-size: 15px;}
+.numeri {display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--linea);}
+.numeri div {padding: 30px 24px 30px 0;}
+.numeri div + div {padding-left: 24px; border-left: 1px solid var(--linea);}
+.numeri b {display: block; font: 400 clamp(40px, 4.6vw, 64px)/1 var(--serif); letter-spacing: -.02em;}
+.numeri b.parola {font-size: clamp(32px, 3.4vw, 46px); line-height: 1.38;}
+.numeri span {display: block; margin-top: 10px; color: var(--ink-2); font-size: 15px; max-width: 240px;}
+@media (max-width: 860px) {.numeri {grid-template-columns: 1fr 1fr;} .numeri div:nth-child(3) {padding-left: 0; border-left: 0;}
+  .numeri div:nth-child(n+3) {border-top: 1px solid var(--linea);}}
+.nota {color: var(--muted); font-size: 13.5px; margin: 14px 0 0;}
 
 /* club */
-.club {background: var(--navy); color: #fff; border-radius: 22px; padding: 44px; display: grid;
-  grid-template-columns: 1fr 1fr; gap: 36px; position: relative; overflow: hidden;}
-.club::after {content: ""; position: absolute; top: -20%; bottom: -20%; right: -6%; width: 26%; transform: skewX(-22deg);
-  background: var(--navy-2); border-left: 18px solid var(--accent);}
-.club > * {position: relative; z-index: 1;}
-.club h2 {font: italic 700 clamp(32px, 4vw, 48px)/1 var(--cond); text-transform: uppercase; margin: 8px 0 16px;}
-.club p {color: var(--on-navy); margin: 0;}
-.club ul {list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; align-content: center;}
-.club li {background: #15223b; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; padding: 14px 16px;}
-.club li b {display: block; font: 700 19px var(--cond); text-transform: uppercase; color: #fff;}
-.club li span {color: var(--on-navy); font-size: 15px;}
-@media (max-width: 860px) {.club {grid-template-columns: 1fr; padding: 30px 22px;} .club::after {display: none;}}
+.club {display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start;}
+.club h2 {margin: 0; font: 400 clamp(28px, 2.8vw, 38px)/1.2 var(--serif); letter-spacing: -.01em;}
+.club h2 b {font: 600 1em/1.15 var(--sans); letter-spacing: -.02em;}
+.club .elenco li {grid-template-columns: 1fr 1.3fr;}
+.club .elenco h4 {font: 600 17px/1.3 var(--sans);}
+@media (max-width: 900px) {.club {grid-template-columns: 1fr; gap: 28px;}}
 
-/* come partire */
-.passi {display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;}
-@media (max-width: 860px) {.passi {grid-template-columns: 1fr;}}
-.cta {margin: 84px 0 0; background: var(--accent); color: var(--navy); padding: 64px 0;
-  clip-path: polygon(0 40px, 100% 0, 100% 100%, 0 100%);}
-.cta .wrap {display: flex; align-items: center; justify-content: space-between; gap: 30px; flex-wrap: wrap;}
-.cta h2 {font: italic 700 clamp(36px, 5vw, 64px)/1 var(--cond); text-transform: uppercase; margin: 0;}
-.cta p {margin: 8px 0 0; font-size: 18px; font-weight: 500;}
-.cta .btn {background: var(--navy); color: #fff;}
-.cta .btn:hover {background: var(--navy-2);}
-.cta .mail {font: 700 22px 'Barlow', sans-serif; text-decoration: none; display: block; margin-top: 12px;}
-footer {background: var(--navy); color: var(--on-navy); padding: 34px 0; font-size: 14px;}
-footer .wrap {display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; align-items: center;}
-footer a {color: #fff; text-decoration: none;}
-.nota {color: var(--muted); font-size: 14px; margin-top: 14px;}
+/* passi */
+.passi {display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;}
+@media (max-width: 900px) {.passi {grid-template-columns: 1fr;}}
+.passo {border-top: 1px solid var(--ink); padding-top: 18px;}
+.passo b {font: 500 14px var(--sans); color: var(--muted);}
+.passo h3 {font: 400 30px/1.15 var(--serif); margin: 8px 0 8px;}
+.passo p {margin: 0; color: var(--ink-2);}
+
+/* chiusura */
+.chiusura {padding: 110px 0 110px; text-align: left;}
+.chiusura h2 {margin: 0 0 30px; max-width: 980px; font: 400 clamp(32px, 4vw, 54px)/1.15 var(--serif); letter-spacing: -.012em;}
+.chiusura h2 b {font: 600 1em/1.15 var(--sans); letter-spacing: -.025em;}
+.grande {display: inline-flex; align-items: center; gap: 10px; height: 48px; padding: 0 24px; border-radius: 999px; background: var(--ink);
+  color: var(--bg); text-decoration: none; font: 500 16px var(--sans);}
+.grande:hover {background: #2b2b29;}
+.grande.chiara {background: var(--pill); color: var(--ink); border: 1px solid var(--linea-2); margin-left: 8px;}
+
+/* ------------------------------------------------------------ piè di pagina */
+footer {background: var(--ink); color: #b9b7ae; padding: 72px 0 40px; font-size: 14px;}
+footer .alto {display: grid; grid-template-columns: 1fr 2fr; gap: 48px; align-items: start;}
+footer .marchio b {color: var(--bg);}
+footer ul {list-style: none; margin: 0; padding: 0; border-top: 1px solid #34342f;}
+footer li a {display: flex; justify-content: space-between; padding: 13px 0; border-bottom: 1px solid #34342f; text-decoration: none;
+  color: #cfcdc4;}
+footer li a:hover {color: #fff;}
+footer .basso {display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 48px; margin-top: 64px; align-items: end;}
+footer .basso h5 {margin: 0 0 4px; color: var(--bg); font: 500 14px var(--sans);}
+footer .basso p {margin: 0; line-height: 1.5;}
+footer .basso a {display: block; color: #cfcdc4; text-decoration: none; margin-top: 4px;}
+footer .basso a:hover {color: #fff;}
+@media (max-width: 860px) {footer .alto, footer .basso {grid-template-columns: 1fr; gap: 28px;}}
 
 /* comparsa al passaggio */
-.js .appare {opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.8,.2,1);}
+.js .appare {opacity: 0; transform: translateY(18px); transition: opacity .8s ease, transform .8s cubic-bezier(.2,.8,.2,1);}
 .js .appare.visto {opacity: 1; transform: none;}
-@media (prefers-reduced-motion: reduce) {
-  html {scroll-behavior: auto;} .js .appare {opacity: 1; transform: none; transition: none;}
-  .fig, .vetrina .pdf, .fig .barre div i::after {animation: none;}
-}
+@media (prefers-reduced-motion: reduce) {html {scroll-behavior: auto;} .js .appare {opacity: 1; transform: none; transition: none;}
+  .scena.attiva {animation: none;}}
 </style>
 </head>
 <body>
 
 <header class="nav">
   <div class="wrap">
+    <nav class="pills sx" aria-label="Sezioni">
+      <a class="pill" href="#cosa-fa">Cosa fa</a><a class="pill" href="#settimana">La settimana</a>
+      <a class="pill" href="#club">Per il club</a><a class="pill" href="#partire">Come partire</a>
+    </nav>
     <a class="marchio" href="#" aria-label="ASSIST">
-      <svg viewBox="0 0 128 128" aria-hidden="true"><rect width="128" height="128" rx="30" fill="#13213b"/><path d="M30 104 L60 26 Q64 18 68 26 L98 104" fill="none" stroke="#f2f4f8" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/><circle cx="21.0" cy="88.7" r="1.90" fill="#ff7a1a"/><circle cx="31.8" cy="78.2" r="2.23" fill="#ff7a1a"/><circle cx="42.4" cy="69.8" r="2.57" fill="#ff7a1a"/><circle cx="52.8" cy="63.3" r="2.90" fill="#ff7a1a"/><circle cx="63.1" cy="58.9" r="3.23" fill="#ff7a1a"/><circle cx="73.2" cy="56.5" r="3.57" fill="#ff7a1a"/><circle cx="83.2" cy="56.1" r="3.90" fill="#ff7a1a"/><circle cx="101" cy="55" r="13" fill="#ff7a1a" stroke="#13213b" stroke-width="3"/><path d="M88 55 H114 M101 42 V68 M93 45 Q98 55 93 65 M109 45 Q104 55 109 65" fill="none" stroke="#13213b" stroke-width="2" stroke-linecap="round"/></svg>
+      <svg viewBox="0 0 128 128" aria-hidden="true"><path d="M30 104 L60 26 Q64 18 68 26 L98 104" fill="none" stroke="#141413" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/><circle cx="21.0" cy="88.7" r="2.4" fill="#e8631c"/><circle cx="31.8" cy="78.2" r="2.8" fill="#e8631c"/><circle cx="42.4" cy="69.8" r="3.2" fill="#e8631c"/><circle cx="52.8" cy="63.3" r="3.6" fill="#e8631c"/><circle cx="63.1" cy="58.9" r="4" fill="#e8631c"/><circle cx="73.2" cy="56.5" r="4.4" fill="#e8631c"/><circle cx="83.2" cy="56.1" r="4.8" fill="#e8631c"/><circle cx="101" cy="55" r="14" fill="#e8631c"/><path d="M87 55 H115 M101 41 V69 M93 44 Q98 55 93 66 M109 44 Q104 55 109 66" fill="none" stroke="#faf9f5" stroke-width="2.4" stroke-linecap="round"/></svg>
       <b>ASSIST</b>
     </a>
-    <nav aria-label="Sezioni">
-      <a href="#cosa-fa">Cosa fa</a><a href="#settimana">La settimana</a><a href="#club">Per il club</a><a href="#partire">Come partire</a>
-    </nav>
-    <a class="btn vuoto piccolo" href="https://app.assistscouting.com" rel="noopener">Area staff</a>
+    <div class="pills dx">
+      <a class="pill" href="https://app.assistscouting.com" rel="noopener">Area staff
+        <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4 3h5v5" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></a>
+      <a class="pill scura" href="mailto:info@assistscouting.com?subject=Demo%20ASSIST">Richiedi una demo</a>
+    </div>
   </div>
 </header>
 
 <main>
-<section class="hero">
+<section class="apertura">
   <div class="wrap">
-    <div>
-      <div class="occhiello">Per gli staff tecnici di Serie A2 e B Nazionale</div>
-      <h1>Preparate la partita in <em>meno tempo</em></h1>
-      <p class="lead">Con i numeri che contano e nel formato che lo staff usa davvero: lo scouting della prossima avversaria,
-        le chiavi per vincere, lo sviluppo dei giocatori e il mercato, aggiornati ogni giorno.</p>
-      <div class="azioni">
-        <a class="btn pieno" href="mailto:info@assistscouting.com?subject=Demo%20ASSIST">Richiedi una demo</a>
-        <a class="btn vuoto" href="#cosa-fa">Cosa fa ASSIST</a>
-      </div>
-      <div class="temi"><span>Scouting</span><span>Post-partita</span><span>Sviluppo giocatori</span><span>Mercato</span></div>
-    </div>
-    <div class="vetrina" aria-hidden="true">
-      <div class="fig">
-        <div class="diag"></div>
-        <div class="ovr"><b>87</b><span>impatto</span><div><i>ALA</i></div></div>
-        <svg class="sil" viewBox="0 0 200 220"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".32"/><stop offset="1" stop-color="#fff" stop-opacity=".05"/></linearGradient></defs><circle cx="100" cy="72" r="40" fill="url(#g)"/><path d="M28 220 C30 150 62 126 100 126 C138 126 170 150 172 220 Z" fill="url(#g)"/></svg>
-        <div class="nome"><small>Il vostro</small>Giocatore</div>
-        <div class="barre">
-          <div>Realizzazione <b>84</b><i style="--v:84%"></i></div><div>Creazione <b>61</b><i style="--v:61%"></i></div>
-          <div>Tiro da fuori <b>92</b><i style="--v:92%"></i></div><div>Rimbalzo <b>48</b><i style="--v:48%"></i></div>
-          <div>Difesa <b>70</b><i style="--v:70%"></i></div><div>Impatto <b>87</b><i style="--v:87%"></i></div>
-        </div>
-        <div class="esempio">Esempio</div>
-      </div>
-      <div class="pdf"><b>Report PDF</b>pronto per la riunione tecnica</div>
-    </div>
+    <h1><b>Scouting e analisi per gli staff tecnici di Serie A2 e B Nazionale.</b> ASSIST prepara la partita con
+      i numeri che contano: l'avversaria, le chiavi per vincere, la crescita dei giocatori e il mercato, aggiornati ogni giorno.</h1>
   </div>
+</section>
+
+<section class="evidenza" aria-label="Le quattro funzioni di ASSIST">
+  <div class="giostra" id="giostra">
+    <!-- 1 · preparare la partita: lavagna con il gioco -->
+    <div class="scena attiva">
+      <div class="figura"><svg viewBox="0 0 460 460" aria-hidden="true">
+        <defs><pattern id="pt1" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.3" fill="#c9c2ac"/></pattern></defs>
+        <rect width="230" height="460" fill="#ebe6d6"/><rect width="230" height="460" fill="url(#pt1)"/><rect x="230" width="230" height="460" fill="#efc9a5"/>
+        <g fill="none" stroke="#141413" stroke-width="3"><path d="M30 60 H430"/><rect x="160" y="60" width="140" height="170"/><circle cx="230" cy="230" r="52"/>
+          <path d="M52 60 V140 A182 182 0 0 0 408 140 V60"/><circle cx="230" cy="98" r="12"/><path d="M200 82 H260"/><path d="M30 420 H430"/><path d="M178 420 A52 52 0 0 1 282 420"/></g>
+        <g fill="#141413" font-family="Instrument Sans, sans-serif" font-weight="600" font-size="17" text-anchor="middle">
+          <circle cx="230" cy="372" r="19" fill="#faf9f5" stroke="#141413" stroke-width="3"/><text x="230" y="378">1</text>
+          <circle cx="98" cy="300" r="19" fill="#faf9f5" stroke="#141413" stroke-width="3"/><text x="98" y="306">2</text>
+          <circle cx="362" cy="300" r="19" fill="#faf9f5" stroke="#141413" stroke-width="3"/><text x="362" y="306">3</text>
+          <circle cx="132" cy="150" r="19" fill="#faf9f5" stroke="#141413" stroke-width="3"/><text x="132" y="156">4</text>
+          <circle cx="318" cy="164" r="19" fill="#faf9f5" stroke="#141413" stroke-width="3"/><text x="318" y="170">5</text></g>
+        <g fill="none" stroke="#e8631c" stroke-width="3.5" stroke-linecap="round"><path d="M216 356 Q160 330 114 312" stroke-dasharray="7 8"/>
+          <path d="M350 284 Q330 220 324 186"/><path d="M147 140 Q190 110 222 112"/><path d="M372 280 l-2 -10 M372 280 l-10 -1" /></g>
+        <path d="M318 186 l-4 -10 l10 1 z" fill="#e8631c"/>
+      </svg></div>
+      <div class="didascalia"><small><b>Funzione 1</b>Preparare la partita</small><div>Lo scouting dell'avversaria</div></div>
+    </div>
+    <!-- 2 · rivedere la partita: chiavi raggiunte -->
+    <div class="scena">
+      <div class="figura"><svg viewBox="0 0 460 460" aria-hidden="true">
+        <defs><pattern id="pt2" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.3" fill="#c9c2ac"/></pattern></defs>
+        <rect width="460" height="460" fill="#ebe6d6"/><rect width="460" height="230" y="230" fill="url(#pt2)"/>
+        <g font-family="Instrument Sans, sans-serif" font-size="17" fill="#141413">
+          <g transform="translate(60 70)"><text y="0" font-weight="600">Tiro da 3 sopra il 35%</text><rect y="14" width="340" height="14" rx="7" fill="#d9d1b9"/><rect y="14" width="268" height="14" rx="7" fill="#141413"/><circle cx="356" cy="21" r="13" fill="#e8631c"/><path d="M350 21 l4 5 l8 -10" fill="none" stroke="#faf9f5" stroke-width="3" stroke-linecap="round"/></g>
+          <g transform="translate(60 150)"><text y="0" font-weight="600">Palle perse sotto le 13</text><rect y="14" width="340" height="14" rx="7" fill="#d9d1b9"/><rect y="14" width="300" height="14" rx="7" fill="#141413"/><circle cx="356" cy="21" r="13" fill="#e8631c"/><path d="M350 21 l4 5 l8 -10" fill="none" stroke="#faf9f5" stroke-width="3" stroke-linecap="round"/></g>
+          <g transform="translate(60 230)"><text y="0" font-weight="600">Rimbalzi offensivi 30%</text><rect y="14" width="340" height="14" rx="7" fill="#d9d1b9"/><rect y="14" width="190" height="14" rx="7" fill="#141413"/><circle cx="356" cy="21" r="13" fill="none" stroke="#141413" stroke-width="3"/></g>
+          <text x="60" y="380" font-family="Newsreader, serif" font-size="64">+25</text><text x="190" y="372" font-size="18" fill="#3d3d3a">punti di margine</text><text x="190" y="394" font-size="18" fill="#3d3d3a">spostati dalle chiavi</text></g>
+      </svg></div>
+      <div class="didascalia"><small><b>Funzione 2</b>Rivedere la partita</small><div>Le chiavi hanno funzionato?</div></div>
+    </div>
+    <!-- 3 · far crescere i giocatori: figurina -->
+    <div class="scena">
+      <div class="figura"><svg viewBox="0 0 460 460" aria-hidden="true">
+        <rect width="230" height="460" fill="#efc9a5"/><rect x="230" width="230" height="460" fill="#ebe6d6"/>
+        <g transform="translate(130 50) rotate(-3 100 180)"><rect width="200" height="300" rx="12" fill="#141413"/>
+          <path d="M150 0 H200 V160 L120 160 Z" fill="#e8631c"/>
+          <text x="18" y="56" font-family="Newsreader, serif" font-size="52" fill="#e8631c">87</text>
+          <circle cx="100" cy="112" r="30" fill="#3a3a36"/><path d="M48 186 Q50 140 100 140 Q150 140 152 186 Z" fill="#3a3a36"/>
+          <text x="18" y="214" font-family="Instrument Sans, sans-serif" font-weight="600" font-size="22" fill="#faf9f5">IL VOSTRO</text>
+          <text x="18" y="238" font-family="Instrument Sans, sans-serif" font-weight="600" font-size="22" fill="#faf9f5">GIOCATORE</text>
+          <g fill="#e8631c"><rect x="18" y="256" width="72" height="5" rx="2.5"/><rect x="110" y="256" width="52" height="5" rx="2.5"/><rect x="18" y="272" width="64" height="5" rx="2.5"/><rect x="110" y="272" width="70" height="5" rx="2.5"/></g></g>
+        <g transform="translate(250 330) rotate(4)"><rect width="150" height="70" rx="6" fill="#faf9f5" stroke="#141413" stroke-width="2.5"/>
+          <text x="16" y="30" font-family="Instrument Sans, sans-serif" font-weight="600" font-size="16" fill="#141413">Report PDF</text>
+          <text x="16" y="52" font-family="Instrument Sans, sans-serif" font-size="13" fill="#3d3d3a">da dare al giocatore</text></g>
+      </svg></div>
+      <div class="didascalia"><small><b>Funzione 3</b>Far crescere i giocatori</small><div>Lo sviluppo, ruolo per ruolo</div></div>
+    </div>
+    <!-- 4 · costruire la squadra: ricerca -->
+    <div class="scena">
+      <div class="figura"><svg viewBox="0 0 460 460" aria-hidden="true">
+        <defs><pattern id="pt4" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.3" fill="#c9c2ac"/></pattern></defs>
+        <rect width="460" height="460" fill="#ebe6d6"/><rect width="460" height="460" fill="url(#pt4)"/>
+        <g fill="#141413" opacity=".85"><circle cx="90" cy="110" r="9"/><circle cx="160" cy="80" r="9"/><circle cx="120" cy="190" r="9"/><circle cx="210" cy="150" r="9"/>
+          <circle cx="330" cy="100" r="9"/><circle cx="380" cy="190" r="9"/><circle cx="90" cy="300" r="9"/><circle cx="170" cy="350" r="9"/><circle cx="380" cy="360" r="9"/><circle cx="320" cy="400" r="9"/></g>
+        <circle cx="270" cy="250" r="96" fill="#efc9a5" stroke="#141413" stroke-width="6"/><path d="M338 318 L410 390" stroke="#141413" stroke-width="16" stroke-linecap="round"/>
+        <g fill="#e8631c"><circle cx="240" cy="230" r="11"/><circle cx="300" cy="270" r="11"/><circle cx="260" cy="290" r="11"/></g>
+        <g fill="#141413"><circle cx="300" cy="210" r="9"/></g>
+      </svg></div>
+      <div class="didascalia"><small><b>Funzione 4</b>Costruire la squadra</small><div>Il mercato con i numeri</div></div>
+    </div>
+    <div class="puntini" role="tablist" aria-label="Scegli la funzione"></div>
+  </div>
+  <button class="pausa" id="pausa" aria-label="Metti in pausa"><svg viewBox="0 0 12 12"><path d="M3.5 2v8M8.5 2v8" stroke="#141413" stroke-width="1.6"/></svg></button>
 </section>
 
 <section class="blocco" id="cosa-fa">
   <div class="wrap">
-    <div class="titolo appare"><div class="occhiello">Cosa fa ASSIST</div><h2>Quattro lavori, una piattaforma</h2>
-      <p>Box score, cronache e classifiche diventano ogni notte report e indicazioni per tutte le squadre del campionato.</p></div>
-    <div class="griglia">
-      <div class="carta appare"><div class="n">01</div><h3>Preparare la partita</h3>
-        <p>Lo scouting si apre già sulla prossima avversaria.</p>
-        <ul><li>Chiavi per vincere con obiettivi numerici su tiro, palle perse, rimbalzi e liberi</li>
-          <li>Obiettivi sui singoli: chi limitare e sotto quale soglia</li>
-          <li>Report PDF e Word modificabile per la riunione tecnica</li></ul></div>
-      <div class="carta appare"><div class="n">02</div><h3>Rivedere la partita</h3>
-        <p>Il post-partita mette la vigilia contro il campo.</p>
-        <ul><li>Ogni chiave: obiettivo, valore in partita, raggiunta o mancata</li>
-          <li>Quanti punti ha spostato sul margine finale</li>
-          <li>Chi ha giocato sopra o sotto la sua media</li></ul></div>
-      <div class="carta appare"><div class="n">03</div><h3>Far crescere i giocatori</h3>
-        <p>Ogni giocatore confrontato con il suo ruolo nel campionato.</p>
-        <ul><li>Cosa fa bene, dove può crescere, con l'obiettivo e i punti in gioco</li>
-          <li>Le prestazioni che spostano il risultato della squadra</li>
-          <li>Report individuale di una pagina, da consegnare al giocatore</li></ul></div>
-      <div class="carta appare"><div class="n">04</div><h3>Costruire la squadra</h3>
-        <p>Il mercato con i numeri, su A2 e B Nazionale.</p>
-        <ul><li>Filtri combinabili: "più di 5 assist e meno di 2 palle perse"</li>
-          <li>I fabbisogni della vostra rosa e i candidati che li coprono</li>
-          <li>Giocatori simili e quanto renderebbe chi sale dalla B all'A2</li></ul></div>
+    <div class="schede">
+      <article class="scheda appare"><div class="tag"><i>···</i>Prima della gara</div>
+        <h3>Preparare la partita</h3>
+        <p>Lo scouting si apre già sulla prossima avversaria: chiavi per vincere con obiettivi numerici e obiettivi sui singoli.</p>
+        <div class="righe"><div class="riga"><span>Report per la riunione</span><span>PDF e Word</span></div>
+          <div class="riga"><span>La squadra</span><span>in 30 secondi</span></div></div>
+        <a class="bottone" href="mailto:info@assistscouting.com?subject=Demo%20ASSIST">Richiedi una demo →</a></article>
+      <article class="scheda appare"><div class="tag"><i>···</i>Dopo la gara</div>
+        <h3>Rivedere la partita</h3>
+        <p>La vigilia contro il campo: ogni chiave raggiunta o mancata e quanti punti ha spostato sul risultato.</p>
+        <div class="righe"><div class="riga"><span>Verifica delle chiavi</span><span>automatica</span></div>
+          <div class="riga"><span>Sopra o sotto la media</span><span>giocatore per giocatore</span></div></div>
+        <a class="bottone" href="mailto:info@assistscouting.com?subject=Demo%20ASSIST">Richiedi una demo →</a></article>
+      <article class="scheda appare"><div class="tag"><i>···</i>In settimana</div>
+        <h3>Far crescere i giocatori</h3>
+        <p>Ogni giocatore confrontato con il suo ruolo: cosa fa bene, dove può crescere, l'obiettivo e i punti in gioco.</p>
+        <div class="righe"><div class="riga"><span>Report individuale</span><span>una pagina</span></div>
+          <div class="riga"><span>Mercato e giocatori simili</span><span>A2 e B Nazionale</span></div></div>
+        <a class="bottone" href="mailto:info@assistscouting.com?subject=Demo%20ASSIST">Richiedi una demo →</a></article>
     </div>
   </div>
 </section>
 
 <section class="blocco" id="settimana">
   <div class="wrap">
-    <div class="titolo appare"><div class="occhiello">Come si usa</div><h2>La settimana tipo</h2>
-      <p>Ogni pagina si apre già sulla vostra squadra e sulla prossima avversaria.</p></div>
-    <div class="settimana">
-      <div class="giorno appare"><div class="g">LUN</div><h4>Post-partita</h4><p>Report della gara e verifica delle chiavi della vigilia.</p></div>
-      <div class="giorno appare"><div class="g">MAR</div><h4>Sviluppo</h4><p>Aree di miglioramento e obiettivi individuali per l'allenamento.</p></div>
-      <div class="giorno appare"><div class="g">MER</div><h4>Scouting</h4><p>La prossima avversaria in 30 secondi, PDF e Word per la riunione.</p></div>
-      <div class="giorno appare"><div class="g">GIO</div><h4>Lavagna</h4><p>I giochi dell'avversaria e i vostri, fase per fase, anche in 3D.</p></div>
-      <div class="giorno appare"><div class="g">VEN</div><h4>Anteprima</h4><p>Probabilità di vittoria e le chiavi da portare nello spogliatoio.</p></div>
-      <div class="giorno gara appare"><div class="g">GARA</div><h4>Live</h4><p>Punteggio, falli, bonus e suggerimenti in diretta per lo staff.</p></div>
-    </div>
+    <h2 class="titoletto">La settimana tipo</h2>
+    <ul class="elenco">
+      <li class="appare"><span class="g">LUNEDÌ</span><h4>Post-partita</h4><p>Report della gara e verifica delle chiavi della vigilia.</p></li>
+      <li class="appare"><span class="g">MARTEDÌ</span><h4>Sviluppo</h4><p>Aree di miglioramento e obiettivi individuali per l'allenamento.</p></li>
+      <li class="appare"><span class="g">MERCOLEDÌ</span><h4>Scouting</h4><p>La prossima avversaria in 30 secondi, PDF e Word per la riunione tecnica.</p></li>
+      <li class="appare"><span class="g">GIOVEDÌ</span><h4>Lavagna</h4><p>I giochi dell'avversaria e i vostri, fase per fase, anche in 3D.</p></li>
+      <li class="appare"><span class="g">VENERDÌ</span><h4>Anteprima</h4><p>Probabilità di vittoria e le chiavi da portare nello spogliatoio.</p></li>
+      <li class="appare"><span class="g">GARA</span><h4>Live</h4><p>Punteggio, falli, bonus e suggerimenti in diretta per lo staff.</p></li>
+    </ul>
   </div>
 </section>
 
 <section class="blocco">
   <div class="wrap">
-    <div class="titolo appare"><div class="occhiello">La base dati</div><h2>I numeri dietro ASSIST</h2></div>
+    <h2 class="titoletto">I numeri dietro ASSIST</h2>
     <div class="numeri">
-      <div class="numero appare"><b>2.234</b><span>partite analizzate con box score e cronaca</span></div>
-      <div class="numero appare"><b>56</b><span>squadre: Serie A2 e i due gironi di B Nazionale</span></div>
-      <div class="numero appare"><b>3</b><span>stagioni: 2024/25, 2025/26 e quella in corso</span></div>
-      <div class="numero appare"><b>Ogni giorno</b><span>aggiornamento automatico, senza lavoro per lo staff</span></div>
+      <div class="appare"><b>2.234</b><span>partite analizzate con box score e cronaca</span></div>
+      <div class="appare"><b>56</b><span>squadre: Serie A2 e i due gironi di B Nazionale</span></div>
+      <div class="appare"><b>3</b><span>stagioni: 2024/25, 2025/26 e quella in corso</span></div>
+      <div class="appare"><b class="parola">Ogni giorno</b><span>aggiornamento automatico, senza lavoro per lo staff</span></div>
     </div>
     <p class="nota">Dati della piattaforma, ottobre 2026. Le previsioni sono probabilità, non certezze: uno strumento per lo staff tecnico.</p>
   </div>
 </section>
 
 <section class="blocco" id="club">
-  <div class="wrap">
-    <div class="club appare">
-      <div><div class="occhiello">Su misura per il club</div><h2>La vostra piattaforma</h2>
-        <p>Ogni club entra dal proprio link, con il proprio logo e i propri colori. Le indicazioni le decide lo staff:
-          ASSIST dà i dati, non istruzioni preconfezionate.</p></div>
-      <ul>
-        <li><b>Accesso riservato</b><span>Ogni membro dello staff con la sua password.</span></li>
-        <li><b>Logo e colori del club</b><span>La piattaforma e la pagina di accesso con il vostro brand.</span></li>
-        <li><b>Dati privati</b><span>Note, obiettivi, osservati e giochi li vede solo il vostro club.</span></li>
-        <li><b>Ovunque</b><span>iPad in panchina, computer in ufficio, telefono in trasferta.</span></li>
-      </ul>
-    </div>
+  <div class="wrap club">
+    <h2 class="appare"><b>Su misura per il vostro club.</b> Ogni staff entra dal proprio link, con il logo e i colori della squadra.
+      Le indicazioni le decide lo staff: ASSIST dà i dati, non istruzioni preconfezionate.</h2>
+    <ul class="elenco">
+      <li class="appare"><h4>Accesso riservato</h4><p>Ogni membro dello staff con la sua password.</p></li>
+      <li class="appare"><h4>Logo e colori del club</h4><p>La piattaforma, la pagina di accesso e l'icona sul telefono con il vostro brand.</p></li>
+      <li class="appare"><h4>Dati privati</h4><p>Note, obiettivi, osservati e giochi li vede solo il vostro club.</p></li>
+      <li class="appare"><h4>Ovunque</h4><p>iPad in panchina, computer in ufficio, telefono in trasferta.</p></li>
+    </ul>
   </div>
 </section>
 
 <section class="blocco" id="partire">
   <div class="wrap">
-    <div class="titolo appare"><div class="occhiello">Come partire</div><h2>Proviamola sulla vostra squadra</h2></div>
-    <div class="passi">
-      <div class="carta appare"><div class="n">1</div><h3>Demo di 30 minuti</h3><p>Sulla vostra squadra e sulla vostra prossima avversaria.</p></div>
-      <div class="carta appare"><div class="n">2</div><h3>Accesso di prova</h3><p>Per lo staff, con logo e colori del club, per qualche settimana di campionato.</p></div>
-      <div class="carta appare"><div class="n">3</div><h3>Abbonamento stagionale</h3><p>Accessi per tutto lo staff, aggiornamenti e assistenza inclusi. Proposta su misura per campionato e accessi.</p></div>
+    <h2 class="titoletto">Come partire</h2>
+    <div class="passi" style="margin-top:28px">
+      <div class="passo appare"><b>01</b><h3>Demo di 30 minuti</h3><p>Sulla vostra squadra e sulla vostra prossima avversaria.</p></div>
+      <div class="passo appare"><b>02</b><h3>Accesso di prova</h3><p>Per lo staff, con logo e colori del club, per qualche settimana di campionato.</p></div>
+      <div class="passo appare"><b>03</b><h3>Abbonamento stagionale</h3><p>Accessi per tutto lo staff, aggiornamenti e assistenza inclusi. Proposta su misura per campionato e accessi.</p></div>
     </div>
   </div>
 </section>
 
-<section class="cta">
+<section class="chiusura">
   <div class="wrap">
-    <div><h2>Scriveteci</h2><p>Vi mostriamo ASSIST sulla vostra prossima partita.</p>
-      <a class="mail" href="mailto:info@assistscouting.com">info@assistscouting.com</a></div>
-    <a class="btn" href="mailto:info@assistscouting.com?subject=Demo%20ASSIST">Richiedi una demo</a>
+    <h2 class="appare"><b>Proviamola sulla vostra squadra.</b> Vi mostriamo ASSIST sulla vostra prossima partita, in trenta minuti.</h2>
+    <a class="grande" href="mailto:info@assistscouting.com?subject=Demo%20ASSIST">Richiedi una demo →</a>
+    <a class="grande chiara" href="mailto:info@assistscouting.com">info@assistscouting.com</a>
   </div>
 </section>
 </main>
 
 <footer>
   <div class="wrap">
-    <span><b style="color:#fff">ASSIST</b> · Analisi Statistica e Scouting Integrato per Staff Tecnici · © 2026</span>
-    <span><a href="mailto:info@assistscouting.com">info@assistscouting.com</a> · <a href="https://app.assistscouting.com" rel="noopener">Area staff</a></span>
+    <div class="alto">
+      <a class="marchio" href="#" aria-label="ASSIST">
+        <svg viewBox="0 0 128 128" aria-hidden="true"><path d="M30 104 L60 26 Q64 18 68 26 L98 104" fill="none" stroke="#faf9f5" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/><circle cx="101" cy="55" r="14" fill="#e8631c"/><circle cx="52.8" cy="63.3" r="3.6" fill="#e8631c"/><circle cx="73.2" cy="56.5" r="4.4" fill="#e8631c"/></svg>
+        <b>ASSIST</b></a>
+      <ul>
+        <li><a href="#cosa-fa">Cosa fa <span>↓</span></a></li><li><a href="#settimana">La settimana tipo <span>↓</span></a></li>
+        <li><a href="#club">Per il club <span>↓</span></a></li><li><a href="#partire">Come partire <span>↓</span></a></li>
+        <li><a href="mailto:info@assistscouting.com">Contatti <span>↗</span></a></li>
+      </ul>
+    </div>
+    <div class="basso">
+      <div>© 2026 ASSIST</div>
+      <div><h5>Analisi Statistica e Scouting Integrato per Staff Tecnici</h5><p>Scouting, post-partita, sviluppo dei giocatori e mercato per
+        gli staff di Serie A2 e B Nazionale, aggiornati ogni giorno.</p></div>
+      <div><h5>Accedi</h5><a href="https://app.assistscouting.com" rel="noopener">Area staff ↗</a><a href="mailto:info@assistscouting.com">info@assistscouting.com</a></div>
+    </div>
   </div>
 </footer>
 
 <script>
-// le sezioni compaiono al passaggio; senza JavaScript (o con il movimento ridotto) sono già visibili
 (function () {
-  var el = document.querySelectorAll(".appare");
-  if (!("IntersectionObserver" in window) || matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    el.forEach(function (e) { e.classList.add("visto"); }); return;
+  // giostra delle funzioni: cambia da sola ogni 6 secondi, con i puntini e il pulsante pausa
+  var scene = document.querySelectorAll(".scena"), punti = document.querySelector(".puntini"),
+      pausa = document.getElementById("pausa"), i = 0, timer = null,
+      ridotto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  scene.forEach(function (_, k) {
+    var b = document.createElement("button"); b.setAttribute("aria-label", "Funzione " + (k + 1));
+    b.addEventListener("click", function () { mostra(k); ferma(); }); punti.appendChild(b);
+  });
+  function mostra(k) {
+    i = k; scene.forEach(function (s, j) { s.classList.toggle("attiva", j === k); });
+    punti.querySelectorAll("button").forEach(function (b, j) { b.setAttribute("aria-current", j === k ? "true" : "false"); });
   }
+  function avvia() { if (!timer) timer = setInterval(function () { mostra((i + 1) % scene.length); }, 6000);
+    pausa.setAttribute("aria-label", "Metti in pausa"); pausa.innerHTML = '<svg viewBox="0 0 12 12"><path d="M3.5 2v8M8.5 2v8" stroke="#141413" stroke-width="1.6"/></svg>'; }
+  function ferma() { clearInterval(timer); timer = null; pausa.setAttribute("aria-label", "Riprendi");
+    pausa.innerHTML = '<svg viewBox="0 0 12 12"><path d="M3 2l7 4-7 4z" fill="#141413"/></svg>'; }
+  pausa.addEventListener("click", function () { timer ? ferma() : avvia(); });
+  mostra(0); if (ridotto) ferma(); else avvia();
+
+  // le sezioni compaiono al passaggio; senza JavaScript (o con il movimento ridotto) sono già visibili
+  var el = document.querySelectorAll(".appare");
+  if (!("IntersectionObserver" in window) || ridotto) { el.forEach(function (e) { e.classList.add("visto"); }); return; }
   var io = new IntersectionObserver(function (voci) {
     voci.forEach(function (v) { if (v.isIntersecting) { v.target.classList.add("visto"); io.unobserve(v.target); } });
   }, {rootMargin: "0px 0px -8% 0px"});
-  el.forEach(function (e, i) { e.style.transitionDelay = (i % 4) * 60 + "ms"; io.observe(e); });
+  el.forEach(function (e, k) { e.style.transitionDelay = (k % 3) * 70 + "ms"; io.observe(e); });
 })();
 </script>
 </body>
