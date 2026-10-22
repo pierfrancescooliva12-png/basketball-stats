@@ -934,7 +934,7 @@ function three() {
 const W3 = (x, y) => [(x - 75) / 10, y / 10];          // decimetri del campo → metri della scena
 // parquet chiaro in tono crema, come la lavagna 2D: attacco blu, difesa arancio-rossa, palla arancio
 const COL3 = { attacco: 0x2a6fd0, difesa: 0xd2551f, palla: 0xe8631c, righe: "#3d3b36",
-               pavimento: "#efe9dc", area: "#e4dccb", fuori: 0xe9e5da };
+               pavimento: "#e6dac2", area: "#d8c9aa", fuori: 0xe9e5da };
 const CAMERE = {
   alto: { target: [0, 0, 6.6], raggio: 16.5, azim: 0, elev: 1.25 },
   tribuna: { target: [0, 0.6, 6.2], raggio: 14, azim: Math.PI / 2, elev: 0.42 },
@@ -954,8 +954,8 @@ function creaVista3D(T) {
   const cam = new T.PerspectiveCamera(42, 4 / 3, 0.1, 120);
 
   // luci
-  s.add(new T.HemisphereLight(0xfffaf0, 0x8a8478, 0.85));
-  const sole = new T.DirectionalLight(0xffffff, 0.75);
+  s.add(new T.HemisphereLight(0xfffaf0, 0x8a8478, 0.7));
+  const sole = new T.DirectionalLight(0xffffff, 0.6);
   sole.position.set(-6, 14, 2); sole.target.position.set(0, 0, 7);
   sole.castShadow = true; sole.shadow.mapSize.set(1024, 1024);
   Object.assign(sole.shadow.camera, { left: -10, right: 10, top: 10, bottom: -10, near: 1, far: 40 });
@@ -992,7 +992,7 @@ function creaVista3D(T) {
   function lineeFase(f) {
     gl.setTransform(1, 0, 0, 1, 0, 0); gl.clearRect(0, 0, 1500, 1400); gl.setTransform(10, 0, 0, 10, 0, 0);
     if (f) for (const l of f.linee) {
-      gl.strokeStyle = l.tipo === "blocco" ? "rgba(232,99,28,.9)" : "rgba(20,20,19,.5)";
+      gl.strokeStyle = l.tipo === "blocco" ? "rgba(232,99,28,.9)" : "rgba(20,20,19,.62)";
       gl.lineWidth = l.tipo === "blocco" ? 0.9 : 0.6;
       gl.setLineDash(l.tipo === "passaggio" ? [2.4, 1.8] : l.tipo === "palleggio" ? [0.8, 1.2] : []);
       gl.stroke(new Path2D(curva(l.punti)));
