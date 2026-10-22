@@ -31,6 +31,11 @@ SCHEMA = [
         club TEXT NOT NULL, gioco_id TEXT NOT NULL, riferimento TEXT NOT NULL,
         nome TEXT, dati TEXT NOT NULL, autore TEXT, aggiornato_il TEXT NOT NULL,
         PRIMARY KEY (club, gioco_id))""",
+    # programmi di allenamento (sedute, esercizi, cosa stampare): un JSON per programma
+    """CREATE TABLE IF NOT EXISTS programmi (
+        club TEXT NOT NULL, programma_id TEXT NOT NULL, nome TEXT, dati TEXT NOT NULL,
+        autore TEXT, aggiornato_il TEXT NOT NULL,
+        PRIMARY KEY (club, programma_id))""",
     """CREATE TABLE IF NOT EXISTS video_sync (
         club TEXT NOT NULL, partita_id TEXT NOT NULL, inizi TEXT NOT NULL,
         PRIMARY KEY (club, partita_id))""",
@@ -151,6 +156,28 @@ class Archivio:
             rows = c.execute(text("SELECT dati FROM giochi WHERE club = :c AND riferimento = :r "
                                   "ORDER BY nome"), {"c": club, "r": str(riferimento)}).fetchall()
         return [json.loads(r[0]) for r in rows]
+
+    # ------------------------------------------------------------ programmi di allenamento
+    def save_program(self, club: str, programma: dict, autore: str):
+        """Salva (o sostituisce) un programma di allenamento."""
+        with self.engine.begin() as c:
+            c.execute(text("DELETE FROM programmi WHERE club = :c AND programma_id = :p"),
+                      {"c": club, "p": str(programma["id"])})
+            c.execute(text("INSERT INTO programmi VALUES (:c, :p, :n, :d, :a, :t)"),
+                      {"c": club, "p": str(programma["id"]), "n": programma.get("nome", ""),
+                       "d": json.dumps(programma), "a": autore, "t": _now()})
+
+    def programs(self, club: str) -> list[dict]:
+        """Programmi del club, il più recente prima."""
+        with self.engine.connect() as c:
+            rows = c.execute(text("SELECT dati FROM programmi WHERE club = :c ORDER BY aggiornato_il DESC"),
+                             {"c": club}).fetchall()
+        return [json.loads(r[0]) for r in rows]
+
+    def delete_program(self, club: str, programma_id: str):
+        with self.engine.begin() as c:
+            c.execute(text("DELETE FROM programmi WHERE club = :c AND programma_id = :p"),
+                      {"c": club, "p": str(programma_id)})
 
     # ------------------------------------------------------------ sincronizzazione video
     def set_video_sync(self, club: str, partita_id: str, inizi: dict):

@@ -20,7 +20,7 @@ APP: App | None = None
 PAGINE: dict = {}
 
 # pagine della propria squadra: con una squadra del club valgono solo per quella
-MIE = {"mia-squadra", "sviluppo", "live", "lavagna", "avvisi", "anteprima", "mercato"}
+MIE = {"mia-squadra", "sviluppo", "allenamento", "live", "lavagna", "avvisi", "anteprima", "mercato"}
 # pagine sull'avversaria: entrandoci si aprono sulla prossima avversaria
 AVVERSARIA = {"scouting", "lavagna-avversaria"}
 
@@ -232,6 +232,7 @@ def _home():
     pulsante(c[1], "Lavagna dei giochi →", "lavagna")
     if avv is not None:
         pulsante(c[2], "Lavagna dell'avversaria →", "lavagna_avv", f_sq=avv)
+    pulsante(c[3], "Programma di allenamento →", "allenamento")
 
 
 def _card(h: str, t: str, m: str, righe: list[tuple[str, str]], extra: str = "") -> str:
@@ -339,6 +340,12 @@ def p_sviluppo():
     sviluppo_ui.render(APP)
 
 
+def p_allenamento():
+    titolo_pagina("Programmi di allenamento", "sedute, esercizi e quintetti da lavorare, pronti da stampare")
+    from . import allenamento_ui
+    allenamento_ui.render(APP)
+
+
 def p_live():
     titolo_pagina("Live", "la partita in diretta, con i suggerimenti per lo staff")
     from . import live_ui
@@ -399,6 +406,7 @@ def mappa(admin: bool = False, club: bool = False) -> dict:
                       P(p_mercato, "Mercato", "mercato", "mercato")],
         "La mia squadra": [P(p_mia, "La mia squadra", "mia-squadra", "mia"),
                            P(p_sviluppo, "Sviluppo dei giocatori", "sviluppo", "sviluppo"),
+                           P(p_allenamento, "Programmi di allenamento", "allenamento", "allenamento"),
                            P(p_live, "Live · partita in diretta", "live", "live"),
                            P(p_lavagna, "Lavagna dei giochi", "lavagna", "lavagna"),
                            P(p_avvisi, "Avvisi", "avvisi", "avvisi")],
