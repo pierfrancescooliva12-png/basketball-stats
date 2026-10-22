@@ -13,10 +13,10 @@ from basket.glossario import G, voci_per_colonne
 # Palette dei grafici: la stessa dei report PDF ("Match day"), su fondo bianco
 BLU, ARANCIO, ACQUA = "#2a78d6", "#d95926", "#199e70"
 GRIGIO = "#9aa3b5"
-SUPERFICIE = "#ffffff"
-TESTO, TESTO_2 = "#1a2233", "#4a5468"
-NEUTRO = "#eef1f6"
-NAVY = "#0b1220"
+SUPERFICIE = "#fffefb"
+TESTO, TESTO_2 = "#141413", "#3d3d3a"
+NEUTRO = "#f0eee6"
+NAVY = "#141413"
 
 def inject_css():
     st.markdown("""
@@ -342,6 +342,117 @@ def inject_css():
       [data-testid="stStatusWidgetRunningIcon"]::before, [data-testid="stStatusWidgetRunningIcon"]::after
         {animation-duration: 1.6s;}
     }
+
+    /* ================================================================ stile editoriale
+       (fondo crema, caratteri Instrument Sans e Newsreader, linee sottili, pulsanti a pillola):
+       ridefinisce i token e i componenti dello stile "Match day" qui sopra */
+    @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap');
+    :root {
+      --bg: #faf9f5; --surface: #fffefb; --surface-2: #fffefb; --surface-3: #f0eee6; --carta: #f3f1ea;
+      --line: #e3e0d4; --line-2: #d6d2c4; --text: #141413; --text-2: #3d3d3a; --muted: #6f6d66;
+      --accent: #e8631c; --accent-soft: rgba(232,99,28,.10); --navy: #141413; --navy-2: #2b2b29;
+      --on-navy: #d9d6cc; --shadow: none; --r: 12px;
+      --sans: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --serif: 'Newsreader', Georgia, serif; --cond: var(--sans);
+    }
+    html, body, [data-testid="stAppViewContainer"], [data-testid="stMarkdownContainer"],
+    button, input, textarea, select {font-family: var(--sans);}
+    [data-testid="stAppViewContainer"] {background: var(--bg);}
+    h1, h2, h3, h4 {font-family: var(--sans) !important; font-weight: 600 !important; text-transform: none;
+      letter-spacing: -.01em;}
+    ::selection {background: rgba(232,99,28,.22);}
+    /* navigazione: fascia chiara con le voci a pillola */
+    header[data-testid="stHeader"] {background: rgba(250,249,245,.94) !important; backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--line) !important;}
+    header[data-testid="stHeader"] * {color: var(--text);}
+    header [data-testid="stTopNavLink"], header [data-testid="stTopNavSection"] {
+      font: 500 .95rem var(--sans) !important; color: var(--text) !important; border-radius: 999px !important;
+      min-height: 34px;}
+    header [data-testid="stTopNavLink"]:hover, header [data-testid="stTopNavSection"]:hover {
+      color: var(--text) !important; background: var(--surface-3) !important;}
+    header [data-testid="stTopNavLink"][aria-current="page"], header [data-testid="stTopNavLink"][data-active="true"] {
+      color: var(--text) !important; background: var(--surface-3) !important; box-shadow: inset 0 0 0 1px var(--line-2);}
+    /* barra del marchio e titolo della pagina */
+    .topbar svg {width: auto; height: 18px; border-radius: 0;}
+    .topbar .nome {display: none;}
+    .topbar .meta {font: 400 .88rem var(--sans); color: var(--muted);}
+    .pagina {font: 400 clamp(2rem, 3vw, 2.7rem)/1.1 var(--serif); text-transform: none; letter-spacing: -.012em;
+      color: var(--text); margin: 10px 0 4px;}
+    .pagina-d {font: 400 1rem var(--sans); color: var(--muted);}
+    /* testata: niente fascia scura, titolo editoriale */
+    .hero {background: transparent; color: var(--text); clip-path: none; border-radius: 0; padding: 6px 0 20px;
+      border-bottom: 1px solid var(--line); --text: #141413; --text-2: #3d3d3a; --muted: #6f6d66; --line: #e3e0d4;}
+    .hero::before, .hero::after {display: none;}
+    .hero .eyebrow {font: 500 .85rem var(--sans); letter-spacing: 0; text-transform: none; color: var(--muted);}
+    .hero .title {font: 400 clamp(2rem, 3.4vw, 3rem)/1.1 var(--serif); text-transform: none; letter-spacing: -.015em;
+      color: var(--text); max-width: 100%;}
+    .hero .meta {color: var(--text-2); max-width: 100%;}
+    .hero .meta a {color: var(--text) !important;}
+    .hero .brand {gap: 18px;}
+    .hero .brand svg {border-radius: 0; box-shadow: none;}
+    .hero .brand .title {font: 400 clamp(2rem, 3.4vw, 3rem)/1.1 var(--serif); letter-spacing: -.015em;}
+    .hero .tagline {font: 400 .95rem var(--sans); letter-spacing: 0; text-transform: none; color: var(--muted);}
+    .hero .badge {background: var(--surface-3); color: var(--text); border-color: var(--line-2);}
+    .hero details.tip > summary {border-color: var(--line-2); color: var(--muted);}
+    .club-logo {filter: none !important;}
+    /* titoli di sezione */
+    .sec {border-bottom: 1px solid var(--line-2); padding-bottom: 10px; margin: 34px 0 14px;}
+    .sec::before {display: none;}
+    .sec .t {font: 600 1.15rem/1.2 var(--sans); text-transform: none; letter-spacing: -.005em;}
+    .sec .d {font: 400 .92rem var(--sans); color: var(--muted);}
+    /* tessere numeriche */
+    .kpi {background: var(--carta); border: 0; border-radius: var(--r); box-shadow: none; padding: 16px 18px 14px;}
+    .kpi::before {display: none;}
+    .kpi:hover {transform: none;}
+    .kpi .l {font: 500 .82rem var(--sans); letter-spacing: 0; text-transform: none; color: var(--muted);}
+    .kpi .v {font: 400 2.2rem/1.1 var(--serif); letter-spacing: -.01em; color: var(--text);}
+    .kpi .s {color: var(--muted);}
+    /* frase di sintesi, schede, leader, elenchi */
+    .frase {background: transparent; border: 0; border-top: 1px solid var(--line-2); border-bottom: 1px solid var(--line-2);
+      border-radius: 0; box-shadow: none; padding: 16px 0; font: 400 1.25rem/1.45 var(--serif); color: var(--text);}
+    .frase b {font: 600 .85rem var(--sans); letter-spacing: 0; text-transform: none; color: var(--accent);}
+    .card {background: var(--carta); border: 0; border-radius: var(--r); box-shadow: none;}
+    .card::before {display: none;}
+    .card .h {font: 500 .85rem var(--sans); letter-spacing: 0; text-transform: none; color: var(--muted);}
+    .card .t {font: 400 1.75rem/1.15 var(--serif); text-transform: none; letter-spacing: -.01em;}
+    .card .big, .card .row div {font-family: var(--serif); font-weight: 400;}
+    .card .row small {font: 500 .78rem var(--sans); letter-spacing: 0; text-transform: none;}
+    .lcard {background: var(--carta); border: 0; box-shadow: none;}
+    .lcard .h {font: 600 1rem var(--sans); text-transform: none; letter-spacing: 0;}
+    .lrow .r, .lrow .x {font-family: var(--serif); font-weight: 400;}
+    .pill-list {background: transparent; border: 0; border-top: 1px solid var(--line-2); border-radius: 0; box-shadow: none;}
+    .pill {border-top: 0; border-bottom: 1px solid var(--line); font-family: var(--sans);}
+    .fb-t {font: 600 1.05rem var(--sans); text-transform: none;}
+    .badge {font-family: var(--sans); border-radius: 999px;}
+    /* controlli: etichette normali, campi bianchi, pulsanti a pillola */
+    [data-testid="stWidgetLabel"] p {font: 500 .85rem var(--sans) !important; letter-spacing: 0 !important;
+      text-transform: none !important; color: var(--text-2) !important;}
+    div[data-baseweb="select"] > div {background: #fff !important; border-color: var(--line-2) !important;}
+    button[data-baseweb="tab"] {font: 500 1rem var(--sans); letter-spacing: 0; text-transform: none;}
+    [data-testid="stBaseButton-secondary"], [data-testid="stDownloadButton"] button, [data-testid="stBaseButton-primary"],
+    [data-testid="stBaseButton-primaryFormSubmit"], [data-testid="stBaseButton-secondaryFormSubmit"] {
+      border-radius: 999px !important; font: 500 .98rem var(--sans) !important; box-shadow: none !important;}
+    [data-testid="stBaseButton-secondary"], [data-testid="stDownloadButton"] button {background: var(--surface-3) !important;
+      border: 1px solid var(--line-2) !important; color: var(--text) !important;}
+    [data-testid="stBaseButton-secondary"]:hover, [data-testid="stDownloadButton"] button:hover {
+      background: #e8e5da !important; border-color: var(--line-2) !important;}
+    [data-testid="stBaseButton-primary"], [data-testid="stDownloadButton"] button[kind="primary"] {
+      background: var(--text) !important; border-color: var(--text) !important; color: var(--bg) !important;}
+    [data-testid="stBaseButton-primary"] *, [data-testid="stDownloadButton"] button[kind="primary"] * {color: var(--bg) !important;}
+    [data-testid="stPageLink"] a {border-radius: 999px; background: var(--surface-3); border-color: var(--line-2);}
+    [data-testid="stExpander"] details {background: var(--surface); box-shadow: none;}
+    [data-testid="stMetricValue"] {font-family: var(--serif); font-weight: 400;}
+    [data-testid="stDataFrame"], [data-testid="stPlotlyChart"] {box-shadow: none; background: var(--surface);}
+    details.tip > summary {font-family: var(--sans);}
+    details.tip .bubble {border-top: 1px solid var(--line); font-family: var(--sans); box-shadow: 0 30px 80px rgba(20,20,19,.22);}
+    .bubble .bt {font: 400 1.6rem/1.15 var(--serif); text-transform: none;}
+    .bubble .bk {font: 600 .8rem var(--sans); letter-spacing: 0; text-transform: none;}
+    details.tip[open] > summary::before {background: rgba(20,20,19,.45);}
+    .quadrante {background: var(--carta); border: 0; box-shadow: none;}
+    .quadrante .qv {font-family: var(--serif); font-weight: 400;}
+    .quadrante .qt {font: 500 .82rem var(--sans); letter-spacing: 0; text-transform: none;}
+    .quadrante .qr b {font-family: var(--serif); font-weight: 400;}
+    .card .quadrante {background: transparent;}
     </style>
     """, unsafe_allow_html=True)
 
@@ -360,15 +471,15 @@ fill="rgba(57,135,229,.06)"/></g></svg>"""
 
 def _template():
     t = go.layout.Template()
-    axis = dict(gridcolor="rgba(11,18,32,0.07)", linecolor="rgba(11,18,32,0.15)",
-                zeroline=False, showline=False, ticks="", tickfont=dict(color="#6b7489", size=12.5),
-                title=dict(font=dict(color="#6b7489", size=12.5)), automargin=True)
+    axis = dict(gridcolor="rgba(20,20,19,0.07)", linecolor="rgba(20,20,19,0.15)",
+                zeroline=False, showline=False, ticks="", tickfont=dict(color="#6f6d66", size=12.5),
+                title=dict(font=dict(color="#6f6d66", size=12.5)), automargin=True)
     t.layout = go.Layout(
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="Barlow, system-ui, sans-serif", color=TESTO_2, size=13),
+        font=dict(family="Instrument Sans, system-ui, sans-serif", color=TESTO_2, size=13),
         colorway=[BLU, ARANCIO, ACQUA], xaxis=axis, yaxis=axis,
         hoverlabel=dict(bgcolor=NAVY, bordercolor=NAVY,
-                        font=dict(color="#ffffff", family="Barlow, sans-serif", size=13),
+                        font=dict(color="#faf9f5", family="Instrument Sans, sans-serif", size=13),
                         align="left"),
         hovermode="closest",
         legend=dict(orientation="h", y=1.08, x=0, font=dict(color=TESTO_2, size=12),
@@ -637,21 +748,21 @@ def brand_hero(eyebrow: str, meta: str = "", tema=None):
             f'<div class="meta" style="margin-top:10px">{meta}</div></div>',
             unsafe_allow_html=True)
         return
-    mark = (config.LOGO_DIR / "assist-mark.svg").read_text(encoding="utf-8")
-    mark = mark.replace('width="128" height="128"', 'width="64" height="64"', 1)
+    scritta = (config.LOGO_DIR / "assist-scritta.svg").read_text(encoding="utf-8")
+    scritta = scritta.replace('height="40"', 'height="34"', 1).replace(' width="', ' data-w="', 1)
     st.markdown(
         f'<div class="hero">{COURT_SVG}<div class="eyebrow">{esc(eyebrow)}</div>'
-        f'<div class="brand">{mark}<div><div class="title" style="margin:0">'
-        f'{esc(config.BRAND)}</div><div class="tagline">{esc(config.BRAND_TAGLINE)}</div>'
-        f'</div></div><div class="meta" style="margin-top:10px">{meta}</div></div>',
+        f'<div class="brand" style="margin-top:14px">{scritta}</div>'
+        f'<div class="tagline" style="margin-top:8px">{esc(config.BRAND_TAGLINE)}</div>'
+        f'<div class="meta" style="margin-top:10px">{meta}</div></div>',
         unsafe_allow_html=True)
 
 
 def topbar(meta: str = ""):
     """Barra compatta con il marchio (al posto della testata grande)."""
     from basket import config
-    mark = (config.LOGO_DIR / "assist-mark.svg").read_text(encoding="utf-8")
-    st.markdown(f'<div class="topbar">{mark}<span class="nome">{esc(config.BRAND)}</span>'
+    scritta = (config.LOGO_DIR / "assist-scritta.svg").read_text(encoding="utf-8")
+    st.markdown(f'<div class="topbar">{scritta}<span class="nome">{esc(config.BRAND)}</span>'
                 f'<span class="meta">{meta}</span></div>', unsafe_allow_html=True)
 
 

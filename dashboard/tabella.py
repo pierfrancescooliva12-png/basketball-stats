@@ -19,28 +19,28 @@ RIGA, TESTA, BARRA, LEGENDA = 38, 44, 53, 33
 MASSIMO_RIGHE = 800              # oltre, la griglia standard di Streamlit regge meglio
 
 CSS = """
-:root{--navy:#0b1220;--navy2:#13213b;--accent:#ff7a1a;--text:#1a2233;--text2:#4a5568;--muted:#7b8496;
---line:#e3e8f0;--surface:#fff;--zebra:#f8fafc;--hover:#eef3fb;--pos:#1f8a4c;--neg:#c93c3c;--posbg:#e3f5ea;
---negbg:#fde9e9;--mia:#fff4ea}
+:root{--navy:#141413;--navy2:#2b2b29;--accent:#e8631c;--text:#141413;--text2:#3d3d3a;--muted:#6f6d66;
+--line:#e3e0d4;--surface:#fffefb;--zebra:#faf9f5;--hover:#f3f1ea;--pos:#1f7a45;--neg:#b8432f;--posbg:#e4f1e6;
+--negbg:#f8e6e0;--mia:#fbefe4;--testa:#f3f1ea}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:transparent;font-family:'Barlow',system-ui,sans-serif;color:var(--text)}
+html,body{margin:0;height:100%;background:transparent;font-family:'Instrument Sans',system-ui,sans-serif;color:var(--text)}
 .tab{display:flex;flex-direction:column;height:100%;background:var(--surface);border:1px solid var(--line);
   border-radius:12px;overflow:hidden}
 .bar{display:flex;gap:10px;align-items:center;padding:9px 10px;border-bottom:1px solid var(--line);flex:none}
-.bar input{flex:1;min-width:120px;max-width:260px;border:1px solid var(--line);border-radius:8px;
+.bar input{flex:1;min-width:120px;max-width:260px;border:1px solid var(--line);border-radius:999px;
   padding:6px 10px 6px 30px;font:inherit;font-size:.88rem;color:var(--text);background:#f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%237b8496' stroke-width='2'%3E%3Ccircle cx='6' cy='6' r='4.5'/%3E%3Cpath d='M9.5 9.5 13 13'/%3E%3C/svg%3E") 10px center no-repeat}
 .bar input:focus{outline:2px solid var(--accent);outline-offset:-1px;background-color:#fff}
 .bar .n{color:var(--muted);font-size:.8rem;margin-right:auto;white-space:nowrap}
-.bar button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 10px;
-  font:600 .78rem 'Barlow',sans-serif;color:var(--text2);cursor:pointer;white-space:nowrap}
+.bar button{border:1px solid var(--line);background:#f0eee6;border-radius:999px;padding:5px 12px;
+  font:500 .8rem 'Instrument Sans',sans-serif;color:var(--text);cursor:pointer;white-space:nowrap}
 .bar button:hover{border-color:#cfd6e2;color:var(--text)}
 .wrap{overflow:auto;flex:1;min-height:0}
 table{border-collapse:separate;border-spacing:0;width:100%;font-size:.9rem}
-thead th{position:sticky;top:0;z-index:2;background:var(--navy);color:#fff;font:600 .68rem 'Barlow',sans-serif;
-  letter-spacing:.09em;text-transform:uppercase;text-align:right;padding:10px 10px 8px;white-space:nowrap;
-  cursor:pointer;user-select:none;border-bottom:3px solid var(--accent)}
+thead th{position:sticky;top:0;z-index:2;background:var(--testa);color:var(--text);font:500 .8rem 'Instrument Sans',sans-serif;
+  letter-spacing:0;text-transform:none;text-align:right;padding:10px 10px 9px;white-space:nowrap;
+  cursor:pointer;user-select:none;border-bottom:1px solid var(--text)}
 thead th.t{text-align:left}
-thead th:hover{background:var(--navy2)}
+thead th:hover{background:#e9e6db}
 thead th .ar{display:inline-block;width:9px;margin-left:4px;opacity:.3;font-size:.6rem}
 thead th.on{color:var(--accent)} thead th.on .ar{opacity:1}
 tbody td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;
@@ -54,10 +54,10 @@ th.fix,td.fix{position:sticky;left:0;z-index:1} thead th.fix{z-index:3}
 td.fix{box-shadow:1px 0 0 var(--line)}
 .sq{display:flex;align-items:center;gap:8px;font-weight:600}
 .sq img{width:22px;height:22px;object-fit:contain;flex:none}
-.sq .lg{width:22px;height:22px;border-radius:50%;background:var(--navy2);color:#fff;font:italic 700 .56rem 'Barlow Condensed',sans-serif;
+.sq .lg{width:22px;height:22px;border-radius:50%;background:var(--navy2);color:#fff;font:600 .5rem 'Instrument Sans',sans-serif;
   display:flex;align-items:center;justify-content:center;flex:none;letter-spacing:.02em}
 .nm{font-weight:600}
-.num{font:600 .98rem 'Barlow Condensed',sans-serif;letter-spacing:.01em}
+.num{font:500 .92rem 'Instrument Sans',sans-serif;letter-spacing:0}
 .chip{display:inline-block;min-width:44px;padding:1px 7px;border-radius:5px}
 .chip.top{background:var(--posbg);color:var(--pos);font-weight:700}
 .chip.low{background:var(--negbg);color:var(--neg);font-weight:700}
@@ -65,9 +65,9 @@ td.fix{box-shadow:1px 0 0 var(--line)}
 .cb .tr{width:56px;height:6px;border-radius:3px;background:#e9edf3;display:flex;flex:none}
 .cb i{display:block;height:6px;border-radius:3px;background:var(--navy2)}
 .fm{display:inline-flex;gap:3px}
-.fm b{width:18px;height:18px;border-radius:4px;font:700 .66rem 'Barlow',sans-serif;color:#fff;display:flex;
+.fm b{width:18px;height:18px;border-radius:50%;font:600 .62rem 'Instrument Sans',sans-serif;color:#fff;display:flex;
   align-items:center;justify-content:center}
-.fm b.V{background:var(--pos)} .fm b.P{background:#c3cad5}
+.fm b.V{background:var(--pos)} .fm b.P{background:#cfcabb}
 .sg.p{color:var(--pos)} .sg.n{color:var(--neg)}
 .vuoto{color:var(--muted)}
 .leg{display:flex;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:.76rem;padding:8px 12px;
@@ -136,8 +136,7 @@ draw();
 """
 
 FONT = ('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/'
-        'css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:ital,wght@0,600;0,700;1,700&display=swap" '
-        'rel="stylesheet">')
+        'css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">')
 
 
 def _sigla(nome: str) -> str:
@@ -293,8 +292,8 @@ def render(df: pd.DataFrame, height: int | None = None, progress: dict | None = 
                "cerca": n > 8, "legenda": "".join(legenda), "file": file}
     stile = ""
     if tema.get("accent"):
-        stile = (f":root{{--accent:{tema['accent']};--navy:{tema.get('navy', '#0b1220')};"
-                 f"--navy2:{tema.get('navy2', '#13213b')};--mia:{tema.get('mia', '#fff4ea')}}}")
+        stile = (f":root{{--accent:{tema['accent']};--navy2:{tema.get('navy', '#2b2b29')};"
+                 f"--mia:{tema.get('mia', '#fbefe4')}}}")
     naturale = TESTA + RIGA * max(n, 1) + (BARRA if barra else 0) + (LEGENDA if legenda else 0) + 4
     alto = naturale if n <= 25 else min(naturale, max(height or 0, 640))
     dati_json = json.dumps(payload, ensure_ascii=False, allow_nan=False).replace("</", "<\\/")

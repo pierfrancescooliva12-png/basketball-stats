@@ -19,8 +19,7 @@ header[data-testid="stHeader"] {display: none;}
 .block-container {padding-top: 1.4rem; max-width: 1240px;}
 .accesso-barra {display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 54px;}
 .accesso-barra .marchio {display: flex; align-items: center; gap: 10px; color: var(--ink);}
-.accesso-barra .marchio svg {width: 26px; height: 26px; border-radius: 0;}
-.accesso-barra .marchio b {font: 600 21px/1 var(--sans); letter-spacing: .14em;}
+.accesso-barra .marchio svg {height: 20px; width: auto; border-radius: 0;}
 .accesso-barra .marchio img {height: 30px; width: auto; max-width: 120px; object-fit: contain;}
 .accesso-barra a.pillola {display: inline-flex; align-items: center; height: 30px; padding: 0 14px; border-radius: 999px;
   background: var(--pill); border: 1px solid var(--linea); font: 500 14px var(--sans); color: var(--ink) !important;
@@ -64,11 +63,11 @@ header[data-testid="stHeader"] {display: none;}
 </style>
 """
 
-MARCHIO = ('<svg viewBox="0 0 128 128" aria-hidden="true"><path d="M30 104 L60 26 Q64 18 68 26 L98 104" fill="none" '
-           'stroke="#141413" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>'
-           '<circle cx="52.8" cy="63.3" r="3.6" fill="#e8631c"/><circle cx="63.1" cy="58.9" r="4" fill="#e8631c"/>'
-           '<circle cx="73.2" cy="56.5" r="4.4" fill="#e8631c"/><circle cx="83.2" cy="56.1" r="4.8" fill="#e8631c"/>'
-           '<circle cx="101" cy="55" r="14" fill="#e8631c"/></svg>')
+def _scritta(altezza: int = 20) -> str:
+    """La scritta ΛSSIST (nuovo logo) all'altezza data."""
+    import re
+    svg = (config.LOGO_DIR / "assist-scritta.svg").read_text(encoding="utf-8")
+    return re.sub(r' width="\d+" height="\d+"', f' height="{altezza}"', svg, count=1)
 
 PUNTI = ["Scouting dell'avversaria e report pre-partita in PDF e Word",
          "Chiavi della partita e verifica dopo la gara",
@@ -79,9 +78,9 @@ PUNTI = ["Scouting dell'avversaria e report pre-partita in PDF e Word",
 def _barra(tema=None):
     """Barra in alto: marchio ASSIST (o logo e nome del club) e il link alla pagina pubblica."""
     if tema is not None and tema.logo:
-        sx = f'<img src="{tema.logo}" alt=""><b>{esc(config.BRAND)}</b>'
+        sx = f'<img src="{tema.logo}" alt="">{_scritta()}'
     else:
-        sx = f'{MARCHIO}<b>{esc(config.BRAND)}</b>'
+        sx = _scritta()
     st.markdown(f'<div class="accesso-barra"><div class="marchio">{sx}</div>'
                 f'<a class="pillola" href="https://{config.SITO}" target="_blank" rel="noopener">{esc(config.SITO)} ↗</a></div>',
                 unsafe_allow_html=True)

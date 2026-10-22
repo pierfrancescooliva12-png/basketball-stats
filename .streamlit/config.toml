@@ -1,15 +1,15 @@
 [theme]
-# stile "Match day" dei report PDF: fondo grigio chiaro, riquadri bianchi, blu notte e arancio
+# stile editoriale: fondo crema, testo quasi nero, linee sottili (i PDF restano "Match day")
 base = "light"
-primaryColor = "#ff7a1a"
-backgroundColor = "#f4f6fa"
-secondaryBackgroundColor = "#eef1f6"
-textColor = "#1a2233"
-linkColor = "#2a78d6"
-borderColor = "#e3e8f0"
-dataframeHeaderBackgroundColor = "#e9edf4"
-font = "Barlow, sans-serif"
-headingFont = "'Barlow Condensed', sans-serif"
+primaryColor = "#141413"
+backgroundColor = "#faf9f5"
+secondaryBackgroundColor = "#f0eee6"
+textColor = "#141413"
+linkColor = "#141413"
+borderColor = "#e3e0d4"
+dataframeHeaderBackgroundColor = "#f0eee6"
+font = "'Instrument Sans', sans-serif"
+headingFont = "'Instrument Sans', sans-serif"
 baseRadius = "10px"
 showWidgetBorder = true
 

@@ -35,31 +35,31 @@ CSS = """
 .loc .logo img {max-width: 100%; max-height: 100%; object-fit: contain;}
 .loc .logo .ini {width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center;
   justify-content: center; background: rgba(255,255,255,.10); border: 2px solid rgba(255,255,255,.35);
-  font: italic 700 clamp(22px, 4.6cqw, 52px)/1 'Barlow Condensed', sans-serif; letter-spacing: .02em;}
-.loc .nm {font: italic 700 clamp(22px, 3.8cqw, 46px)/1 'Barlow Condensed', sans-serif; letter-spacing: .03em;
+  font: 400 clamp(22px, 4.6cqw, 52px)/1 'Newsreader', Georgia, serif; letter-spacing: 0;}
+.loc .nm {font: 400 clamp(24px, 4cqw, 48px)/1.05 'Newsreader', Georgia, serif; letter-spacing: -.01em; text-transform: none !important;
   text-transform: uppercase; margin-top: 1.6cqw; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
   white-space: nowrap;}
-.loc .full {font: 500 clamp(11px, 1.35cqw, 15px) 'Barlow', sans-serif; color: rgba(255,255,255,.72);
+.loc .full {font: 500 clamp(11px, 1.35cqw, 15px) 'Instrument Sans', sans-serif; color: rgba(255,255,255,.72);
   margin-top: .5cqw; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
-.loc .ruolo {font: 600 clamp(9px, 1.05cqw, 12px) 'Barlow', sans-serif; letter-spacing: .2em; text-transform: uppercase;
+.loc .ruolo {font: 500 clamp(10px, 1.1cqw, 13px) 'Instrument Sans', sans-serif; letter-spacing: .02em; text-transform: none;
   color: var(--ax); margin-top: .9cqw;}
-.loc .vs {font: italic 700 clamp(28px, 5.6cqw, 64px)/1 'Barlow Condensed', sans-serif; letter-spacing: .02em;
+.loc .vs {font: italic 400 clamp(30px, 5.6cqw, 66px)/1 'Newsreader', Georgia, serif; letter-spacing: 0;
   color: #fff; text-shadow: 0 6px 22px rgba(0,0,0,.45);
   animation: loc-vs .5s cubic-bezier(.2,1.6,.4,1) .6s backwards;}
-.loc .info {position: relative; z-index: 4; display: flex; justify-content: center; flex-wrap: wrap;
-  gap: 4px 1.6cqw; padding: 12px 4cqw; background: rgba(6,10,18,.72); backdrop-filter: blur(4px); font: 600 clamp(11px, 1.35cqw, 15px) 'Barlow', sans-serif;
+.loc .info {position: relative; z-index: 4; text-transform: none !important; letter-spacing: .01em !important; display: flex; justify-content: center; flex-wrap: wrap;
+  gap: 4px 1.6cqw; padding: 12px 4cqw; background: rgba(6,10,18,.72); backdrop-filter: blur(4px); font: 600 clamp(11px, 1.35cqw, 15px) 'Instrument Sans', sans-serif;
   letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.86);
   animation: loc-su .5s ease .75s backwards;}
 .loc .info span + span::before {content: "·"; margin-right: 1.6cqw; color: rgba(255,255,255,.5);}
 .loc .eye {position: absolute; z-index: 4; left: 50%; top: max(12px, 1.6cqw); transform: translateX(-50%);
-  font: 600 clamp(10px, 1.15cqw, 13px) 'Barlow', sans-serif; letter-spacing: .24em; text-transform: uppercase;
+  font: 600 clamp(10px, 1.15cqw, 13px) 'Instrument Sans', sans-serif; letter-spacing: .02em; text-transform: none;
   color: #fff; background: rgba(6,10,18,.72); padding: 5px 14px 4px; border-radius: 999px; white-space: nowrap;}
 .loc .prob {position: relative; z-index: 2; display: grid; grid-template-columns: auto 1fr auto; align-items: center;
-  gap: 1.4cqw; margin: -1.2cqw 8cqw 3.2cqw; font: italic 700 clamp(16px, 2.4cqw, 28px) 'Barlow Condensed', sans-serif;}
+  gap: 1.4cqw; margin: -1.2cqw 8cqw 3.2cqw; font: 400 clamp(16px, 2.4cqw, 28px) 'Newsreader', Georgia, serif;}
 .loc .prob .bar {height: 8px; border-radius: 4px; background: var(--a2); overflow: hidden;}
 .loc .prob .bar i {display: block; height: 100%; background: var(--a1); border-radius: 4px;
   animation: loc-bar 1s cubic-bezier(.2,.8,.2,1) .8s backwards; transform-origin: left;}
-.loc .prob small {display: block; font: 600 clamp(9px, 1cqw, 11px) 'Barlow', sans-serif; letter-spacing: .14em;
+.loc .prob small {display: block; font: 600 clamp(9px, 1cqw, 11px) 'Instrument Sans', sans-serif; letter-spacing: .14em;
   text-transform: uppercase; color: rgba(255,255,255,.7); font-style: normal;}
 @keyframes loc-su {from {opacity: 0; transform: translateY(14px);}}
 @keyframes loc-b2 {from {transform: translateX(60%);}}
