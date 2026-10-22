@@ -28,6 +28,7 @@ CANDIDATI = tuple(f"https://static.legapallacanestro.com/sites/default/files/{ca
                   for ext in ("png", "jpg", "jpeg", "webp", "gif")
                   for cartella in ("", "styles/255_x/public/"))
 NAVY, ARANCIO, SFONDO = "#0b1220", "#ff7a1a", "#f4f6fa"
+CREMA = "#faf9f5"          # fondo dello stile editoriale
 
 
 def slug(nome: str) -> str:
@@ -209,7 +210,7 @@ def tema(squadra_id: int, nome: str, sovrascrivi: dict | None = None, scarica: b
     return Tema(squadra_id=int(squadra_id), nome=nome, fondo=fondo,
                 fondo_2=mescola(fondo, "#ffffff", 0.82), accento=accento,
                 testo_accento=testo_accento,
-                sfondo=mescola(primario, SFONDO, 0.07), logo=data_uri(dati),
+                sfondo=mescola(primario, CREMA, 0.05), logo=data_uri(dati),
                 da_logo=bool(auto) and not (sv.get("primario") or sv.get("secondario")))
 
 
@@ -226,15 +227,13 @@ def css(t: Tema) -> str:
 :root {{--navy: {t.fondo}; --navy-2: {t.fondo_2}; --accent: {t.accento};
   --accent-soft: rgba({a[0]},{a[1]},{a[2]},.12); --bg: {t.sfondo};}}
 [data-testid="stAppViewContainer"] {{background:
-  linear-gradient(180deg, {mescola(t.fondo, t.sfondo, 0.10)} 0, {t.sfondo} 340px) !important;}}
-header[data-testid="stHeader"] {{border-bottom-color: {t.accento} !important;}}
+  linear-gradient(180deg, {mescola(t.fondo, CREMA, 0.07)} 0, {CREMA} 300px) !important;}}
+header[data-testid="stHeader"] {{border-bottom: 2px solid {t.accento} !important;}}
 [data-testid="stBaseButton-primary"], [data-testid="stBaseButton-primaryFormSubmit"] {{
-  background: {t.accento} !important; border-color: {t.accento} !important;
-  box-shadow: 0 6px 18px rgba({a[0]},{a[1]},{a[2]},.28) !important; color: {t.testo_accento} !important;}}
+  background: {t.fondo} !important; border-color: {t.fondo} !important;
+  box-shadow: none !important; color: #ffffff !important;}}
 [data-testid="stBaseButton-primary"] *, [data-testid="stBaseButton-primaryFormSubmit"] * {{
-  color: {t.testo_accento} !important;}}
-[data-testid="stBaseButton-primaryFormSubmit"] {{color: {t.testo_accento} !important;}}
-.club-logo {{height: 84px; width: auto; max-width: 180px; object-fit: contain;
-  filter: drop-shadow(0 4px 14px rgba(0,0,0,.35));}}
+  color: #ffffff !important;}}
+.club-logo {{height: 84px; width: auto; max-width: 180px; object-fit: contain;}}
 {logo_css}
 </style>"""

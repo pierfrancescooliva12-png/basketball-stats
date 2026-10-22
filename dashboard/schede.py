@@ -376,7 +376,7 @@ def _contro_di_voi(a: App, sq: int) -> str:
         return ""
     giornata, data, ora, casa = r
     dove = "in casa" if casa == mia else "in trasferta"
-    return (f'<br><b style="color:#fff">Contro di voi: {giornata}ª giornata, '
+    return (f'<br><b>Contro di voi: {giornata}ª giornata, '
             f'{esc(it(data))} {esc(ora or "")} · {dove}</b>')
 
 
