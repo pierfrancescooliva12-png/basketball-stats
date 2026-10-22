@@ -11,40 +11,64 @@ from .ui import esc
 
 CSS = """
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap');
+:root {--crema: #faf9f5; --carta: #f3f1ea; --pill: #f0eee6; --linea: #e3e0d4; --ink: #141413; --ink-2: #3d3d3a;
+  --grigio: #6f6d66; --acc: #e8631c; --sans: 'Instrument Sans', system-ui, sans-serif; --serif: 'Newsreader', Georgia, serif;}
 header[data-testid="stHeader"] {display: none;}
-.block-container {padding-top: 2.2rem; max-width: 1180px;}
-.accesso-hero {position: relative; overflow: hidden; border-radius: 16px; background: var(--navy);
-  color: #fff; padding: 34px 32px 64px; min-height: 420px;
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 34px), 0 100%);}
-.accesso-hero::before, .accesso-hero::after {content: ""; position: absolute; top: -10%; bottom: -10%;
-  transform: skewX(-22deg);}
-.accesso-hero::before {left: 84%; width: 16px; background: var(--accent);}
-.accesso-hero::after {left: calc(84% + 16px); right: -40%; background: var(--navy-2);}
-.accesso-hero > * {position: relative; z-index: 1;}
-.accesso-hero .campo-bg {position: absolute; right: 18%; bottom: -40px; width: 380px; height: auto;
-  opacity: .09; z-index: 0; pointer-events: none;}
-.accesso-hero svg {width: 64px; height: 64px; border-radius: 14px;}
-.accesso-hero .marchio {font: italic 700 3.4rem/1 var(--cond); letter-spacing: .06em; margin-top: 18px;
-  text-transform: uppercase;}
-.accesso-hero .slogan {font: 600 .74rem 'Barlow', sans-serif; letter-spacing: .16em;
-  text-transform: uppercase; color: var(--accent); margin-top: 8px;}
-.accesso-hero ul {list-style: none; padding: 0; margin: 28px 0 0; max-width: 80%;}
-.accesso-hero li {color: var(--on-navy); font-size: 1rem; margin: 10px 0; padding-left: 18px;
-  position: relative;}
-.accesso-hero li::before {content: ""; position: absolute; left: 0; top: .5em; width: 8px; height: 8px;
-  background: var(--accent); transform: skewX(-14deg);}
-.accesso-titolo {font: italic 700 2.1rem/1 var(--cond); text-transform: uppercase; color: var(--navy);
-  margin: 6px 0 4px;}
-.accesso-sotto {color: var(--text-2); font-size: .95rem; margin-bottom: 14px;}
-[data-testid="stForm"] {background: var(--surface); border: 1px solid var(--line) !important;
-  border-top: 4px solid var(--accent) !important; border-radius: 14px; padding: 22px 22px 14px;
-  box-shadow: var(--shadow);}
-.accesso-piede {color: var(--muted); font-size: .8rem; margin-top: 12px;}
-@media (max-width: 760px) {.accesso-hero {min-height: 0; padding: 22px 20px 46px;}
-  .accesso-hero::before, .accesso-hero::after, .accesso-hero ul {display: none;}
-  .accesso-hero .marchio {font-size: 2.6rem; margin-top: 12px;}}
+.stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] {background: var(--crema) !important;}
+.block-container {padding-top: 1.4rem; max-width: 1240px;}
+.accesso-barra {display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 54px;}
+.accesso-barra .marchio {display: flex; align-items: center; gap: 10px; color: var(--ink);}
+.accesso-barra .marchio svg {width: 26px; height: 26px; border-radius: 0;}
+.accesso-barra .marchio b {font: 600 21px/1 var(--sans); letter-spacing: .14em;}
+.accesso-barra .marchio img {height: 30px; width: auto; max-width: 120px; object-fit: contain;}
+.accesso-barra a.pillola {display: inline-flex; align-items: center; height: 30px; padding: 0 14px; border-radius: 999px;
+  background: var(--pill); border: 1px solid var(--linea); font: 500 14px var(--sans); color: var(--ink) !important;
+  text-decoration: none;}
+.accesso-hero {color: var(--ink); padding: 0 0 20px;}
+.accesso-hero .club-logo {height: 76px; width: auto; max-width: 180px; object-fit: contain; margin-bottom: 22px;}
+.accesso-hero h1 {font: 400 clamp(30px, 3.3vw, 46px)/1.16 var(--serif) !important; letter-spacing: -.012em; margin: 0 0 30px;
+  color: var(--ink); padding: 0;}
+.accesso-hero h1 b {font: 600 1em/1.16 var(--sans); letter-spacing: -.025em;}
+.accesso-hero ul {list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--linea);}
+.accesso-hero li {display: grid; grid-template-columns: 34px 1fr; gap: 10px; padding: 13px 0; border-bottom: 1px solid var(--linea);
+  font: 400 16px/1.45 var(--sans); color: var(--ink-2);}
+.accesso-hero li span {font: 500 13px var(--sans); color: var(--acc); padding-top: 2px;}
+.accesso-titolo {font: 400 44px/1.05 var(--serif); color: var(--ink); margin: 6px 0 6px; letter-spacing: -.01em;}
+.accesso-sotto {color: var(--grigio); font: 400 16px/1.5 var(--sans); margin-bottom: 16px;}
+[data-testid="stForm"] {background: var(--carta); border: 1px solid var(--linea) !important; border-radius: 14px;
+  padding: 24px 24px 16px; box-shadow: none;}
+[data-testid="stForm"] label p {font: 500 14px var(--sans) !important; color: var(--ink) !important; letter-spacing: 0 !important;
+  text-transform: none !important;}
+[data-testid="stForm"] [data-baseweb="input"] {background: #fff !important; border: 1px solid var(--linea) !important;
+  border-radius: 10px !important;}
+[data-testid="stForm"] [data-baseweb="input"]:focus-within {border-color: var(--ink) !important;}
+[data-testid="stForm"] input {font: 400 16px var(--sans) !important; color: var(--ink) !important; background: #fff !important;}
+[data-testid="stForm"] button[kind="primaryFormSubmit"], [data-testid="stForm"] [data-testid="stBaseButton-primaryFormSubmit"] {
+  background: var(--ink) !important; border: 1px solid var(--ink) !important; color: var(--crema) !important;
+  border-radius: 999px !important; font: 500 16px var(--sans) !important; min-height: 46px;}
+[data-testid="stForm"] [data-testid="stBaseButton-primaryFormSubmit"]:hover {background: #2b2b29 !important;}
+[data-testid="stForm"] [data-testid="stBaseButton-primaryFormSubmit"] p {font: 500 16px var(--sans) !important; color: var(--crema) !important;}
+.accesso-piede {color: var(--grigio); font: 400 14px/1.5 var(--sans); margin-top: 14px;}
+.accesso-piede a {color: var(--ink) !important;}
+.accesso-hero h1, .accesso-hero h1 b {text-transform: none !important;}
+.accesso-hero ul {padding-left: 0 !important; margin-left: 0 !important;}
+.accesso-hero li {margin: 0 !important; list-style: none !important;}
+.accesso-hero li::marker {content: none;}
+.accesso-hero h1 a, .accesso-barra a svg[class*="Icon"] {display: none !important;}
+[data-testid="stForm"] [data-testid="stBaseButton-primaryFormSubmit"] {box-shadow: none !important;}
+/* su telefono prima il modulo di accesso, poi la presentazione */
+@media (max-width: 640px) {[data-testid="stHorizontalBlock"] {flex-direction: column-reverse !important;}}
+@media (max-width: 760px) {.accesso-barra {margin-bottom: 26px;} .accesso-titolo {font-size: 36px;}
+  .accesso-hero .club-logo {height: 56px;}}
 </style>
 """
+
+MARCHIO = ('<svg viewBox="0 0 128 128" aria-hidden="true"><path d="M30 104 L60 26 Q64 18 68 26 L98 104" fill="none" '
+           'stroke="#141413" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>'
+           '<circle cx="52.8" cy="63.3" r="3.6" fill="#e8631c"/><circle cx="63.1" cy="58.9" r="4" fill="#e8631c"/>'
+           '<circle cx="73.2" cy="56.5" r="4.4" fill="#e8631c"/><circle cx="83.2" cy="56.1" r="4.8" fill="#e8631c"/>'
+           '<circle cx="101" cy="55" r="14" fill="#e8631c"/></svg>')
 
 PUNTI = ["Scouting dell'avversaria e report pre-partita in PDF e Word",
          "Chiavi della partita e verifica dopo la gara",
@@ -52,25 +76,27 @@ PUNTI = ["Scouting dell'avversaria e report pre-partita in PDF e Word",
          "Previsioni e dati di Serie A2 e B Nazionale aggiornati ogni giorno"]
 
 
-# mezzo campo stilizzato, appena visibile sullo sfondo della testata
-CAMPO = ('<svg class="campo-bg" viewBox="0 0 300 280" fill="none" stroke="#ffffff" stroke-width="3" '
-         'aria-hidden="true"><path d="M0 2 H300"/><rect x="100" y="2" width="100" height="120"/>'
-         '<circle cx="150" cy="122" r="36"/><path d="M22 2 V60 A128 128 0 0 0 278 60 V2"/>'
-         '<circle cx="150" cy="30" r="9"/><path d="M128 18 H172"/></svg>')
+def _barra(tema=None):
+    """Barra in alto: marchio ASSIST (o logo e nome del club) e il link alla pagina pubblica."""
+    if tema is not None and tema.logo:
+        sx = f'<img src="{tema.logo}" alt=""><b>{esc(config.BRAND)}</b>'
+    else:
+        sx = f'{MARCHIO}<b>{esc(config.BRAND)}</b>'
+    st.markdown(f'<div class="accesso-barra"><div class="marchio">{sx}</div>'
+                f'<a class="pillola" href="https://{config.SITO}" target="_blank" rel="noopener">{esc(config.SITO)} ↗</a></div>',
+                unsafe_allow_html=True)
 
 
 def _hero(tema=None):
-    punti = "".join(f"<li>{esc(p)}</li>" for p in PUNTI)
+    punti = "".join(f"<li><span>{i:02d}</span>{esc(p)}</li>" for i, p in enumerate(PUNTI, 1))
     if tema is not None:
-        logo = f'<img class="club-logo" src="{tema.logo}" alt="">' if tema.logo else ""
-        st.markdown(f'<div class="accesso-hero">{CAMPO}{logo}<div class="marchio">{esc(tema.nome)}</div>'
-                    f'<div class="slogan">Area staff · con {esc(config.BRAND)}</div><ul>{punti}</ul></div>',
-                    unsafe_allow_html=True)
+        st.markdown(f'<div class="accesso-hero"><h1><b>{esc(tema.nome)}.</b> L\'area dello staff tecnico, con '
+                    f'{esc(config.BRAND)}: la prossima avversaria, le chiavi della partita e la crescita dei vostri '
+                    f'giocatori, aggiornate ogni giorno.</h1><ul>{punti}</ul></div>', unsafe_allow_html=True)
         return
-    mark = (config.LOGO_DIR / "assist-mark.svg").read_text(encoding="utf-8")
-    st.markdown(f'<div class="accesso-hero">{CAMPO}{mark}<div class="marchio">{esc(config.BRAND)}</div>'
-                f'<div class="slogan">{esc(config.BRAND_TAGLINE)}</div><ul>{punti}</ul></div>',
-                unsafe_allow_html=True)
+    st.markdown(f'<div class="accesso-hero"><h1><b>Area riservata agli staff tecnici.</b> Scouting dell\'avversaria, '
+                'chiavi della partita, sviluppo dei giocatori e mercato per la Serie A2 e la B Nazionale, aggiornati '
+                f'ogni giorno.</h1><ul>{punti}</ul></div>', unsafe_allow_html=True)
 
 
 def club_da_link(voluto: str | None = None) -> tuple[int, str] | None:
@@ -107,19 +133,20 @@ def _tema_link(voluto: str | None = None):
 
 def login(utenti: dict, arch=None) -> None:
     """Mostra la schermata di accesso e ferma la pagina finché le credenziali non sono giuste."""
-    st.markdown(CSS, unsafe_allow_html=True)
     tema = _tema_link()                   # pagina di accesso con il brand del club
+    st.markdown(CSS, unsafe_allow_html=True)   # dopo il brand: fondo crema e pulsante scuro restano
     from . import icona_app
     icona_app.imposta(tema)               # "Aggiungi a Home" dal link del club: il suo logo
     from . import intro
     intro.mostra(tema)                    # intro animata, una volta per sessione
+    _barra(tema)
     stato = st.session_state.setdefault("_accesso", {})
-    c1, _, c2 = st.columns([1.25, 0.08, 1], vertical_alignment="center")
+    c1, _, c2 = st.columns([1.2, 0.12, 0.9], vertical_alignment="top")
     with c1:
         _hero(tema)
     with c2:
         st.markdown('<div class="accesso-titolo">Accedi</div><div class="accesso-sotto">'
-                    'Area riservata agli staff tecnici.</div>', unsafe_allow_html=True)
+                    'Con le credenziali ricevute dal tuo club.</div>', unsafe_allow_html=True)
         attesa = accesso.attesa(stato, time.time())
         with st.form("login"):
             u = st.text_input("Utente", autocomplete="username")
@@ -210,12 +237,13 @@ def _nuova_password(utente: dict, arch, chiave: str, vecchia_richiesta: bool) ->
 
 def cambio_obbligatorio(utente: dict, arch) -> None:
     """Primo accesso con la password iniziale: prima di entrare si sceglie la propria."""
-    st.markdown(CSS, unsafe_allow_html=True)
     from basket import brand
     tema = _tema_link(brand.slug(utente["club"])) if utente.get("club") else None
+    st.markdown(CSS, unsafe_allow_html=True)
     from . import icona_app
     icona_app.imposta(tema)
-    c1, _, c2 = st.columns([1.25, 0.08, 1], vertical_alignment="center")
+    _barra(tema)
+    c1, _, c2 = st.columns([1.2, 0.12, 0.9], vertical_alignment="top")
     with c1:
         _hero(tema)
     with c2:

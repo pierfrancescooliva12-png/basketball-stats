@@ -18,17 +18,18 @@ PUNTI = [(21.0, 88.7, 1.90), (31.8, 78.2, 2.23), (42.4, 69.8, 2.57), (52.8, 63.3
 
 CSS = """
 <style>
-.intro {position: fixed; inset: 0; z-index: 1000000; background: #0b1220; overflow: hidden;
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600&family=Newsreader:opsz,wght@6..72,400&display=swap');
+.intro {position: fixed; inset: 0; z-index: 1000000; background: #faf9f5; overflow: hidden;
   display: flex; align-items: center; justify-content: center; flex-direction: column;
   animation: intro-via .7s cubic-bezier(.6,0,.2,1) var(--fine) forwards;}
 @keyframes intro-via {to {opacity: 0; transform: scale(1.04); visibility: hidden;}}
 .intro .lampo {position: absolute; top: -20%; bottom: -20%; width: 9vw; min-width: 60px;
-  background: #ff7a1a; transform: skewX(-24deg); left: -30%;
+  background: #e8631c; transform: skewX(-24deg); left: -30%;
   animation: intro-lampo 1.1s cubic-bezier(.7,0,.25,1) .05s forwards;}
-.intro .lampo.b {background: #13213b; width: 34vw; animation-delay: .18s; animation-duration: 1.25s;}
+.intro .lampo.b {background: #ebe6d6; width: 34vw; animation-delay: .18s; animation-duration: 1.25s;}
 @keyframes intro-lampo {to {left: 130%;}}
 .intro .fondo {position: absolute; inset: 0; opacity: 0;
-  background: radial-gradient(900px 500px at 50% 45%, rgba(255,122,26,.10), transparent 70%);
+  background: radial-gradient(900px 500px at 50% 45%, rgba(232,99,28,.07), transparent 70%);
   animation: intro-in .8s ease .7s forwards;}
 .intro .scena {position: relative; display: flex; flex-direction: column; align-items: center;}
 .intro svg {width: min(38vw, 220px); height: auto; overflow: visible;}
@@ -45,18 +46,18 @@ CSS = """
   animation: intro-palla .55s cubic-bezier(.2,1.6,.4,1) 1.85s forwards;}
 @keyframes intro-palla {0% {transform: scale(0) rotate(-90deg); opacity: 0;}
   100% {transform: scale(1) rotate(0); opacity: 1;}}
-.intro .nome {font: italic 700 clamp(56px, 11vw, 120px)/1 'Barlow Condensed', 'Arial Narrow', sans-serif;
-  letter-spacing: .08em; color: #fff; margin-top: 18px; clip-path: inset(0 100% 0 0);
+.intro .nome {font: 600 clamp(48px, 9vw, 104px)/1 'Instrument Sans', sans-serif;
+  letter-spacing: .14em; color: #141413; margin-top: 18px; clip-path: inset(0 100% 0 0);
   animation: intro-svela .55s cubic-bezier(.6,0,.2,1) 2.05s forwards;}
 @keyframes intro-svela {to {clip-path: inset(0 0 0 0);}}
-.intro .motto {font: 600 clamp(11px, 1.6vw, 14px) 'Barlow', sans-serif; letter-spacing: .22em;
-  text-transform: uppercase; color: #ff7a1a; margin-top: 10px; opacity: 0; transform: translateY(8px);
+.intro .motto {font: 400 clamp(16px, 2vw, 22px) 'Newsreader', Georgia, serif; letter-spacing: 0;
+  text-transform: none; color: #6f6d66; margin-top: 10px; opacity: 0; transform: translateY(8px);
   animation: intro-in .45s ease 2.4s forwards;}
 .intro .club {display: flex; align-items: center; gap: 14px; margin-top: 26px; opacity: 0;
   transform: translateY(10px); animation: intro-in .45s ease 2.55s forwards;
-  font: italic 700 clamp(22px, 3vw, 30px) 'Barlow Condensed', sans-serif; letter-spacing: .04em;
-  text-transform: uppercase; color: #fff;}
-.intro .club span {color: #8e9ab0; font: 600 13px 'Barlow', sans-serif; letter-spacing: .2em;}
+  font: 400 clamp(22px, 3vw, 30px) 'Newsreader', Georgia, serif; letter-spacing: 0;
+  text-transform: none; color: #141413;}
+.intro .club span {color: #6f6d66; font: 500 15px 'Instrument Sans', sans-serif; letter-spacing: .02em;}
 .intro .club img {height: 56px; width: auto; max-width: 140px; object-fit: contain;}
 @keyframes intro-in {to {opacity: 1; transform: none;}}
 /* la schermata di accesso entra dopo l'intro: testata da sinistra, modulo dal basso */
@@ -77,7 +78,7 @@ def _svg() -> str:
                     f'style="animation-delay:{1.45 + i * 0.06:.2f}s"/>'
                     for i, (x, y, r) in enumerate(PUNTI))
     return ('<svg viewBox="0 0 128 128" aria-hidden="true">'
-            '<g class="quadro"><rect width="128" height="128" rx="30" fill="#13213b"/>'
+            '<g class="quadro"><rect width="128" height="128" rx="30" fill="#141413"/>'
             '<path class="lettera" pathLength="1" d="M30 104 L60 26 Q64 18 68 26 L98 104" fill="none" '
             'stroke="#f2f4f8" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>'
             f'{punti}'
