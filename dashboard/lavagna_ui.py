@@ -63,7 +63,7 @@ def render(a: App, riferimento: int, contesto: str, titolo: str, nome_squadra: s
     if a.utente.get("ruolo") == "admin" and not a.utente.get("demo"):
         video_ui.render(a, riferimento, contesto, nome_squadra)
     valore = _lavagna(giochi=giochi(a, riferimento), contesto=contesto, titolo=titolo,
-                      schemi=SCHEMI, tema="dark", apri=st.session_state.get(f"lavagna_apri_{contesto}_{riferimento}"),
+                      schemi=SCHEMI, tema="light", apri=st.session_state.get(f"lavagna_apri_{contesto}_{riferimento}"),
                       key=f"lavagna_{contesto}_{riferimento}",
                       default=None)
     chiave = f"lavagna_ultima_{contesto}_{riferimento}"
