@@ -22,7 +22,7 @@ from . import miglioramento as M
 from .contesto import Contesto, open_readonly
 from . import pdf_stile as ST
 from .report_extra import _data_it, _documento, _piede, _testata
-from .report_pdf import (_approfondimenti, _fmt, _fonts, _kpis, _styles, _table, slug,
+from .report_pdf import (Capitoli, _approfondimenti, _fmt, _fonts, _kpis, _styles, _table, slug,
                          unisci_titoli)
 
 # stesse voci e nomi del pannello obiettivi della dashboard
@@ -53,7 +53,7 @@ def _prestazioni(ctx, sid: int) -> list[dict]:
 
 
 def _titolo(testo: str, S) -> Paragraph:
-    return Paragraph(testo.upper(), S["h2"])
+    return Paragraph(testo, S["h2"])
 
 
 def _quintetti(df: pd.DataFrame, S, W) -> list:
@@ -90,14 +90,18 @@ def build_mia_squadra(ctx: Contesto, sid: int, obiettivi: dict | None = None,
         avv = ng["ospite"] if ng["casa_id"] == sid else ng["casa"]
         meta += (f"<br/>Prossima partita: {ng['giornata']}ª giornata, {_data_it(ng['data'])} "
                  f"contro {avv} ({'in casa' if ng['casa_id'] == sid else 'in trasferta'})")
-    el = [_testata(f"La mia squadra · {camp_nome} {stag}", nome.upper(), meta, S, W),
-          Spacer(1, 6)]
+    con_giocatori = (ctx.players["squadra_id"] == sid).any()
+    capitoli = ["Dove intervenire", "Come sta andando"] + (["Lo sviluppo dei giocatori"] if con_giocatori else []) \
+        + ["Come gioca"] + (["I giochi"] if giochi else [])
+    cap = Capitoli(capitoli, W)
+    el = [_testata(f"La mia squadra · {camp_nome} {stag}", nome, meta, S, W),
+          ST.Sommario(W, capitoli), Spacer(1, 8)]
     el.append(_kpis([
         ("Net rating", _fmt(me["net_rtg"], signed=True), _rank(lega, sid, "net_rtg")),
         ("Rating offensivo", _fmt(me["ortg"]), _rank(lega, sid, "ortg")),
         ("Rating difensivo", _fmt(me["drtg"]), _rank(lega, sid, "drtg", True)),
         ("Ritmo", _fmt(me["pace"]), _rank(lega, sid, "pace")),
-        ("Punto a punto", str(me["record_pp"]), "margine ≤ 5"),
+        ("Punto a punto", str(me["record_pp"]), "margine fino a 5"),
         ("Fortuna", _fmt(me["fortuna"], signed=True), "vittorie reali − attese"),
     ], S, W))
 
@@ -110,7 +114,7 @@ def build_mia_squadra(ctx: Contesto, sid: int, obiettivi: dict | None = None,
     dett = M.dettagli_giocatori(pl, sid)
     el.append(_titolo("Su cosa concentrarsi", S))
     if int(me["partite"]) < 8:
-        el.append(Paragraph(f"⚠ Pochi dati: {int(me['partite'])} partite giocate. Le differenze "
+        el.append(Paragraph(f"<b>Attenzione</b> · Pochi dati: {int(me['partite'])} partite giocate. Le differenze "
                             "dal campionato diventano affidabili dopo 8-10 giornate.", S["small"]))
     for i, v in enumerate(M.sintesi(pri, rg, dett), start=1):
         el.append(Paragraph(f"{i}. {_virgola(v)}", S["body"]))
@@ -157,7 +161,7 @@ def build_mia_squadra(ctx: Contesto, sid: int, obiettivi: dict | None = None,
         el.append(Paragraph("Servono più partite con quintetti verificati.", S["small"]))
     else:
         if int(me["partite"]) < 8:
-            el.append(Paragraph("⚠ Inizio stagione: pochi minuti insieme per ogni quintetto, "
+            el.append(Paragraph("<b>Attenzione</b> · Inizio stagione: pochi minuti insieme per ogni quintetto, "
                                 "indicazioni da confermare.", S["small"]))
         for df, testo in ((migliori, "Quelli che funzionano: da usare di più"),
                           (peggiori, "Quelli da rivedere")):
@@ -184,7 +188,8 @@ def build_mia_squadra(ctx: Contesto, sid: int, obiettivi: dict | None = None,
                _table(rows, [90 * mm] + [(W - 90 * mm) / 2] * 2)]
 
     # ---- obiettivi, andamento, avversarie
-    el.append(PageBreak())
+    el += [PageBreak()] + cap("Come sta andando", "Gli obiettivi dello staff, l'andamento partita per partita, "
+                              "le partite contro le forti e le deboli, le medie dei giocatori.")
     goals = {**AV.OBIETTIVI_DEFAULT, **(obiettivi or {})}
     form = AV.rolling_form(ctx.bs, sid)
     rows = [["Voce", "Obiettivo", "A partita", "Stagione", "Ultime 5", "Raggiunto"]]
@@ -244,14 +249,16 @@ def build_mia_squadra(ctx: Contesto, sid: int, obiettivi: dict | None = None,
         # sviluppo dei singoli giocatori: cosa fanno bene, cosa fanno male, dove migliorare
         from . import sviluppo as SV
         from .report_pdf import sviluppo_flowables
-        el += [PageBreak()] + sviluppo_flowables(SV.squadra(ctx, sid, foto=foto), S, W, titolo=True,
-                                                 sfondo=ST.SFONDO, prestazioni=_prestazioni(ctx, sid)) \
-            + [PageBreak()]
+        el += [PageBreak()] + cap("Lo sviluppo dei giocatori", "Ogni giocatore confrontato con quelli di rotazione "
+                                  "del campionato dello stesso ruolo: cosa fa bene, cosa fa male, dove crescere.") \
+            + sviluppo_flowables(SV.squadra(ctx, sid, foto=foto), S, W, prestazioni=_prestazioni(ctx, sid))
+    el += [PageBreak()] + cap("Come gioca", "Finali punto a punto, rotazioni, quintetti, momenti della partita "
+                              "e avvisi.")
 
     ct = ctx.clutch_teams
     if ct is not None and not ct.empty and sid in set(ct["squadra_id"]):
         c = ct.set_index("squadra_id").loc[sid]
-        el += [_titolo("Finali punto a punto · ultimi 5' con scarto ≤ 5", S),
+        el += [_titolo("Finali punto a punto · ultimi 5' con scarto entro 5", S),
                Paragraph(f"Partite con finale punto a punto: {int(c['partite_clutch'])} · record "
                          f"{c['record_clutch']} · punti nei finali {int(c['punti_fatti'])}-"
                          f"{int(c['punti_subiti'])}", S["body"])]
@@ -268,10 +275,10 @@ def build_mia_squadra(ctx: Contesto, sid: int, obiettivi: dict | None = None,
                 el.append(Paragraph(f"• {chi}{x.testo}", S["body"]))
 
     if giochi:
-        el += [PageBreak()] + L.flowables(giochi, S, W, f"GIOCHI DI {nome.upper()} · "
-                                                        "disegnati dallo staff, fase per fase")
+        el += [PageBreak()] + cap("I giochi", "Disegnati dallo staff sulla lavagna, fase per fase.") \
+            + L.flowables(giochi, S, W, f"Giochi di {nome} · disegnati dallo staff, fase per fase")[1:]
 
-    piede = _piede(f"{nome} · la mia squadra")
+    piede = _piede(f"La mia squadra · {nome}")
     doc.build(unisci_titoli(el), onFirstPage=piede, onLaterPages=piede)
     return buf.getvalue()
 

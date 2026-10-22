@@ -29,50 +29,65 @@ from . import pdf_stile as ST
 from .contesto import Contesto, open_readonly
 
 FONT_DIR = config.ROOT / "assets" / "fonts"
-NAVY = colors.HexColor("#0b1220")
-ARANCIO = colors.HexColor("#ff7a1a")
-BLU = colors.HexColor("#2a78d6")
-ROSSO = colors.HexColor("#d95926")
-INK = colors.HexColor("#1a2233")
-GRIGIO = colors.HexColor("#6b7489")
-RIGA = colors.HexColor("#f3f5f9")
-BORDO = colors.HexColor("#dfe3eb")
+# stile editoriale, come la piattaforma: carta crema, inchiostro, arancio solo come accento
+NAVY = ST.INK                       # nome storico: il colore "scuro" dei report
+ARANCIO = ST.ARANCIO
+BLU = ST.BLU
+ROSSO = ST.ROSSO
+INK = ST.INK
+GRIGIO = ST.GRIGIO
+RIGA = ST.CARTA
+BORDO = ST.LINEA
 
 
 def _fonts():
-    if "Barlow" in pdfmetrics.getRegisteredFontNames():
+    """Instrument Sans per i testi e Newsreader per titoli e numeri grandi (licenza OFL)."""
+    if "Sans" in pdfmetrics.getRegisteredFontNames():
         return
-    for name, file in (("Barlow", "Barlow-Regular.ttf"), ("Barlow-Medium", "Barlow-Medium.ttf"),
-                       ("Barlow-SemiBold", "Barlow-SemiBold.ttf"),
-                       ("Condensed", "BarlowCondensed-Bold.ttf"),
-                       ("Condensed-Semi", "BarlowCondensed-SemiBold.ttf")):
+    for name, file in (("Sans", "InstrumentSans-Regular.ttf"), ("Sans-Medium", "InstrumentSans-Medium.ttf"),
+                       ("Sans-Semi", "InstrumentSans-SemiBold.ttf"), ("Serif", "Newsreader-Regular.ttf"),
+                       ("Serif-Medium", "Newsreader-Medium.ttf")):
         pdfmetrics.registerFont(TTFont(name, str(FONT_DIR / file)))
+    # <b> nei paragrafi: il semibold della stessa famiglia
+    pdfmetrics.registerFontFamily("Sans", normal="Sans", bold="Sans-Semi", italic="Sans", boldItalic="Sans-Semi")
+    pdfmetrics.registerFontFamily("Sans-Medium", normal="Sans-Medium", bold="Sans-Semi", italic="Sans-Medium",
+                                  boldItalic="Sans-Semi")
+    pdfmetrics.registerFontFamily("Serif", normal="Serif", bold="Serif-Medium", italic="Serif",
+                                  boldItalic="Serif-Medium")
 
 
 def _styles():
     return {
-        "h1": ParagraphStyle("h1", fontName="Condensed", fontSize=26, leading=28,
-                             textColor=colors.white),
-        "eyebrow": ParagraphStyle("eb", fontName="Barlow-SemiBold", fontSize=8, leading=10,
-                                  textColor=ARANCIO),
-        "meta": ParagraphStyle("meta", fontName="Barlow", fontSize=9, leading=12,
-                               textColor=colors.HexColor("#c9d1e0")),
-        "h2": ParagraphStyle("h2", fontName="Condensed", fontSize=14, leading=16,
-                             textColor=INK, spaceBefore=8, spaceAfter=4),
-        "h3": ParagraphStyle("h3", fontName="Condensed-Semi", fontSize=11, leading=13,
+        "h1": ParagraphStyle("h1", fontName="Serif", fontSize=26, leading=29, textColor=INK),
+        "eyebrow": ParagraphStyle("eb", fontName="Sans-Semi", fontSize=7.5, leading=10, textColor=GRIGIO),
+        "meta": ParagraphStyle("meta", fontName="Sans", fontSize=9, leading=12, textColor=GRIGIO),
+        "h2": ParagraphStyle("h2", fontName="Serif-Medium", fontSize=14.5, leading=17,
+                             textColor=INK, spaceBefore=12, spaceAfter=5),
+        "h3": ParagraphStyle("h3", fontName="Sans-Semi", fontSize=9.5, leading=12,
                              textColor=INK, spaceBefore=6, spaceAfter=3),
-        "body": ParagraphStyle("body", fontName="Barlow", fontSize=8.5, leading=11,
+        "body": ParagraphStyle("body", fontName="Sans", fontSize=8.5, leading=11.6,
                                textColor=INK, alignment=TA_LEFT),
-        "small": ParagraphStyle("small", fontName="Barlow", fontSize=7.5, leading=9.5,
+        "small": ParagraphStyle("small", fontName="Sans", fontSize=7.3, leading=9.6,
                                 textColor=GRIGIO),
-        "cell": ParagraphStyle("cell", fontName="Barlow", fontSize=8, leading=9.5, textColor=INK),
-        "kpi_l": ParagraphStyle("kl", fontName="Barlow-SemiBold", fontSize=6.5, leading=8,
+        "cell": ParagraphStyle("cell", fontName="Sans", fontSize=7.8, leading=9.6, textColor=INK),
+        "kpi_l": ParagraphStyle("kl", fontName="Sans-Semi", fontSize=6.3, leading=8,
                                 textColor=GRIGIO),
-        "kpi_v": ParagraphStyle("kv", fontName="Condensed", fontSize=18, leading=20,
+        "kpi_v": ParagraphStyle("kv", fontName="Serif", fontSize=19, leading=21,
                                 textColor=INK),
-        "kpi_s": ParagraphStyle("ks", fontName="Barlow", fontSize=6.5, leading=8,
+        "kpi_s": ParagraphStyle("ks", fontName="Sans", fontSize=6.5, leading=8,
                                 textColor=GRIGIO),
     }
+
+
+class Capitoli:
+    """Apre i capitoli di un report numerandoli nell'ordine in cui compaiono nel sommario."""
+
+    def __init__(self, titoli: list[str], W):
+        self.titoli, self.W = titoli, W
+
+    def __call__(self, titolo: str, descrizione: str = "") -> list:
+        n = self.titoli.index(titolo) + 1 if titolo in self.titoli else len(self.titoli) + 1
+        return [ST.Capitolo(self.W, n, titolo, descrizione), Spacer(1, 8)]
 
 
 def _fmt(v, d=1, signed=False):
@@ -90,25 +105,24 @@ def _fmt(v, d=1, signed=False):
 def _table(rows, widths, header=True, align_right_from=1, zebra=True, align_left=()):
     t = Table(rows, colWidths=widths, repeatRows=1 if header else 0)
     style = [
-        ("FONTNAME", (0, 0), (-1, -1), "Barlow"),
-        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("FONTNAME", (0, 0), (-1, -1), "Sans"),
+        ("FONTSIZE", (0, 0), (-1, -1), 7.8),
         ("TEXTCOLOR", (0, 0), (-1, -1), INK),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("TOPPADDING", (0, 0), (-1, -1), 2.5),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 2.5),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
         ("ALIGN", (align_right_from, 0), (-1, -1), "RIGHT"),
-        ("LINEBELOW", (0, -1), (-1, -1), 0.4, BORDO),
-        ("BACKGROUND", (0, 0), (-1, -1), colors.white),
+        ("LINEBELOW", (0, 1 if header else 0), (-1, -1), 0.35, BORDO),
     ] + [("ALIGN", (c, 0), (c, -1), "LEFT") for c in align_left]
     if header:
-        style += [("FONTNAME", (0, 0), (-1, 0), "Barlow-SemiBold"),
-                  ("FONTSIZE", (0, 0), (-1, 0), 7),
+        style += [("FONTNAME", (0, 0), (-1, 0), "Sans-Medium"),
+                  ("FONTSIZE", (0, 0), (-1, 0), 6.8),
                   ("TEXTCOLOR", (0, 0), (-1, 0), GRIGIO),
-                  ("LINEBELOW", (0, 0), (-1, 0), 0.6, INK)]
+                  ("LINEBELOW", (0, 0), (-1, 0), 0.7, INK)]
     if zebra:
         for i in range(1 if header else 0, len(rows)):
             if i % 2 == 0:
-                style.append(("BACKGROUND", (0, i), (-1, i), RIGA))
+                style.append(("BACKGROUND", (0, i), (-1, i), ST.CARTA_CHIARA))
     t.setStyle(TableStyle(style))
     return t
 
@@ -123,12 +137,11 @@ def _kpis(items, S, width):
 
 
 def _box(content):
-    t = Table([[content[0]], [content[1]], [content[2]]], cornerRadii=[6, 6, 6, 6])
-    t.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.white),
-                           ("LINEABOVE", (0, 0), (-1, 0), 2.5, ARANCIO),
-                           ("TOPPADDING", (0, 0), (-1, -1), 1.5),
-                           ("BOTTOMPADDING", (0, 0), (-1, -1), 1.5),
-                           ("LEFTPADDING", (0, 0), (-1, -1), 6)]))
+    t = Table([[content[0]], [content[1]], [content[2]]], cornerRadii=[5, 5, 5, 5])
+    t.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), ST.CARTA),
+                           ("TOPPADDING", (0, 0), (0, 0), 6), ("TOPPADDING", (0, 1), (-1, -1), 1.5),
+                           ("BOTTOMPADDING", (0, 0), (-1, -2), 1.5), ("BOTTOMPADDING", (0, -1), (-1, -1), 6),
+                           ("LEFTPADDING", (0, 0), (-1, -1), 7)]))
     return t
 
 
@@ -198,28 +211,36 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
                             topMargin=12 * mm, bottomMargin=14 * mm,
                             title=f"Scouting {r.squadra}", author=config.BRAND)
     prossima = ctx.next_game(squadra_id)
-    el = [_header(r, prossima, S, W, config.STAGIONI.get(ctx.stagione, ctx.stagione)),
-          Spacer(1, 6)]
-
-    # ---- 0. visione di squadra e scouting dei giocatori
-    # la visione di squadra sta sempre in una pagina (si riduce se i testi sono lunghi)
-    libera = A4[1] - 26 * mm - el[0].wrap(W, A4[1])[1] - el[1].height - 2
-    el.append(KeepInFrame(W, libera, _sintesi(SI.squadra(ctx, squadra_id, mia, r), r, S, W), mode="shrink"))
     giocatori = SG.schede(ctx, squadra_id, foto=foto)
+    # i capitoli del report, nell'ordine: la prima pagina li elenca
+    capitoli = (["La squadra"] + (["I giocatori"] if giocatori else []) + ["Il piano partita", "I numeri"]
+                + (["I giochi"] if giochi else []))
+    cap = Capitoli(capitoli, W)
+    el = [_header(r, prossima, S, W, config.STAGIONI.get(ctx.stagione, ctx.stagione)),
+          ST.Sommario(W, capitoli), Spacer(1, 8)]
+
+    # ---- 1. la squadra: la visione di squadra sta sempre in una pagina (si riduce se i testi sono lunghi)
+    libera = A4[1] - 26 * mm - sum(x.wrap(W, A4[1])[1] for x in el) - 2
+    el.append(KeepInFrame(W, libera, _sintesi(SI.squadra(ctx, squadra_id, mia, r), r, S, W), mode="shrink"))
+    # ---- 2. i giocatori
     from . import impatto as I
     try:
         obiettivi = I.obiettivi(ctx, squadra_id)
     except Exception:
         obiettivi = []
     if giocatori:
-        el += [PageBreak()] + _schede(giocatori, r.squadra, S, W, obiettivi)
-    el.append(PageBreak())
+        el += [PageBreak()] + cap("I giocatori", "Giocatori di rotazione (almeno 10 minuti a partita), in ordine di "
+                                  "minuti, con gli obiettivi per limitarne l'impatto.") \
+            + _schede(giocatori, r.squadra, S, W, obiettivi)
+    # ---- 3. il piano partita
+    el += [PageBreak()] + cap("Il piano partita", "I numeri chiave, come affrontarli in difesa e in attacco, "
+                              "le chiavi per vincere.")
 
     el.append(_kpis([
         ("Net rating", _fmt(pf["net_rtg"], signed=True), f"ORtg {_fmt(pf['ortg'])} · "
                                                          f"DRtg {_fmt(pf['drtg'])}"),
         ("Ritmo", _fmt(pf["pace"]), "possessi per 40'"),
-        ("Punto a punto", str(pf["record_pp"]), "margine ≤ 5"),
+        ("Punto a punto", str(pf["record_pp"]), "margine fino a 5"),
         ("Fortuna", _fmt(pf["fortuna"], signed=True), f"vittorie attese {_fmt(pf['vinte_attese'])}"),
         ("Panchina", f"{_fmt(pf['quota_punti_panchina'], 0)}%", "dei punti"),
         ("Top 2", f"{_fmt(pf['quota_top2'], 0)}%", "dei punti"),
@@ -228,22 +249,22 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
     frasi = X.frase_squadra(lega, squadra_id)
     if frasi:
         testo = frasi[0] if len(frasi) == 1 else ", ".join(frasi[:-1]) + " e " + frasi[-1]
-        el.append(Paragraph(f"<b>IN UNA FRASE</b> · {testo[0].upper() + testo[1:]}.", S["body"]))
+        el.append(Paragraph(f"<b>In una frase</b> · {testo[0].upper() + testo[1:]}.", S["body"]))
 
-    # ---- 1. piano partita
     piano, dettaglio = _piano(ctx, squadra_id, mia, S, W)
     el += piano
     if dettaglio:
         el += [PageBreak()] + dettaglio
 
-    # ---- 2. la squadra
-    el.append(PageBreak())
+    # ---- 4. i numeri: le tabelle per approfondire
+    el += [PageBreak()] + cap("I numeri", "Punti di forza e deboli, Four Factors, giocatori, tiro, finali, "
+                              "quintetti, origine dei punti, risultati e profilo completo.")
 
     def lista(items, colore):
         if not items:
             return [Paragraph("Nessuno marcato (servono più partite).", S["small"])]
-        return [Paragraph(f'<font color="{colore}">■</font> {x}', S["body"]) for x in items]
-    fd = Table([[Paragraph("PUNTI DI FORZA", S["h2"]), Paragraph("PUNTI DEBOLI", S["h2"])],
+        return [Paragraph(f'<font color="{colore}"><b>•</b></font>&nbsp;&nbsp;{x}', S["body"]) for x in items]
+    fd = Table([[Paragraph("Punti di forza", S["h2"]), Paragraph("Punti deboli", S["h2"])],
                 [lista(r.punti_forza, "#2a78d6"), lista(r.punti_deboli, "#d95926")]],
                colWidths=[W / 2, W / 2])
     fd.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"),
@@ -259,9 +280,9 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
         [x.Periodo, _fmt(x.Fatti), _fmt(x.Subiti), _fmt(x.Diff, signed=True)]
         for x in q.itertuples()]
     blocco = Table([[
-        [Paragraph("FOUR FACTORS", S["h2"]),
+        [Paragraph("Four Factors", S["h2"]),
          _table(_bar_rows(ff, 22 * mm), [46 * mm, 24 * mm, 24 * mm, 12 * mm, 22 * mm])],
-        [Paragraph("QUARTO PER QUARTO", S["h2"]),
+        [Paragraph("Quarto per quarto", S["h2"]),
          _table(qrows, [16 * mm, 14 * mm, 14 * mm, 14 * mm]),
          Spacer(1, 4),
          Paragraph("Barra blu = squadra, linea = media del campionato. Diff = punti medi "
@@ -287,7 +308,7 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
             row += [_fmt(p.plus_minus, 0, signed=True), _fmt(p.on_off, signed=True)]
         rows.append(row)
     widths = [38 * mm] + [((W - 38 * mm) / (len(head) - 1))] * (len(head) - 1)
-    el += [Paragraph("GIOCATORI", S["h2"]), _table(rows, widths)]
+    el += [Paragraph("Giocatori", S["h2"]), _table(rows, widths)]
     if has_pm:
         el.append(Paragraph("+/- e On-Off (Net rating con il giocatore in campo meno fuori) "
                             "calcolati dalle partite con quintetti verificati.", S["small"]))
@@ -305,7 +326,7 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
                 row += [str(int(x.area_t)), _fmt(x.area_pct, 0), str(int(x.media_t)),
                         _fmt(x.media_pct, 0)]
             rows.append(row + [str(int(x.schiacciate_r))])
-        el += [Paragraph("PROFILO DI TIRO", S["h2"]),
+        el += [Paragraph("Profilo di tiro", S["h2"]),
                _table(rows, [44 * mm] + [(W - 44 * mm) / (len(head) - 1)] * (len(head) - 1))]
 
     f = ctx.fouls
@@ -316,11 +337,11 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
             rows = [["Giocatore", "Partite con problemi", "Uscito per 5 falli", "Falli totali"]]
             rows += [[x.giocatore, str(int(x.partite_problemi)), str(int(x.uscite_5_falli)),
                       str(int(x.falli))] for x in mine.itertuples()]
-            el += [Paragraph("PROBLEMI DI FALLI · 2+ nel 1° quarto o 3+ all'intervallo", S["h2"]),
+            el += [Paragraph("Problemi di falli · 2+ nel 1° quarto o 3+ all'intervallo", S["h2"]),
                    _table(rows, [60 * mm] + [(W - 60 * mm) / 3] * 3)]
 
     # ---- 3. come gioca: finali, quintetti, punti
-    el.append(Paragraph("FINALI PUNTO A PUNTO · ultimi 5' con scarto ≤ 5", S["h2"]))
+    el.append(Paragraph("Finali punto a punto · ultimi 5' con scarto entro 5", S["h2"]))
     ct = ctx.clutch_teams
     cp = ctx.clutch_players
     if ct is not None and not ct.empty and squadra_id in set(ct["squadra_id"]):
@@ -346,7 +367,7 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
         mine = a[a["squadra_id"] == squadra_id].head(8)
         rows = [["Passa", "Segna", "Canestri", "Punti"]] + [
             [x.da, x.a, str(int(x.canestri)), str(int(x.punti))] for x in mine.itertuples()]
-        left = [Paragraph("CHI SERVE CHI", S["h2"]),
+        left = [Paragraph("Chi serve chi", S["h2"]),
                 _table(rows, [30 * mm, 30 * mm, 14 * mm, 12 * mm])]
     lu = ctx.lineups
     if lu is not None and not lu.empty:
@@ -354,7 +375,7 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
         rows = [["Quintetto", "Min", "+/-", "Net"]] + [
             [Paragraph(x.giocatori, S["cell"]), _fmt(x.minuti), _fmt(x.plus_minus, 0, True),
              _fmt(x.net_rtg, signed=True)] for x in mine.itertuples()]
-        right = [Paragraph("QUINTETTI PIÙ USATI", S["h2"]),
+        right = [Paragraph("Quintetti più usati", S["h2"]),
                  _table(rows, [60 * mm, 12 * mm, 10 * mm, 12 * mm])]
     if left or right:
         t = Table([[left or "", right or ""]], colWidths=[W * 0.47, W * 0.53])
@@ -365,7 +386,7 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
     from . import miglioramento as M
     migliori, peggiori, soglia = M.quintetti_estremi(ctx.lineups, squadra_id)
     if not migliori.empty or not peggiori.empty:
-        el.append(Paragraph(f"QUINTETTI MIGLIORI E PEGGIORI · almeno {_fmt(soglia, 0)} minuti "
+        el.append(Paragraph(f"Quintetti migliori e peggiori · almeno {_fmt(soglia, 0)} minuti "
                             "insieme", S["h2"]))
         for df, testo in ((migliori, "Migliori: da limitare con i cambi"),
                           (peggiori, "Peggiori: da cercare in partita")):
@@ -390,7 +411,7 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
                              "concessi_contropiede_pg")):
             rows.append([lab, _fmt(pf[fc]), _fmt(lega[fc].mean()), _fmt(o[cc]),
                          _fmt(lega_oc[cc].mean())])
-        el += [Paragraph("ORIGINE DEI PUNTI FATTI E CONCESSI · a partita", S["h2"]),
+        el += [Paragraph("Origine dei punti fatti e concessi · a partita", S["h2"]),
                _table(rows, [60 * mm] + [(W - 60 * mm) / 4] * 4)]
 
     righe = [["Voce", "Squadra", "Media campionato"]]
@@ -411,7 +432,7 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
     voce("% punti dai liberi", "quota_punti_tl", 0, "%")
     voce("% punti dalla panchina", "quota_punti_panchina", 0, "%")
     if len(righe) > 1:
-        el += [Paragraph("COME FA PUNTI · PARZIALI · FALLI · TIMEOUT", S["h2"]),
+        el += [Paragraph("Come fa punti · parziali, falli e timeout", S["h2"]),
                _table(righe, [100 * mm, 30 * mm, 40 * mm])]
 
     el += _approfondimenti(ctx, squadra_id, prossima, S, W)
@@ -419,50 +440,41 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
     # ---- 4. risultati e profilo completo
     ct_ = r.casa_trasferta
     if ct_ is not None and not ct_.empty:
-        el += [Paragraph("CASA E TRASFERTA", S["h2"]),
+        el += [Paragraph("Casa e trasferta", S["h2"]),
                _table([list(ct_.columns)] + [[_fmt(v, 1) if isinstance(v, float) else str(v)
                                               for v in row] for row in ct_.values],
                       [W / len(ct_.columns)] * len(ct_.columns))]
-    el += [Paragraph("ULTIME PARTITE", S["h2"]),
+    el += [Paragraph("Ultime partite", S["h2"]),
            _table([list(r.ultime.columns)] + [[_fmt(v, 1) if isinstance(v, float) else str(v)
                                                for v in row] for row in r.ultime.values],
                   [18 * mm, 10 * mm, 50 * mm, 18 * mm, 22 * mm, 14 * mm, 14 * mm, 14 * mm,
                    26 * mm], align_left=(2, 3, 8))]
     prof_c = scouting.profilo_leggibile(r.profilo)
     rows = [["Metrica", "Valore", "Media campionato", "Posizione"]] + prof_c.values.tolist()
-    el += [Paragraph("PROFILO COMPLETO · posizione nel campionato", S["h2"]),
+    el += [Paragraph("Profilo completo · posizione nel campionato", S["h2"]),
            _table(rows, [80 * mm] + [(W - 80 * mm) / 3] * 3)]
 
     al = ctx.alerts
     if al is not None and not al.empty:
         mine = al[al["squadra_id"] == squadra_id]
         if not mine.empty:
-            el.append(Paragraph("AVVISI", S["h2"]))
+            el.append(Paragraph("Avvisi", S["h2"]))
             for x in mine.itertuples():
                 chi = f"<b>{x.giocatore}</b>: " if isinstance(x.giocatore, str) else ""
                 el.append(Paragraph(f"• {chi}{x.testo}", S["body"]))
     if note:
-        el.append(Paragraph("NOTE DELLO STAFF", S["h2"]))
+        el.append(Paragraph("Note dello staff", S["h2"]))
         for n in note:
             el.append(Paragraph(f"• {_esc(n.get('testo', ''))} "
-                                f"<font color='#6b7489'>({_esc(n.get('autore', ''))}, "
+                                f"<font color='#6f6d66'>({_esc(n.get('autore', ''))}, "
                                 f"{str(n.get('creata_il', ''))[:10]})</font>", S["body"]))
 
     if giochi:
-        el += [PageBreak()] + L.flowables(giochi, S, W, f"GIOCHI DI {r.squadra.upper()} · "
-                                                         "disegnati dallo staff, fase per fase")
+        el += [PageBreak()] + cap("I giochi", "Disegnati dallo staff sulla lavagna, fase per fase.") \
+            + L.flowables(giochi, S, W, f"Giochi di {r.squadra} · disegnati dallo staff, fase per fase")[1:]
 
-    def footer(canvas, doc_):
-        ST.sfondo(canvas, doc_)
-        canvas.saveState()
-        canvas.setFont("Barlow", 7)
-        canvas.setFillColor(GRIGIO)
-        canvas.drawString(12 * mm, 8 * mm, f"{config.BRAND} · {r.squadra}"
-                                           f" · {date.today().strftime('%d/%m/%Y')}")
-        canvas.drawRightString(A4[0] - 12 * mm, 8 * mm, f"pagina {doc_.page}")
-        canvas.restoreState()
-
-    doc.build(unisci_titoli(el), onFirstPage=footer, onLaterPages=footer)
+    footer = ST.piede(f"Scouting · {r.squadra}")
+    doc.build(unisci_titoli(el, W), onFirstPage=footer, onLaterPages=footer)
     return buf.getvalue()
 
 
@@ -484,14 +496,14 @@ def _semaforo(profilo: pd.DataFrame, S, W, riga=None):
     return g
 
 
-def _carta(contenuto, w, bordo=None, sfondo=colors.white, pad=8):
-    """Riquadro arrotondato (bianco o scuro) con un eventuale bordo colorato in alto."""
-    t = Table([[contenuto]], colWidths=[w], cornerRadii=[7, 7, 7, 7])
+def _carta(contenuto, w, bordo=None, sfondo=None, pad=8):
+    """Riquadro arrotondato: carta chiara o, se sfondo è l'inchiostro, scura. bordo resta per
+    compatibilità: nello stile editoriale i riquadri non hanno filetti colorati."""
+    sfondo = ST.SUPERFICIE if sfondo is None or sfondo == colors.white else sfondo
+    t = Table([[contenuto]], colWidths=[w], cornerRadii=[6, 6, 6, 6])
     stile = [("BACKGROUND", (0, 0), (-1, -1), sfondo), ("LEFTPADDING", (0, 0), (-1, -1), pad),
-             ("RIGHTPADDING", (0, 0), (-1, -1), pad), ("TOPPADDING", (0, 0), (-1, -1), pad - 2),
-             ("BOTTOMPADDING", (0, 0), (-1, -1), pad - 2), ("VALIGN", (0, 0), (-1, -1), "TOP")]
-    if bordo is not None:
-        stile.append(("LINEABOVE", (0, 0), (-1, 0), 3, bordo))
+             ("RIGHTPADDING", (0, 0), (-1, -1), pad), ("TOPPADDING", (0, 0), (-1, -1), pad - 1),
+             ("BOTTOMPADDING", (0, 0), (-1, -1), pad - 1), ("VALIGN", (0, 0), (-1, -1), "TOP")]
     t.setStyle(TableStyle(stile))
     return t
 
@@ -505,9 +517,9 @@ def _sintesi(s: dict, r, S, W) -> list:
                          spaceBefore=8, spaceAfter=4)
     grande = ParagraphStyle("grande", parent=S["body"], fontSize=10.5, leading=14)
     voce = ParagraphStyle("voce", parent=S["body"], fontSize=8.6, leading=11.2, spaceAfter=4)
-    el = [_carta([Paragraph("LA SQUADRA IN 30 SECONDI", titolo), Paragraph(_esc(s.get("sintesi", "")), grande)],
+    el = [_carta([Paragraph("La squadra in 30 secondi", titolo), Paragraph(_esc(s.get("sintesi", "")), grande)],
                  W - 4, pad=10),
-          Paragraph("COME STANNO IN CAMPIONATO", sez), _semaforo(r.profilo, S, W, s.get("riga"))]
+          Paragraph("Come stanno in campionato", sez), _semaforo(r.profilo, S, W, s.get("riga"))]
 
     def colonna(titolo_c, voci, colore, w):
         st_t = ParagraphStyle("ct", parent=S["h3"], fontSize=11, leading=13, textColor=colore,
@@ -516,16 +528,16 @@ def _sintesi(s: dict, r, S, W) -> list:
         corpo += [Paragraph(_esc(v), voce) for v in voci] or [Paragraph("Nessuna indicazione marcata.", S["small"])]
         return _carta(corpo, w, pad=9)
     w3 = W / 3 - 4
-    tre = Table([[colonna("IN DIFESA · contro il loro attacco", s.get("in_difesa", []), BLU, w3),
-                  colonna("IN ATTACCO · contro la loro difesa", s.get("in_attacco", []), ARANCIO, w3),
-                  colonna("RITMO, MOMENTI E FINALI", s.get("ritmo", []), NAVY, w3)]],
+    tre = Table([[colonna("In difesa · contro il loro attacco", s.get("in_difesa", []), BLU, w3),
+                  colonna("In attacco · contro la loro difesa", s.get("in_attacco", []), ARANCIO, w3),
+                  colonna("Ritmo, momenti e finali", s.get("ritmo", []), NAVY, w3)]],
                 colWidths=[W / 3] * 3)
     tre.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 2),
                              ("RIGHTPADDING", (0, 0), (-1, -1), 2)]))
     el += [Spacer(1, 6), tre]
     if s.get("da_ricordare"):
         num = ParagraphStyle("num", parent=S["h1"], fontSize=24, leading=26, textColor=ARANCIO)
-        testo = ParagraphStyle("ric", parent=S["body"], fontName="Barlow-SemiBold", fontSize=10,
+        testo = ParagraphStyle("ric", parent=S["body"], fontName="Sans-Semi", fontSize=10,
                                leading=13, textColor=colors.white)
         voci = s["da_ricordare"][:3]
         celle = [_carta([Paragraph(f"<i>{i}</i>", num), Paragraph(_esc(x), testo)], W / 3 - 4,
@@ -534,9 +546,9 @@ def _sintesi(s: dict, r, S, W) -> list:
         box = Table([celle], colWidths=[W / 3] * 3)
         box.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 2),
                                  ("RIGHTPADDING", (0, 0), (-1, -1), 2)]))
-        el += [Paragraph("DA RICORDARE", sez), box]
+        el += [Paragraph("Da ricordare", sez), box]
     if s.get("attenzione"):
-        el += [Spacer(1, 4), Paragraph(f"⚠ {_esc(s['attenzione'])}", S["small"])]
+        el += [Spacer(1, 4), Paragraph(f"<b>Attenzione</b> · {_esc(s['attenzione'])}", S["small"])]
     return el
 
 
@@ -553,8 +565,8 @@ def _foto(dati: bytes | None, nome: str, w, h):
     from reportlab.graphics.shapes import Drawing, Rect, String
     iniziali = "".join(x[0] for x in nome.split()[:2]).upper()
     d = Drawing(w, h)
-    d.add(Rect(0, 0, w, h, fillColor=colors.HexColor("#e9edf4"), strokeColor=None))
-    d.add(String(w / 2, h / 2 - 6, iniziali, fontName="Condensed", fontSize=18, fillColor=GRIGIO,
+    d.add(Rect(0, 0, w, h, fillColor=colors.HexColor("#f0eee6"), strokeColor=None))
+    d.add(String(w / 2, h / 2 - 6, iniziali, fontName="Serif", fontSize=18, fillColor=GRIGIO,
                  textAnchor="middle"))
     return d
 
@@ -577,17 +589,17 @@ def _scheda(g: dict, S, w):
     destra += [Paragraph(f'<font color="#2a78d6"><b>+</b></font>&nbsp;&nbsp;{_esc(c)}', voce) for c in g["forza"]]
     destra += [Paragraph(f'<font color="#d95926"><b>−</b></font>&nbsp;&nbsp;{_esc(c)}', voce) for c in g["deboli"]]
     if g.get("obiettivo"):
-        destra.append(Paragraph(f'<font color="#0b1220"><b>OBIETTIVO</b></font> · {_esc(g["obiettivo"]["obiettivo"])}',
+        destra.append(Paragraph(f'<font color="#141413"><b>Obiettivo</b></font> · {_esc(g["obiettivo"]["obiettivo"])}',
                                 voce))
     interno = Table([[ST.FotoMaglia(g.get("foto"), g["nome"], g.get("maglia")), destra]],
                     colWidths=[27 * mm, wd])
     interno.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
                                  ("RIGHTPADDING", (0, 0), (-1, -1), 0), ("TOPPADDING", (0, 0), (-1, -1), 0),
                                  ("BOTTOMPADDING", (0, 0), (-1, -1), 0)]))
-    return _carta(interno, w, bordo=ARANCIO, pad=8)
+    return _carta(interno, w, pad=8)
 
 
-def _obiettivi_singoli(obiettivi: list[dict], S, W, titolo="OBIETTIVI SUI SINGOLI · per limitarne l'impatto") -> list:
+def _obiettivi_singoli(obiettivi: list[dict], S, W, titolo="Obiettivi sui singoli · per limitarne l'impatto") -> list:
     """Tabella degli obiettivi sui giocatori, con quanto valgono e perché."""
     from . import impatto as I
     if not obiettivi:
@@ -604,10 +616,7 @@ def _obiettivi_singoli(obiettivi: list[dict], S, W, titolo="OBIETTIVI SUI SINGOL
 
 
 def _schede(giocatori: list[dict], squadra: str, S, W, obiettivi: list[dict] | None = None) -> list:
-    el = [ST.Intestazione(W, 12 * mm, 12 * mm, "Scouting dei giocatori", squadra, marchio=config.BRAND,
-                          grande=False),
-          Paragraph("Giocatori di rotazione (almeno 10 minuti a partita), in ordine di minuti. "
-                    "<font color='#2a78d6'><b>+</b></font> cosa fa meglio, "
+    el = [Paragraph("<font color='#2a78d6'><b>+</b></font> cosa fa meglio, "
                     "<font color='#d95926'><b>−</b></font> cosa fa peggio in modo evidente, sempre "
                     "rispetto ai giocatori di rotazione del campionato.", S["small"]), Spacer(1, 5)]
     el += _obiettivi_singoli(obiettivi or [], S, W)
@@ -651,16 +660,8 @@ def build_sviluppo(ctx: Contesto, squadra_id: int, foto: bool = True) -> bytes:
         prest = []
     el += sviluppo_flowables(giocatori, S, W, prestazioni=prest)
 
-    def pagina(canvas, doc_):
-        ST.sfondo(canvas, doc_)
-        canvas.saveState()
-        canvas.setFont("Barlow", 7)
-        canvas.setFillColor(GRIGIO)
-        canvas.drawString(12 * mm, 8 * mm, f"{config.BRAND} · {nome} · sviluppo dei giocatori · "
-                                           f"{date.today().strftime('%d/%m/%Y')}")
-        canvas.drawRightString(A4[0] - 12 * mm, 8 * mm, f"pagina {doc_.page}")
-        canvas.restoreState()
-    doc.build(el, onFirstPage=pagina, onLaterPages=pagina)
+    pagina = ST.piede(f"Sviluppo dei giocatori · {nome}")
+    doc.build(unisci_titoli(el, W), onFirstPage=pagina, onLaterPages=pagina)
     return buf.getvalue()
 
 
@@ -671,7 +672,7 @@ def sviluppo_flowables(giocatori: list[dict], S, W, titolo: bool = False, sfondo
                          spaceAfter=4)
     el = []
     if titolo:
-        el += [Paragraph("SVILUPPO DEI GIOCATORI", sez),
+        el += [Paragraph("Sviluppo dei giocatori", sez),
                Paragraph("Ogni giocatore è confrontato con i giocatori di rotazione del campionato dello stesso "
                          "ruolo (esterni, ali, lunghi); l'obiettivo è il valore normale del ruolo. Rimbalzi, "
                          "assist, recuperi e falli sono a partita con i minuti del giocatore; azione = un tiro, "
@@ -684,14 +685,13 @@ def sviluppo_flowables(giocatori: list[dict], S, W, titolo: bool = False, sfondo
         righe.append([g["nome"], g["numeri"][0][1], Paragraph(_esc(a["voce"]) if a else "–", S["cell"]),
                       Paragraph(_esc(f"{a['valore']} › {a['obiettivo']}") if a else "–", S["cell"]),
                       _fmt(a["punti_pg"]) if a and pd.notna(a["punti_pg"]) else "–"])
-    el += [Paragraph("PRIORITÀ DI LAVORO", sez),
+    el += [Paragraph("Priorità di lavoro · la voce su cui lavorare per prima, per ogni giocatore", S["h2"]),
            _table(righe, [42 * mm, 12 * mm, W - 42 * mm - 12 * mm - 52 * mm - 20 * mm, 52 * mm, 20 * mm],
                   align_left=(2, 3)), Spacer(1, 6)]
-    el += _obiettivi_singoli(prestazioni or [], S, W, "LE PRESTAZIONI CHE SPOSTANO IL RISULTATO")
-    for i, g in enumerate(giocatori):
-        if i % 3 == 0:
-            el.append(PageBreak())
-            el.append(Paragraph("GIOCATORI" + (" (continua)" if i else ""), sez))
+    el += _obiettivi_singoli(prestazioni or [], S, W, "Le prestazioni che spostano il risultato")
+    # le schede scorrono una dopo l'altra (ognuna intera sulla sua pagina), senza pagine mezze vuote
+    el.append(Paragraph("Giocatori · cosa fa bene, cosa fa male, dove crescere", S["h2"]))
+    for g in giocatori:
         el += [_scheda_sviluppo(g, S, W, sfondo), Spacer(1, 6)]
     return el
 
@@ -721,38 +721,44 @@ def _scheda_sviluppo(g: dict, S, W, sfondo=colors.white):
     testa = [Paragraph(_esc(g["nome"]), nome), Paragraph(_esc(" · ".join(map(str, meta))), S["small"]), Spacer(1, 3),
              numeri, Paragraph(_esc(g["tiro"]), S["small"])] + ([Paragraph(trend, S["small"])] if trend else [])
     cw = (W - 16) / 3
-    bene = [tit("COSA FA BENE", BLU)] + [Paragraph(f'<font color="#2a78d6"><b>+</b></font>&nbsp;&nbsp;{_esc(x)}', voce)
+    bene = [tit("Cosa fa bene", BLU)] + [Paragraph(f'<font color="#2a78d6"><b>+</b></font>&nbsp;&nbsp;{_esc(x)}', voce)
                                         for x in g["forza"]]
-    male = [tit("COSA FA MALE", ROSSO)] + ([Paragraph(f'<font color="#d95926"><b>−</b></font>&nbsp;&nbsp;{_esc(x)}', voce)
+    male = [tit("Cosa fa male", ROSSO)] + ([Paragraph(f'<font color="#d95926"><b>−</b></font>&nbsp;&nbsp;{_esc(x)}', voce)
                                            for x in g["deboli"]] or
                                           [Paragraph("Nessun difetto evidente rispetto al campionato.", S["small"])])
-    aree = [tit("AREE DI MIGLIORAMENTO", NAVY)]
+    aree = [tit("Aree di miglioramento", NAVY)]
     for a in g["aree"]:
         punti = f" · circa {_fmt(a['punti_pg'])} punti a partita" if pd.notna(a["punti_pg"]) and a["punti_pg"] >= 0.3 \
             else ""
         aree += [Paragraph(f"<b>{_esc(a['voce'])}</b>", voce),
                  Paragraph(f"{a['valore']} › obiettivo <b>{a['obiettivo']}</b>{punti}", S["small"]),
-                 ST.Obiettivo(cw - 20, a["da"], a["a"], a["alto"]), Spacer(1, 3)]
+                 ST.Obiettivo(cw - 16, a["da"], a["a"], a["alto"]), Spacer(1, 3)]
     if len(aree) == 1:
         aree.append(Paragraph("Nessuna voce sotto il livello del ruolo.", S["small"]))
     tre = Table([[bene, male, aree]], colWidths=[cw] * 3)
-    tre.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                             ("RIGHTPADDING", (0, 0), (-1, -1), 8), ("LINEBEFORE", (1, 0), (-1, 0), 0.5, BORDO)]))
+    tre.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (0, -1), 0),
+                             ("LEFTPADDING", (1, 0), (-1, -1), 7), ("RIGHTPADDING", (0, 0), (-1, -1), 7),
+                             ("LINEBEFORE", (1, 0), (-1, 0), 0.5, ST.LINEA_2)]))
     alto_ = Table([[ST.FotoMaglia(g.get("foto"), g["nome"], g.get("maglia")), testa]], colWidths=[27 * mm, wd])
     alto_.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
                                ("RIGHTPADDING", (0, 0), (-1, -1), 0), ("TOPPADDING", (0, 0), (-1, -1), 0),
                                ("BOTTOMPADDING", (0, 0), (-1, -1), 4)]))
-    return KeepTogether(_carta([alto_, tre], W - 4, bordo=ARANCIO, sfondo=sfondo, pad=9))
+    return KeepTogether(_carta([alto_, tre], W - 4, sfondo=sfondo, pad=9))
 
 
-def unisci_titoli(el: list) -> list:
-    """Tiene ogni titolo di sezione sulla stessa pagina del blocco che lo segue."""
+def unisci_titoli(el: list, W: float = A4[0] - 24 * mm) -> list:
+    """Titoli di sezione con il filo d'inchiostro sopra (pdf_stile.sezione); ogni titolo resta
+    sulla stessa pagina del blocco che lo segue."""
     out, i = [], 0
     while i < len(el):
         x = el[i]
-        if isinstance(x, Paragraph) and x.style.name in ("h2", "h3") and i + 1 < len(el) \
-                and not isinstance(el[i + 1], PageBreak):
-            out.append(KeepTogether([x, el[i + 1]]))
+        titolo = isinstance(x, Paragraph) and x.style.name in ("h2", "h3")
+        if isinstance(x, Paragraph) and x.style.name == "h2":
+            x = ST.sezione(x.text, x.style, W)
+        if titolo and i + 1 < len(el) and not isinstance(el[i + 1], PageBreak):
+            dopo = el[i + 1]
+            # un KeepTogether dentro l'altro manda tutto alla pagina dopo: si uniscono i contenuti
+            out.append(KeepTogether([x] + (list(dopo._content) if isinstance(dopo, KeepTogether) else [dopo])))
             i += 2
         else:
             out.append(x)
@@ -773,22 +779,15 @@ def build_giochi(giochi: list[dict], squadra: str) -> bytes:
     doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=12 * mm, rightMargin=12 * mm,
                             topMargin=12 * mm, bottomMargin=14 * mm,
                             title=f"Giochi {squadra}", author=config.BRAND)
-    el = [Paragraph(f"GIOCHI · {squadra.upper()}", S["h2"]),
-          Paragraph(f"{len(giochi)} giochi disegnati dallo staff. Taglio: freccia piena · "
-                    "passaggio: tratteggio · palleggio: zig-zag · blocco: barra finale.",
+    el = [ST.Intestazione(W, eyebrow="Giochi disegnati dallo staff", titolo=squadra,
+                          meta=f"{len(giochi)} giochi · report del {date.today().strftime('%d/%m/%Y')}",
+                          marchio=config.BRAND, grande=False),
+          Paragraph("Taglio: freccia piena · passaggio: tratteggio · palleggio: zig-zag · blocco: barra finale.",
                     S["small"]), Spacer(1, 4)]
     el += L.flowables(giochi, S, W, "")[1:]
 
-    def footer(canvas, doc_):
-        canvas.saveState()
-        canvas.setFont("Barlow", 7)
-        canvas.setFillColor(GRIGIO)
-        canvas.drawString(12 * mm, 8 * mm, f"{config.BRAND} · {squadra} · giochi · "
-                                           f"{date.today().strftime('%d/%m/%Y')}")
-        canvas.drawRightString(A4[0] - 12 * mm, 8 * mm, f"pagina {doc_.page}")
-        canvas.restoreState()
-
-    doc.build(el, onFirstPage=footer, onLaterPages=footer)
+    footer = ST.piede(f"Giochi · {squadra}")
+    doc.build(unisci_titoli(el, W), onFirstPage=footer, onLaterPages=footer)
     return buf.getvalue()
 
 
@@ -799,7 +798,7 @@ def _consigli(ctx: Contesto, avv: int, mia: int | None, rt, S, W) -> list:
     el = []
     celle = []
     for g, voci in gruppi.items():
-        corpo = [Paragraph(g.upper(), S["h3"])]
+        corpo = [Paragraph(g, S["h3"])]
         corpo += [Paragraph(f'<font color="#ff7a1a">•</font> {v}', S["body"]) for v in voci] \
             or [Paragraph("Nessuna indicazione marcata.", S["small"])]
         celle.append(corpo)
@@ -825,7 +824,7 @@ def _piano(ctx: Contesto, avv: int, mia: int | None, S, W) -> tuple[list, list]:
     nome_avv = ctx.nomi_squadre.get(avv, str(avv))
     g_avv = int(lega.set_index("squadra_id").loc[avv, "partite"])
     if mia is None or mia == avv or mia not in set(lega["squadra_id"]):
-        el = [Paragraph(f"COME AFFRONTARE {nome_avv.upper()}", S["h2"]),
+        el = [Paragraph(f"Come affrontare {nome_avv}", S["h2"]),
               Paragraph("Indicazioni ricavate dai dati della squadra rispetto al campionato. "
                         "Con la propria squadra impostata il report aggiunge le probabilità di "
                         "vittoria e le chiavi della partita.", S["small"])]
@@ -855,7 +854,7 @@ def _piano(ctx: Contesto, avv: int, mia: int | None, S, W) -> tuple[list, list]:
     lento_meglio = lento["prob"] >= veloce["prob"]
     rit = lento if lento_meglio else veloce
 
-    el = [Paragraph(f"PIANO PARTITA · {nome_mia} contro {nome_avv}", S["h2"]),
+    el = [Paragraph(f"Piano partita · {nome_mia} contro {nome_avv}", S["h2"]),
           _kpis([("Probabilità ora", f"{_fmt(p0, 0)}%",
                   f"{nome_mia.split()[-1]} {'in casa' if casa_mia else 'in trasferta'}"),
                  ("Con tutte le chiavi", f"{_fmt(comb['prob_tutte'], 0)}%",
@@ -865,13 +864,13 @@ def _piano(ctx: Contesto, avv: int, mia: int | None, S, W) -> tuple[list, list]:
                  ("Ritmo che conviene", "lento" if lento_meglio else "veloce",
                   f"{_fmt(rit['prob'], 0)}% con {_fmt(rit['possessi'], 0)} possessi")], S, W),
           Spacer(1, 4),
-          Paragraph("LE CHIAVI DELLA PARTITA", S["h3"])]
+          Paragraph("Le chiavi della partita", S["h3"])]
     for i, frase in enumerate(C.sintesi(lv, gc, nome_avv.split()[-1]), start=1):
         el.append(Paragraph(f"<b>{i}.</b> {_virgole(frase)}".replace(" → ", " · "), S["body"]))
     el.append(Paragraph(f"<b>Tutte insieme:</b> {_virgole(C.frase_combinata(comb))}.",
                         S["body"]))
     if min(g_avv, int(lega.set_index("squadra_id").loc[mia, "partite"])) < 8:
-        el.append(Paragraph("⚠ Inizio stagione: con meno di 8 partite i valori sono avvicinati "
+        el.append(Paragraph("<b>Attenzione</b> · Inizio stagione: con meno di 8 partite i valori sono avvicinati "
                             "alla media del campionato e i consigli vanno confermati.",
                             S["small"]))
     el.append(Spacer(1, 4))
@@ -886,7 +885,7 @@ def _piano(ctx: Contesto, avv: int, mia: int | None, S, W) -> tuple[list, list]:
                         "statistiche, non garanzie.", S["small"]))
 
     # ---- dettaglio
-    det = [Paragraph("LE CHIAVI IN DETTAGLIO · Four Factors della partita", S["h2"])]
+    det = [Paragraph("Le chiavi in dettaglio · Four Factors della partita", S["h2"])]
     rows = [["Fattore", "Lato", "Atteso", "Media", "Obiettivo", "Situazione", "Prob.",
              "Guadagno"]]
     for _, x in lv.iterrows():
@@ -905,8 +904,8 @@ def _piano(ctx: Contesto, avv: int, mia: int | None, S, W) -> tuple[list, list]:
                          f"{_fmt(veloce['prob'], 0)}%.", S["small"]))
 
     blocchi = []
-    for sid, titolo in ((avv, f"QUANDO {nome_avv.split()[-1].upper()} PERDE"),
-                        (mia, f"QUANDO PERDETE VOI ({nome_mia.split()[-1]})")):
+    for sid, titolo in ((avv, f"Quando {nome_avv.split()[-1]} perde"),
+                        (mia, f"Quando perdete voi ({nome_mia.split()[-1]})")):
         qp = C.quando_perdono(ctx.bs, sid)
         corpo = [Paragraph(titolo, S["h3"])]
         if qp.empty:
@@ -927,7 +926,7 @@ def _piano(ctx: Contesto, avv: int, mia: int | None, S, W) -> tuple[list, list]:
         g = gc if avversario else chiave_giocatori(mia, False)
         nome = nome_avv if avversario else nome_mia
         det.append(Paragraph(
-            f"GIOCATORI CHIAVE DI {nome.upper()} · " + (
+            f"Giocatori chiave di {nome} · " + (
                 "quando restano sotto la soglia" if avversario else "quando vanno sopra la "
                                                                    "soglia"), S["h3"]))
         if g.empty:
@@ -971,7 +970,7 @@ def _approfondimenti(ctx: Contesto, sid: int, prossima, S, W) -> list:
                          f"{_fmt(x.quota_titolare, 0)}%", _fmt(x.minuto_ingresso),
                          f"{_fmt(x.quota_finale, 0)}%"])
         base = ", ".join(nomi.get(g, g) for g in str(s["quintetto"]).split(","))
-        el += [Paragraph("ROTAZIONI", S["h2"]),
+        el += [Paragraph("Rotazioni", S["h2"]),
                Paragraph(f"Primo cambio al minuto {_fmt(s['minuto_primo_cambio'])} (mediana) · "
                          f"{_fmt(s['giocatori_rotazione'])} giocatori con almeno 5' · quintetto "
                          f"base ({_fmt(s['quota_quintetto_base'], 0)}% delle partite): {base}.",
@@ -984,7 +983,7 @@ def _approfondimenti(ctx: Contesto, sid: int, prossima, S, W) -> list:
         for x in t.itertuples():
             rows.append([str(x.taglia), f"{_fmt(x.quota_minuti, 0)}%", f"{_fmt(x.altezza, 0)} cm",
                          _fmt(x.ortg), _fmt(x.drtg), _fmt(x.net_rtg, signed=True)])
-        el += [Paragraph("QUINTETTI ALTI E BASSI", S["h2"]),
+        el += [Paragraph("Quintetti alti e bassi", S["h2"]),
                _table(rows, [40 * mm] + [(W - 40 * mm) / 5] * 5)]
     m = ctx.momenti
     if m is not None and not m.empty and sid in set(m["squadra_id"]):
@@ -992,7 +991,7 @@ def _approfondimenti(ctx: Contesto, sid: int, prossima, S, W) -> list:
         for x in m[m["squadra_id"] == sid].itertuples():
             rows.append([x.etichetta, _fmt(x.fatti_pg), _fmt(x.subiti_pg),
                          _fmt(x.diff_pg, signed=True), f"{x.posizione}° su {x.squadre}"])
-        el += [Paragraph("MOMENTI DELLA PARTITA · punti a partita", S["h2"]),
+        el += [Paragraph("Momenti della partita · punti a partita", S["h2"]),
                _table(rows, [60 * mm] + [(W - 60 * mm) / 4] * 4)]
     if prossima:
         cal = ctx.calendario_fisico
@@ -1009,7 +1008,7 @@ def _approfondimenti(ctx: Contesto, sid: int, prossima, S, W) -> list:
                 righe.append(f"{nome}: {riposo if riposo is not None else '–'} giorni di riposo"
                              + ("" if tid == prossima["casa_id"] else
                                 f", trasferta di circa {_fmt(info['km'], 0)} km"))
-            el += [Paragraph("RIPOSO E TRASFERTA PER LA PROSSIMA PARTITA", S["h2"]),
+            el += [Paragraph("Riposo e trasferta per la prossima partita", S["h2"]),
                    Paragraph(" · ".join(righe) + ".", S["body"])]
     return el
 

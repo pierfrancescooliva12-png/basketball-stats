@@ -30,10 +30,10 @@ X0, Y0, LARG, ALT = -4, -4, 158, 148      # area visibile, come il viewBox della
 
 def _font(bold: bool = False) -> str:
     nomi = pdfmetrics.getRegisteredFontNames()
-    if bold and "Condensed" in nomi:          # registrato da report_pdf._fonts()
-        return "Condensed"
-    if "Barlow" in nomi:
-        return "Barlow"
+    if bold and "Sans-Semi" in nomi:      # registrato da report_pdf._fonts()
+        return "Sans-Semi"
+    if "Sans" in nomi:
+        return "Sans"
     return "Helvetica-Bold" if bold else "Helvetica"
 
 

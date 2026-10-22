@@ -11,7 +11,8 @@ from reportlab.platypus import Paragraph, Spacer, Table, TableStyle
 
 from . import confronto as CF
 from .report_extra import _documento, _piede, _testata
-from .report_pdf import ARANCIO, BLU, BORDO, GRIGIO, INK, _fmt, _fonts, _styles, _table
+from .report_pdf import (ARANCIO, BLU, BORDO, INK, _fmt, _fonts, _styles, _table,
+                         unisci_titoli)
 
 
 def _radar(sa: dict, sb: dict, nomi: list[str], lato: float) -> Drawing:
@@ -29,7 +30,7 @@ def _radar(sa: dict, sb: dict, nomi: list[str], lato: float) -> Drawing:
                    strokeWidth=0.5))
         x, y = cx + (r + 12) * math.cos(a), cy + (r + 10) * math.sin(a)
         anchor = "middle" if abs(math.cos(a)) < 0.3 else ("start" if math.cos(a) > 0 else "end")
-        d.add(String(x, y - 3, dim, fontName="Barlow-SemiBold", fontSize=7, fillColor=INK,
+        d.add(String(x, y - 3, dim, fontName="Sans-Semi", fontSize=7, fillColor=INK,
                      textAnchor=anchor))
     for s, col in ((sa, BLU), (sb, ARANCIO)):
         pts = []
@@ -44,7 +45,7 @@ def _radar(sa: dict, sb: dict, nomi: list[str], lato: float) -> Drawing:
     for i, (n, col) in enumerate(((nomi[0], BLU), (nomi[1], ARANCIO))):
         x = 8 + i * lato / 2
         d.add(Line(x, 6, x + 14, 6, strokeColor=col, strokeWidth=3))
-        d.add(String(x + 18, 3.5, n, fontName="Barlow-SemiBold", fontSize=7.5, fillColor=INK))
+        d.add(String(x + 18, 3.5, n, fontName="Sans-Semi", fontSize=7.5, fillColor=INK))
     return d
 
 
@@ -59,13 +60,13 @@ def build_confronto(sa: dict, sb: dict, aa: dict, ab: dict, fit: pd.DataFrame, c
     meta = (f"{ra['giocatore']} ({ra['squadra']}, {ra['categoria']}, {ra['stagione_label']}) · "
             f"{rb['giocatore']} ({rb['squadra']}, {rb['categoria']}, {rb['stagione_label']}) · "
             f"{date.today().strftime('%d/%m/%Y')}")
-    el = [_testata("Confronto giocatori · mercato", f"{na.upper()} – {nb.upper()}", meta, S, W),
+    el = [_testata("Confronto giocatori · mercato", f"{na} – {nb}", meta, S, W),
           Spacer(1, 6)]
     frasi = CF.verdetto(sa, sb) + CF.frasi_affidabilita(aa, ab, na, nb)
     fr = CF.frase_adattamento(fit, chiavi, nomi) if fit is not None and not fit.empty else None
     if fr:
         frasi.append(fr)
-    el.append(Paragraph("IN SINTESI", S["h2"]))
+    el.append(Paragraph("In sintesi", S["h2"]))
     el += [Paragraph(f"• {f}", S["body"]) for f in frasi]
     avvisi = []
     for s, n in ((sa, na), (sb, nb)):
@@ -94,9 +95,9 @@ def build_confronto(sa: dict, sb: dict, aa: dict, ab: dict, fit: pd.DataFrame, c
              _fmt(sa["possesso_ruolo"].get("perse_100"), 0)],
             ["Tiri sbagliati", _fmt(pa["sbagliati_100"], 0), _fmt(pb["sbagliati_100"], 0),
              _fmt(sa["possesso_ruolo"].get("sbagliati_100"), 0)]]
-    destra = [Paragraph("PROFILO · percentili nel ruolo", S["h3"]),
+    destra = [Paragraph("Profilo · percentili nel ruolo", S["h3"]),
               _table(rows, [40 * mm, 20 * mm, 20 * mm, 16 * mm]), Spacer(1, 6),
-              Paragraph("COSA PRODUCE OGNI POSSESSO", S["h3"]),
+              Paragraph("Cosa produce ogni possesso", S["h3"]),
               _table(prow, [40 * mm, 18 * mm, 18 * mm, 20 * mm])]
     t = Table([[_radar(sa, sb, nomi, 82 * mm), destra]], colWidths=[86 * mm, W - 86 * mm])
     t.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"),
@@ -136,6 +137,6 @@ def build_confronto(sa: dict, sb: dict, aa: dict, ab: dict, fit: pd.DataFrame, c
                         "Percentuali di tiro prudenti. Possessi usati = tiri + 0,44 × liberi + palle "
                         "perse. Partite storte: Game Score sotto metà della propria media.",
                         S["small"]))
-    piede = _piede(f"confronto {na} – {nb}")
-    doc.build(el, onFirstPage=piede, onLaterPages=piede)
+    piede = _piede(f"Confronto · {na} – {nb}")
+    doc.build(unisci_titoli(el), onFirstPage=piede, onLaterPages=piede)
     return buf.getvalue()

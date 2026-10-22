@@ -8,7 +8,6 @@ import argparse
 import io
 import json
 import sys
-from datetime import date
 from pathlib import Path
 
 import pandas as pd
@@ -23,8 +22,8 @@ from . import avvisi as AV
 from . import config, mercato, scouting
 from . import numeri as N
 from .contesto import Contesto, open_readonly
-from .report_pdf import (ARANCIO, BLU, GRIGIO, INK, ROSSO, _fmt, _fonts, _kpis, _styles,
-                         _table, slug)
+from .report_pdf import (ARANCIO, BLU, INK, ROSSO, _fmt, _fonts, _kpis, _styles,
+                         _table, slug, unisci_titoli)
 
 FATTORI = [("efg_pct", "Tiro dal campo % (triple pesate)", True, 1),
            ("tov_pct", "Palle perse (% delle azioni)", False, 1),
@@ -134,7 +133,7 @@ def _verifica_chiavi(ctx, sid: int, pid: str, S, W) -> list:
     v = VK.verifica(ctx, sid, pid)
     if v is None:
         return []
-    el = [Paragraph("LE CHIAVI DELLA VIGILIA · COM'È ANDATA", S["h2"]),
+    el = [Paragraph("Le chiavi della vigilia · com'è andata", S["h2"]),
           Paragraph("Le chiavi come ASSIST le dava prima della partita (con le sole partite giocate "
                     "fino al giorno prima) e quello che è successo in campo.", S["small"])]
     el += [Paragraph("• " + f, S["body"]) for f in VK.frasi(v)]
@@ -156,13 +155,13 @@ def _verifica_chiavi(ctx, sid: int, pid: str, S, W) -> list:
             rows.append([g["giocatore"], "avversaria" if g["avversario"] else "vostra", g["obiettivo"],
                          "non ha giocato" if g["fatto"] is None else _fmt(g["fatto"], 0),
                          "rispettata" if g["rispettato"] else "mancata"])
-        el.append(KeepTogether([Paragraph("GIOCATORI CHIAVE DELLA VIGILIA", S["h3"]),
+        el.append(KeepTogether([Paragraph("Giocatori chiave della vigilia", S["h3"]),
                                 _table(rows, [44 * mm, 24 * mm, W - 44 * mm - 24 * mm - 50 * mm, 25 * mm, 25 * mm],
                                        align_left=(1, 2, 4))]))
     _, riass = VK.stagione(ctx, sid)
     if not riass.empty:
         cols = list(riass.columns)
-        el += [KeepTogether([Paragraph("IN STAGIONE · quando le chiavi sono state raggiunte", S["h3"]),
+        el += [KeepTogether([Paragraph("In stagione · quando le chiavi sono state raggiunte", S["h3"]),
                              _table([cols] + riass.values.tolist(),
                                     [40 * mm, 20 * mm, 24 * mm, 32 * mm, 32 * mm, W - 148 * mm], align_left=(1,))]),
                Paragraph("Record = vittorie-sconfitte nelle partite in cui la chiave è stata raggiunta o mancata. "
@@ -185,17 +184,8 @@ def _documento(titolo: str):
 
 
 def _piede(testo: str):
-    def footer(canvas, doc_):
-        from . import pdf_stile as ST
-        ST.sfondo(canvas, doc_)
-        canvas.saveState()
-        canvas.setFont("Barlow", 7)
-        canvas.setFillColor(GRIGIO)
-        canvas.drawString(12 * mm, 8 * mm, f"{config.BRAND} · {testo}"
-                                           f" · {date.today().strftime('%d/%m/%Y')}")
-        canvas.drawRightString(A4[0] - 12 * mm, 8 * mm, f"pagina {doc_.page}")
-        canvas.restoreState()
-    return footer
+    from . import pdf_stile as ST
+    return ST.piede(testo)
 
 
 def _data_it(d) -> str:
@@ -221,8 +211,8 @@ def build_post_partita(ctx: Contesto, squadra_id: int, partita_id: str | None = 
     esito = "Vittoria" if r["vinta"] else "Sconfitta"
     buf, doc = _documento(f"Post-partita {r['squadra']}")
     el = [_testata(f"Report post-partita · {p['giornata']}ª giornata · {_data_it(p['data'])}",
-                   f"{r['squadra'].upper()} {int(riga['punti'])}–{int(riga['punti_subiti'])} "
-                   f"{r['avversario'].upper()}",
+                   f"{r['squadra']} {int(riga['punti'])}–{int(riga['punti_subiti'])} "
+                   f"{r['avversario']}",
                    f"{esito} {dove}" + (f" · {p['palazzetto']}" if p.get("palazzetto") else ""),
                    S, W), Spacer(1, 6)]
     if r["affidabile"]:
@@ -238,7 +228,7 @@ def build_post_partita(ctx: Contesto, squadra_id: int, partita_id: str | None = 
     else:
         el.append(Paragraph("Box score ufficiale incompleto: le metriche avanzate di questa "
                             "partita non sono affidabili.", S["small"]))
-    el += [Paragraph("IN SINTESI", S["h2"])] + [Paragraph("• " + f, S["body"]) for f in r["frasi"]]
+    el += [Paragraph("In sintesi", S["h2"])] + [Paragraph("• " + f, S["body"]) for f in r["frasi"]]
 
     if r["affidabile"]:
         rows = [["Fattore", "Partita", "Media stagione", "Obiettivo", ""]]
@@ -253,7 +243,7 @@ def build_post_partita(ctx: Contesto, squadra_id: int, partita_id: str | None = 
             if f["raggiunto"] is not None:
                 stile.append(("TEXTCOLOR", (4, i), (4, i), BLU if f["raggiunto"] else ROSSO))
         t.setStyle(TableStyle(stile))
-        el += [Paragraph("FOUR FACTORS · partita, media e obiettivi dello staff", S["h2"]), t]
+        el += [Paragraph("Four Factors · partita, media e obiettivi dello staff", S["h2"]), t]
 
     el += _verifica_chiavi(ctx, squadra_id, partita_id, S, W)
 
@@ -262,7 +252,7 @@ def build_post_partita(ctx: Contesto, squadra_id: int, partita_id: str | None = 
                 [r["squadra"][:24]] + [str(q[1]) for q in r["parziali"]],
                 [r["avversario"][:24]] + [str(q[2]) for q in r["parziali"]]]
         n = len(r["parziali"])
-        el += [Paragraph("QUARTO PER QUARTO", S["h2"]),
+        el += [Paragraph("Quarto per quarto", S["h2"]),
                _table(rows, [60 * mm] + [(W - 60 * mm) / n] * n)]
 
     g = r["giocatori"]
@@ -280,11 +270,11 @@ def build_post_partita(ctx: Contesto, squadra_id: int, partita_id: str | None = 
         if pd.notna(x.delta_gs) and abs(x.delta_gs) >= 5:
             stile.append(("TEXTCOLOR", (11, i), (11, i), BLU if x.delta_gs > 0 else ROSSO))
     t.setStyle(TableStyle(stile))
-    el += [Paragraph("GIOCATORI · Game Score della partita contro la media stagionale", S["h2"]),
+    el += [Paragraph("Giocatori · Game Score della partita contro la media stagionale", S["h2"]),
            t, Paragraph("Game Score: sintesi del contributo statistico (punti, tiri, rimbalzi, "
                         "assist, recuperi, stoppate, perse, falli). Diff in blu/rosso quando lo "
                         "scarto dalla media è di almeno 5.", S["small"])]
-    doc.build(el, onFirstPage=_piede(f"{r['squadra']} – {r['avversario']}"),
+    doc.build(unisci_titoli(el), onFirstPage=_piede(f"Post-partita · {r['squadra']} – {r['avversario']}"),
               onLaterPages=_piede(f"{r['squadra']} – {r['avversario']}"))
     return buf.getvalue()
 
@@ -315,7 +305,7 @@ def build_giocatore(ctx: Contesto, giocatore_id: str, squadra_id: int,
             meta.append(str(bio["ruolo"]).lower())
     buf, doc = _documento(f"Report {me['giocatore']}")
     el = [_testata(f"Report individuale · {config.STAGIONI.get(ctx.stagione, ctx.stagione)}",
-                   me["giocatore"].upper(), " · ".join(meta), S, W), Spacer(1, 6)]
+                   me["giocatore"], " · ".join(meta), S, W), Spacer(1, 6)]
     el.append(_kpis([
         ("Punti", _fmt(me["punti_pg"]), f"{_fmt(me['punti_p40'])} per 40'"),
         ("Rimbalzi", _fmt(me["rimb_tot_pg"]), f"REB% {_fmt(me['trb_pct'])}"),
@@ -327,7 +317,7 @@ def build_giocatore(ctx: Contesto, giocatore_id: str, squadra_id: int,
     frasi = X.frase_giocatore(pl[pl["campionato_id"] == me["campionato_id"]], giocatore_id,
                               squadra_id)
     if frasi:
-        el += [Paragraph("IN UNA FRASE", S["h2"]),
+        el += [Paragraph("In una frase", S["h2"]),
                Paragraph(frasi[0][0].upper() + frasi[0][1:] + (
                    ", " + ", ".join(frasi[1:]) if len(frasi) > 1 else "") + ".", S["body"])]
 
@@ -337,7 +327,7 @@ def build_giocatore(ctx: Contesto, giocatore_id: str, squadra_id: int,
         for x in pc.itertuples():
             rows.append([x.Metrica, _fmt(x.Valore), f"{int(x.Percentile)}°",
                          _barra(x.Percentile, 60 * mm)])
-        el += [Paragraph("PROFILO · percentile nel campionato (giocatori con almeno 10' di media)",
+        el += [Paragraph("Profilo · percentile nel campionato (giocatori con almeno 10' di media)",
                          S["h2"]), _table(rows, [60 * mm, 22 * mm, 22 * mm, 66 * mm])]
 
     log = A.player_game_log(ctx.bg[ctx.bg["squadra_id"] == squadra_id], giocatore_id)
@@ -349,7 +339,7 @@ def build_giocatore(ctx: Contesto, giocatore_id: str, squadra_id: int,
                          str(int(x.minuti)), str(int(x.punti)),
                          f"{int(x.t2m + x.t3m)}/{int(x.t2a + x.t3a)}", str(int(x.rimb_tot)),
                          str(int(x.assist)), str(int(x.perse)), _fmt(x.game_score)])
-        el += [Paragraph("ULTIME PARTITE", S["h2"]),
+        el += [Paragraph("Ultime partite", S["h2"]),
                _table(rows, [10 * mm, 20 * mm, 50 * mm] + [(W - 80 * mm) / 7] * 7,
                       align_left=(2,))]
 
@@ -359,22 +349,23 @@ def build_giocatore(ctx: Contesto, giocatore_id: str, squadra_id: int,
             rows.append([x.stagione_label, str(x.squadra)[:28], x.categoria, str(int(x.partite)),
                          _fmt(x.minuti_pg), _fmt(x.punti_pg), _fmt(x.rimb_tot_pg),
                          _fmt(x.assist_pg), _fmt(x.ts_pct), _fmt(x.usg_pct)])
-        el += [Paragraph("CARRIERA IN ARCHIVIO", S["h2"]),
+        el += [Paragraph("Carriera in archivio", S["h2"]),
                _table(rows, [18 * mm, 50 * mm, 22 * mm] + [(W - 90 * mm) / 7] * 7,
                       align_left=(1, 2))]
 
-    el += [Paragraph("OBIETTIVI CONCORDATI CON LO STAFF", S["h2"])]
+    el += [Paragraph("Obiettivi concordati con lo staff", S["h2"])]
     linee = Table([[""] for _ in range(6)], colWidths=[W], rowHeights=[9 * mm] * 6)
-    linee.setStyle(TableStyle([("LINEBELOW", (0, 0), (-1, -1), 0.4, colors.HexColor("#c9cfdb"))]))
+    linee.setStyle(TableStyle([("LINEBELOW", (0, 0), (-1, -1), 0.4, colors.HexColor("#d6d2c4"))]))
     el.append(linee)
-    doc.build(el, onFirstPage=_piede(me["giocatore"]), onLaterPages=_piede(me["giocatore"]))
+    doc.build(unisci_titoli(el), onFirstPage=_piede(f"Giocatore · {me['giocatore']}"),
+              onLaterPages=_piede(f"Giocatore · {me['giocatore']}"))
     return buf.getvalue()
 
 
 def _barra(pct, width):
     from reportlab.graphics.shapes import Drawing, Line, Rect
     d = Drawing(width, 8)
-    d.add(Rect(0, 1.5, width, 5, fillColor=colors.HexColor("#eef1f6"), strokeColor=None))
+    d.add(Rect(0, 1.5, width, 5, fillColor=colors.HexColor("#ebe8de"), strokeColor=None))
     d.add(Rect(0, 1.5, width * max(0, min(100, pct)) / 100, 5,
                fillColor=BLU if pct >= 50 else ARANCIO, strokeColor=None))
     d.add(Line(width / 2, 0, width / 2, 8, strokeColor=INK, strokeWidth=0.6))

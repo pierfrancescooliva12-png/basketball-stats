@@ -226,7 +226,7 @@ def origini_concesse(origini_partita: pd.DataFrame, ev: pd.DataFrame) -> pd.Data
 def _classe_riposo(giorni):
     if pd.isna(giorni):
         return None
-    return "Ravvicinata (≤ 3 giorni)" if giorni <= 3 else (
+    return "Ravvicinata (entro 3 giorni)" if giorni <= 3 else (
         "Normale (4-6 giorni)" if giorni <= 6 else "Lunga (7+ giorni)")
 
 

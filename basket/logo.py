@@ -2,6 +2,8 @@
 stesse proporzioni) e il simbolo Λ su quadrato scuro con il pallone. Usato dallo script che
 genera i file in assets/logo e dai PDF (la scritta si disegna come tracciato)."""
 
+from functools import lru_cache
+
 from fontTools.pens.svgPathPen import SVGPathPen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.ttLib import TTFont
@@ -25,11 +27,16 @@ def _lambda(pen, dx):
     pen.closePath()
 
 
+@lru_cache(maxsize=1)
+def _carattere():
+    font = TTFont(FONT)
+    return font.getGlyphSet(), font.getBestCmap()
+
+
 def disegna(pen, parola=PAROLA, tracking=TRACKING):
     """Disegna la scritta con una penna di fontTools (unità del carattere, y verso l'alto);
     restituisce la larghezza."""
-    font = TTFont(FONT)
-    gs, cmap = font.getGlyphSet(), font.getBestCmap()
+    gs, cmap = _carattere()
     x = 0.0
     for ch in parola:
         if ch == "Λ":

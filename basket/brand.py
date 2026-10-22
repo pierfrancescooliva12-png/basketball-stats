@@ -219,9 +219,12 @@ def css(t: Tema) -> str:
     a = _rgb(t.accento)
     logo_css = ""
     if t.logo:
-        logo_css = (f'header[data-testid="stHeader"]::after {{content: ""; position: absolute; right: 150px; '
-                    f'top: 50%; transform: translateY(-50%); height: 40px; width: 150px; '
-                    f'background: url("{t.logo}") right center / contain no-repeat; pointer-events: none;}}')
+        # il logo nella barra solo dove c'è spazio accanto alle voci del menu: sui telefoni (anche in
+        # orizzontale) e sui tablet le coprirebbe; lì resta il logo nella pagina
+        logo_css = (f'@media (min-width: 1180px) {{header[data-testid="stHeader"]::after {{content: ""; '
+                    f'position: absolute; right: 150px; top: 50%; transform: translateY(-50%); height: 40px; '
+                    f'width: 150px; background: url("{t.logo}") right center / contain no-repeat; '
+                    f'pointer-events: none;}}}}')
     return f"""
 <style>
 :root {{--navy: {t.fondo}; --navy-2: {t.fondo_2}; --accent: {t.accento};

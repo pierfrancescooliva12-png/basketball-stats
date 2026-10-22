@@ -1,0 +1,9 @@
+Newsreader
+Copyright 2020 The Newsreader Project Authors (https://github.com/productiontype/Newsreader)
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+The full text of the license is in OFL.txt (same license as the other fonts in this folder)
+and at https://openfontlicense.org
+
+Usati nei PDF: Newsreader per titoli e numeri grandi, Instrument Sans (Regular, Medium,
+SemiBold) per i testi, come nella piattaforma.

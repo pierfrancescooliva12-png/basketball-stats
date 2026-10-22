@@ -28,7 +28,7 @@ from .report_pdf import _carta, _esc, _fmt, _fonts, _styles, _table
 
 NAVY, BLU, ROSSO, ARANCIO = ST.NAVY, ST.BLU, ST.ROSSO, ST.ARANCIO
 INK, GRIGIO, SEGMENTO = ST.INK, ST.GRIGIO, ST.SEGMENTO
-BORDO = colors.HexColor("#dfe3eb")
+BORDO = colors.HexColor("#e3e0d4")
 
 
 class Barre(Flowable):
@@ -48,19 +48,19 @@ class Barre(Flowable):
         for i, (k, v) in enumerate(self.barre.items()):
             y = self.h - (i + 1) * self.riga + 2.2 * mm
             c.setFillColor(INK)
-            c.setFont("Barlow-SemiBold", 8)
+            c.setFont("Sans-Semi", 8)
             c.drawString(0, y, k.upper())
             c.setFillColor(SEGMENTO)
             c.roundRect(et, y - 0.2 * mm, bw, 2.6 * mm, 1.3 * mm, stroke=0, fill=1)
             ok = v is not None and not pd.isna(v)
             if ok:
-                tinta = BLU if v >= 70 else (ROSSO if v < 35 else colors.HexColor("#9aa3b5"))
+                tinta = BLU if v >= 70 else (ROSSO if v < 35 else colors.HexColor("#b9b5a8"))
                 c.setFillColor(tinta)
                 c.roundRect(et, y - 0.2 * mm, max(2.6 * mm, bw * v / 100), 2.6 * mm, 1.3 * mm, stroke=0, fill=1)
             c.setFillColor(GRIGIO)                     # tacca della mediana del ruolo
             c.rect(et + bw / 2 - 0.3, y - 1 * mm, 0.6, 4.2 * mm, stroke=0, fill=1)
             c.setFillColor(INK)
-            c.setFont("Condensed", 11)
+            c.setFont("Serif", 11)
             c.drawRightString(self.w, y - 0.3 * mm, str(int(round(v))) if ok else "–")
 
 
@@ -90,13 +90,13 @@ class Andamento(Flowable):
             c.setFillColor(BLU if r.punti >= media else colors.HexColor("#9fb6d8"))
             c.roundRect(x, base, bw, max(0.6, h), 1, stroke=0, fill=1)
             c.setFillColor(INK)
-            c.setFont("Condensed", 9)
+            c.setFont("Serif", 9)
             c.drawCentredString(x + bw / 2, base + h + 1.2 * mm, str(int(r.punti)))
             c.setFillColor(GRIGIO)
-            c.setFont("Barlow", 6)
+            c.setFont("Sans", 6)
             c.drawCentredString(x + bw / 2, base - 3.4 * mm, f"G{int(r.giornata)}")
             etichetta = str(r.avv_breve)
-            while len(etichetta) > 3 and stringWidth(etichetta, "Barlow", 6) > passo - 2:
+            while len(etichetta) > 3 and stringWidth(etichetta, "Sans", 6) > passo - 2:
                 etichetta = etichetta[:-1]
             c.drawCentredString(x + bw / 2, base - 6.2 * mm, etichetta)
         y = base + (top - base) * media / massimo
@@ -106,7 +106,7 @@ class Andamento(Flowable):
         c.line(0, y, self.w, y)
         c.setDash()
         c.setFillColor(ARANCIO)
-        c.setFont("Barlow-SemiBold", 6.5)
+        c.setFont("Sans-Semi", 6.5)
         c.drawString(0, top + 1.5 * mm, f"- - media {_fmt(media)} punti")
         c.setStrokeColor(BORDO)
         c.setLineWidth(0.5)
@@ -206,7 +206,7 @@ def build(ctx, sid: int, gid: str, hist: pd.DataFrame | None = None, foto: bool 
                   colWidths=[25 * mm, lw])
     testa.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
                                ("RIGHTPADDING", (0, 0), (-1, -1), 0), ("TOPPADDING", (0, 0), (-1, -1), 0)]))
-    chi = _carta([tit("CHI SEI IN CAMPO"), testa], HW, bordo=ARANCIO, pad=8)
+    chi = _carta([tit("Chi sei in campo"), testa], HW, bordo=ARANCIO, pad=8)
 
     p = CF.scheda(hist, gid, ctx.stagione) if hist is not None else None
     if p is not None:
@@ -220,15 +220,15 @@ def build(ctx, sid: int, gid: str, hist: pd.DataFrame | None = None, foto: bool 
                              + (" Pochi minuti: valori da confermare." if p.get("pochi_dati") else ""), piccolo),
                    Spacer(1, 3), Barre(HW - 18, barre, riga=5.4 * mm)]
     else:
-        profilo = [tit("IL TUO PROFILO"), Paragraph("Confronto con il ruolo non disponibile.", piccolo)]
+        profilo = [tit("Il tuo profilo"), Paragraph("Confronto con il ruolo non disponibile.", piccolo)]
     el.append(affianca(chi, _carta(profilo, HW, bordo=NAVY, pad=8)))
 
     # ---------------------------------------------------------------- forza | crescita
-    bene = [tit("I TUOI PUNTI DI FORZA", BLU)] + [
+    bene = [tit("I tuoi punti di forza", BLU)] + [
         Paragraph(f'<font color="#2a78d6"><b>+</b></font>&nbsp;&nbsp;{_esc(tu(x))}', voce) for x in g["forza"][:4]]
     if len(bene) == 1:
         bene.append(Paragraph("Servono ancora qualche partita per individuarli.", piccolo))
-    cresci = [tit("DOVE PUOI CRESCERE", ROSSO)] + [
+    cresci = [tit("Dove puoi crescere", ROSSO)] + [
         Paragraph(f'<font color="#d95926"><b>›</b></font>&nbsp;&nbsp;{_esc(tu(x))}', voce) for x in g["deboli"][:4]]
     if len(cresci) == 1:
         cresci.append(Paragraph("Nessuna voce sotto il livello del campionato.", piccolo))
@@ -236,7 +236,7 @@ def build(ctx, sid: int, gid: str, hist: pd.DataFrame | None = None, foto: bool 
 
     # ---------------------------------------------------------------- aree di miglioramento (tutta riga)
     cw = (W - 4 - 16) / 2
-    aree = [tit("AREE DI MIGLIORAMENTO · OBIETTIVI", ROSSO),
+    aree = [tit("Aree di miglioramento · obiettivi", ROSSO),
             Paragraph("Dove sei tra i più bassi del ruolo. Obiettivo = il valore normale del ruolo e, quando si può "
                       "stimare, quanti punti a partita vale raggiungerlo.", piccolo), Spacer(1, 3)]
     if g["aree"]:
@@ -273,11 +273,11 @@ def build(ctx, sid: int, gid: str, hist: pd.DataFrame | None = None, foto: bool 
 
     # ---------------------------------------------------------------- andamento | piano e note
     log = game_log(ctx, gid, sid)
-    anda = [tit("PARTITA PER PARTITA" if len(log) <= 12 else "LE ULTIME 12 PARTITE"),
+    anda = [tit("Partita per partita" if len(log) <= 12 else "Le ultime 12 partite"),
             Paragraph("Punti in ogni partita; in blu sopra la tua media (linea arancione).", piccolo), Spacer(1, 2)]
     if not log.empty:
         anda.append(Andamento(HW - 16, log.tail(12), altezza=38 * mm))
-    piano = [tit("IL PIANO DELLE PROSSIME SETTIMANE", BLU)]
+    piano = [tit("Il piano delle prossime settimane", BLU)]
     for i, a in enumerate(g["aree"][:3], 1):
         piano.append(Paragraph(f"<b>{i}. {_esc(a['voce'])}</b>: da {_esc(a['valore'])} a "
                                f"<b>{_esc(a['obiettivo'])}</b>", voce))
@@ -286,7 +286,7 @@ def build(ctx, sid: int, gid: str, hist: pd.DataFrame | None = None, foto: bool 
                                voce))
     righe_note = Table([[""]] * 3, colWidths=[HW - 16], rowHeights=[6.5 * mm] * 3)
     righe_note.setStyle(TableStyle([("LINEBELOW", (0, 0), (-1, -1), 0.4, BORDO)]))
-    piano += [Spacer(1, 4), Paragraph("<b>NOTE DELLO STAFF</b>", piccolo), righe_note]
+    piano += [Spacer(1, 4), Paragraph("<b>Note dello staff</b>", piccolo), righe_note]
     el.append(affianca(_carta(anda, HW, pad=8), _carta(piano, HW, bordo=BLU, pad=8)))
     if not log.empty:
         ultime = log.tail(6).iloc[::-1]
@@ -299,7 +299,7 @@ def build(ctx, sid: int, gid: str, hist: pd.DataFrame | None = None, foto: bool 
                          str(int(r.rimb_tot)), str(int(r.assist)), str(int(r.perse)), str(int(r.valutazione))])
         larg = [8 * mm, 11 * mm, 0, 6 * mm] + [10.5 * mm] * 9
         larg[2] = W - 20 - sum(larg)
-        ult = [tit(f"LE ULTIME {len(ultime)} PARTITE"), _table(rows, larg, align_right_from=4, align_left=(2,))]
+        ult = [tit(f"Le ultime {len(ultime)} partite"), _table(rows, larg, align_right_from=4, align_left=(2,))]
         el += [_carta(ult, W - 4, pad=8), Spacer(1, 4)]
     el.append(Paragraph("Rimbalzi, assist, recuperi e falli sono a partita; un'azione è un tiro, una coppia di liberi o "
                         "una palla persa; punti per tiro = punti per ogni tiro tentato, liberi compresi. I numeri si "
@@ -314,13 +314,7 @@ def build(ctx, sid: int, gid: str, hist: pd.DataFrame | None = None, foto: bool 
     doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=12 * mm, rightMargin=12 * mm, topMargin=12 * mm,
                             bottomMargin=14 * mm, title=f"Report individuale · {nome}", author=config.BRAND)
 
-    def pagina(canvas, doc_):
-        ST.sfondo(canvas, doc_)
-        canvas.saveState()
-        canvas.setFont("Barlow", 7)
-        canvas.setFillColor(GRIGIO)
-        canvas.drawString(12 * mm, 8 * mm, f"{config.BRAND} · {nome} · {squadra} · report individuale · {oggi}")
-        canvas.restoreState()
+    pagina = ST.piede(f"Report individuale · {nome} · {squadra}")
     doc.build([testata, corpo], onFirstPage=pagina, onLaterPages=pagina)
     return buf.getvalue()
 
