@@ -6,6 +6,8 @@ stampare nel PDF e salva il programma nell'archivio del club per riusarlo.
 """
 
 import copy
+import hashlib
+import json
 from datetime import date, timedelta
 
 import pandas as pd
@@ -39,6 +41,22 @@ def _versione() -> int:
 
 def _nuova_versione():
     st.session_state[f"{CHIAVE}_v"] = _versione() + 1
+
+
+def _pdf(col, chiave: str, prog: dict, crea, primario: bool = False):
+    """PDF in due tocchi: «Prepara il PDF» lo crea, «Scarica il PDF» lo scarica subito. Sui telefoni
+    (Safari su iPhone) uno scaricamento che parte dopo l'attesa del server viene bloccato; così il
+    tocco su «Scarica» trova il file già pronto. Se il programma cambia, il PDF si prepara di nuovo."""
+    firma = hashlib.md5(json.dumps(prog, sort_keys=True, default=str).encode()).hexdigest()
+    pronto = st.session_state.get(chiave)
+    tipo = "primary" if primario else "secondary"
+    if pronto and pronto[0] == firma:
+        col.download_button("⬇ Scarica il PDF", pronto[1], file_name=nome_file(prog), mime="application/pdf",
+                            type=tipo, on_click="ignore", use_container_width=True, key=f"{chiave}_dl")
+    elif col.button("Prepara il PDF", type=tipo, use_container_width=True, key=f"{chiave}_prep"):
+        with st.spinner("Preparo il PDF…"):
+            st.session_state[chiave] = (firma, crea())
+        st.rerun()
 
 
 def _suggerimenti(a: App, sid: int):
@@ -188,9 +206,7 @@ def _programma(a: App, sid: int):
                                 key=f"allen_note_{_versione()}")
     giochi = a.archivio.plays(a.club, sid)
     c1, c2, c3, c4 = st.columns(4)
-    c1.download_button("⬇ PDF del programma", lambda: build_programma(a.ctx, sid, prog, giochi),
-                       file_name=nome_file(prog), mime="application/pdf", type="primary", on_click="ignore",
-                       use_container_width=True)
+    _pdf(c1, "allen_pdf", prog, lambda: build_programma(a.ctx, sid, prog, giochi), primario=True)
     if c2.button("Salva nell'archivio", use_container_width=True):
         a.archivio.save_program(a.club, prog, a.autore)
         st.success("Programma salvato: lo trovi in «Programmi salvati».")
@@ -225,9 +241,7 @@ def _salvati(a: App, sid: int):
         st.session_state[CHIAVE] = copy.deepcopy(p)
         _nuova_versione()
         st.rerun()
-    c2.download_button("⬇ PDF", lambda: build_programma(a.ctx, sid, p, a.archivio.plays(a.club, sid)),
-                       file_name=nome_file(p), mime="application/pdf", on_click="ignore", use_container_width=True,
-                       key="allen_pdf_salvato")
+    _pdf(c2, "allen_pdf_salvato", p, lambda: build_programma(a.ctx, sid, p, a.archivio.plays(a.club, sid)))
     if c3.button("Elimina", use_container_width=True):
         a.archivio.delete_program(a.club, p["id"])
         st.rerun()

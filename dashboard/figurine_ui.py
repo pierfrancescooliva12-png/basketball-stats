@@ -73,10 +73,11 @@ CSS = """
 /* figurina cliccabile: il pulsante di download copre tutta la carta (trasparente) */
 [class*="st-key-figpdf_"] {position: relative;}
 [class*="st-key-figpdf_"] [data-testid="stElementContainer"]:has([data-testid="stDownloadButton"]) {
-  position: absolute; inset: 0; z-index: 5; margin: 0;}
-[class*="st-key-figpdf_"] [data-testid="stDownloadButton"], [class*="st-key-figpdf_"] [data-testid="stDownloadButton"] button {
-  width: 100%; height: 100%;}
-[class*="st-key-figpdf_"] [data-testid="stDownloadButton"] button {opacity: 0; cursor: pointer;}
+  position: absolute; inset: 0; z-index: 5; margin: 0; width: auto !important;}
+[class*="st-key-figpdf_"] [data-testid="stDownloadButton"], [class*="st-key-figpdf_"] [data-testid="stDownloadButton"] > *,
+[class*="st-key-figpdf_"] [data-testid="stDownloadButton"] button {width: 100% !important; height: 100%; max-width: none;}
+[class*="st-key-figpdf_"] [data-testid="stDownloadButton"] button {opacity: 0; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;}
 [class*="st-key-figpdf_"]:hover .fig {transform: translateY(-4px) rotate(-.6deg); box-shadow: 0 24px 54px rgba(11,18,32,.36);}
 [class*="st-key-figpdf_"]:hover .fig .pdf {transform: scale(1.08);}
 [class*="st-key-figpdf_"]:has(button:focus-visible) .fig {outline: 3px solid var(--ac); outline-offset: 3px;}
