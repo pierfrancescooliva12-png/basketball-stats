@@ -357,7 +357,7 @@ def p_lavagna():
 def p_video():
     titolo_pagina("Lavagna sul video", "ferma il video e disegna sul fotogramma: niente viene caricato o salvato")
     from . import telestrator_ui
-    telestrator_ui.render()
+    telestrator_ui.render(APP)
 
 
 def p_avvisi():

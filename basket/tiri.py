@@ -17,6 +17,14 @@ ZONE = {"area": "Area", "media": "Media distanza", "tre": "Da 3", "schiacciata":
 DURATA_QUARTO, DURATA_SUPPL = 600, 300
 SECONDI_REALI_PER_SECONDO = 2.3      # rapporto medio tempo reale / tempo di gioco (stima)
 
+# Tempo reale dalla cronaca: a gioco in corso il video scorre poco più del cronometro (le fermate
+# non scritte in cronaca: rimesse, palle fuori, violazioni); a ogni evento che ferma il gioco si
+# aggiunge la pausa tipica. Tarato perché un quarto medio di A2 duri circa 21 minuti reali.
+RITMO_GIOCO = 1.25
+PAUSE = {"timeout": 75, "fallo": 12, "fallo_tecnico": 25, "tl_fatto": 18, "tl_sbagliato": 18}
+PAUSA_CAMBIO, PAUSA_PERSA, PAUSA_CANESTRO_FINALE = 10, 4, 8
+INTERVALLO, PAUSA_QUARTI = 900, 120
+
 
 def inizio_periodo(p: int) -> int:
     return (p - 1) * DURATA_QUARTO if p <= 4 else 4 * DURATA_QUARTO + (p - 5) * DURATA_SUPPL
@@ -178,3 +186,62 @@ def leggi_hms(testo: str) -> int | None:
     for p in parti:
         s = s * 60 + p
     return s
+
+
+def tempi_reali(ev: pd.DataFrame) -> tuple[pd.Series, dict]:
+    """Per gli eventi di una partita: secondi reali stimati dall'inizio del periodo (stesso indice
+    di ev) e durata reale stimata di ogni periodo ({periodo: secondi})."""
+    out, fine = pd.Series(0.0, index=ev.index), {}
+    for p, q in ev.sort_values("n").groupby("periodo", sort=True):
+        p = int(p)
+        inizio = inizio_periodo(p)
+        rel = (q["secondi"].fillna(inizio) - inizio).clip(0, durata_periodo(p))
+        finale = p >= 4                                   # ultimi 2': il cronometro si ferma sui canestri
+        pausa, ferme = 0.0, {}
+        tipi_al = q.groupby(rel)["tipo"].agg(set).to_dict()
+        for i, s_rel, tipo in zip(q.index, rel, q["tipo"]):
+            out[i] = RITMO_GIOCO * s_rel + pausa
+            stessi = tipi_al.get(s_rel, set())
+            if tipo in PAUSE:
+                pausa += PAUSE[tipo]
+            elif tipo == "cambio":
+                # i cambi allo stesso secondo sono una sola fermata, già contata se c'è un fallo o un timeout
+                if not ferme.get(s_rel) and not stessi & set(PAUSE):
+                    pausa += PAUSA_CAMBIO
+                ferme[s_rel] = True
+            elif tipo == "persa" and "recupero" not in stessi:
+                pausa += PAUSA_PERSA                          # palla persa a gioco fermo (fuori, violazione)
+            elif finale and tipo in ("tiro2_fatto", "tiro3_fatto") and s_rel >= durata_periodo(p) - 120:
+                pausa += PAUSA_CANESTRO_FINALE
+        fine[p] = RITMO_GIOCO * durata_periodo(p) + pausa
+    return out.round(1), fine
+
+
+def stime_video(ev: pd.DataFrame, inizi: dict) -> dict:
+    """Minuto del video (in secondi) di ogni evento di una partita ({n: secondi}), dai tempi reali
+    stimati e dagli inizi dei quarti segnati dallo staff. Basta il salto a due: i quarti senza
+    inizio seguono dalla durata stimata del precedente più l'intervallo; se l'inizio del quarto
+    successivo è noto, il quarto si riscala su quella durata reale."""
+    if ev.empty:
+        return {}
+    reali, fine = tempi_reali(ev)
+    periodi = sorted(fine)
+    partenze, k = {}, {p: 1.0 for p in periodi}
+    for p in periodi:
+        if inizi.get(p) is not None:
+            partenze[p] = float(inizi[p])
+        elif p - 1 in partenze:
+            pausa = INTERVALLO if p - 1 == 2 else PAUSA_QUARTI
+            partenze[p] = partenze[p - 1] + k[p - 1] * fine[p - 1] + pausa
+    for p in periodi:
+        succ = inizi.get(p + 1)
+        if p in partenze and succ is not None and fine.get(p):
+            pausa = INTERVALLO if p == 2 else PAUSA_QUARTI
+            k[p] = max(0.7, min(1.6, (float(succ) - partenze[p] - pausa) / fine[p]))
+    # gli inizi stimati dipendono dal ritmo del quarto prima: secondo passaggio con i k misurati
+    for p in periodi:
+        if inizi.get(p) is None and p - 1 in partenze:
+            pausa = INTERVALLO if p - 1 == 2 else PAUSA_QUARTI
+            partenze[p] = partenze[p - 1] + k[p - 1] * fine[p - 1] + pausa
+    return {int(n): partenze[int(q)] + k[int(q)] * float(m)
+            for n, q, m in zip(ev["n"], ev["periodo"], reali) if int(q) in partenze}
