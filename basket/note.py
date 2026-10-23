@@ -36,6 +36,11 @@ SCHEMA = [
         club TEXT NOT NULL, programma_id TEXT NOT NULL, nome TEXT, dati TEXT NOT NULL,
         autore TEXT, aggiornato_il TEXT NOT NULL,
         PRIMARY KEY (club, programma_id))""",
+    # esercizi creati dallo staff del club (stessi campi della libreria)
+    """CREATE TABLE IF NOT EXISTS esercizi_club (
+        club TEXT NOT NULL, esercizio_id TEXT NOT NULL, nome TEXT, dati TEXT NOT NULL,
+        autore TEXT, aggiornato_il TEXT NOT NULL,
+        PRIMARY KEY (club, esercizio_id))""",
     """CREATE TABLE IF NOT EXISTS video_sync (
         club TEXT NOT NULL, partita_id TEXT NOT NULL, inizi TEXT NOT NULL,
         PRIMARY KEY (club, partita_id))""",
@@ -178,6 +183,26 @@ class Archivio:
         with self.engine.begin() as c:
             c.execute(text("DELETE FROM programmi WHERE club = :c AND programma_id = :p"),
                       {"c": club, "p": str(programma_id)})
+
+    def save_exercise(self, club: str, esercizio: dict, autore: str):
+        """Salva (o sostituisce) un esercizio creato dallo staff."""
+        with self.engine.begin() as c:
+            c.execute(text("DELETE FROM esercizi_club WHERE club = :c AND esercizio_id = :e"),
+                      {"c": club, "e": str(esercizio["id"])})
+            c.execute(text("INSERT INTO esercizi_club VALUES (:c, :e, :n, :d, :a, :t)"),
+                      {"c": club, "e": str(esercizio["id"]), "n": esercizio.get("nome", ""),
+                       "d": json.dumps(esercizio), "a": autore, "t": _now()})
+
+    def exercises(self, club: str) -> list[dict]:
+        with self.engine.connect() as c:
+            rows = c.execute(text("SELECT dati FROM esercizi_club WHERE club = :c ORDER BY nome"),
+                             {"c": club}).fetchall()
+        return [json.loads(r[0]) for r in rows]
+
+    def delete_exercise(self, club: str, esercizio_id: str):
+        with self.engine.begin() as c:
+            c.execute(text("DELETE FROM esercizi_club WHERE club = :c AND esercizio_id = :e"),
+                      {"c": club, "e": str(esercizio_id)})
 
     # ------------------------------------------------------------ sincronizzazione video
     def set_video_sync(self, club: str, partita_id: str, inizi: dict):

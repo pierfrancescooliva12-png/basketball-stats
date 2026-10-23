@@ -84,31 +84,46 @@ def _avversaria(ctx, sid, prog, S, W) -> list:
 
 def _seduta(i: int, s: dict, prog, S, W) -> list:
     inc = prog["includi"]
-    testa = (f"Seduta {i} · {A.giorno_it(s['giorno'])} · {s['durata']}' · {INTENSITA_TXT.get(s['intensita'], '')}"
-             + (f" · {s['etichetta']}" if s.get("etichetta") else ""))
-    el = [Paragraph(_esc(testa), S["h2"]), Paragraph(_esc(s.get("obiettivo", "")), S["body"]), Spacer(1, 4)]
-    orari = A.orari(s["blocchi"], s.get("inizio", ""))
+    parti = [f"Seduta {i}", A.giorno_it(s["giorno"]), f"{s['durata']}'" if s.get("durata") else "",
+             INTENSITA_TXT.get(s.get("intensita"), ""), s.get("etichetta", ""), s.get("luogo", "")]
+    el = [Paragraph(_esc(" · ".join(p for p in parti if p)), S["h2"])]
+    if s.get("obiettivo"):
+        el.append(Paragraph(_esc(s["obiettivo"]), S["body"]))
+    el.append(Spacer(1, 4))
+    blocchi = s.get("blocchi", [])
+    orari = A.orari(blocchi, s.get("inizio", ""))
     righe = [["Orario", "Fase", "Esercizio", "Min", "Gruppi e note"]]
-    for o, b in zip(orari, s["blocchi"]):
+    for o, b in zip(orari, blocchi):
         nota = " · ".join(x for x in (b.get("gruppi"), b.get("note")) if x)
-        righe.append([o, E.FASI.get(b["fase"], b["fase"]), Paragraph(f"<b>{_esc(b['nome'])}</b>", S["cell"]),
+        righe.append([o, Paragraph(_esc(E.FASI.get(b.get("fase"), b.get("fase") or "")), S["cell"]),
+                      Paragraph(f"<b>{_esc(b.get('nome', ''))}</b>", S["cell"]),
                       str(b.get("minuti", "")), Paragraph(_esc(nota), S["cell"])])
-    tot = sum(int(b.get("minuti") or 0) for b in s["blocchi"])
-    righe.append(["", "", Paragraph("<b>Totale</b>", S["cell"]), str(tot), ""])
+    if blocchi:
+        tot = sum(int(b.get("minuti") or 0) for b in blocchi)
+        righe.append(["", "", Paragraph("<b>Totale</b>", S["cell"]), str(tot), ""])
+    else:                                   # seduta ancora vuota: righe da riempire a mano
+        righe += [[""] * 5 for _ in range(8)]
     el.append(_table(righe, [24 * mm, 30 * mm, 62 * mm, 11 * mm, W - 127 * mm], align_left=(1, 2, 4), align_right_from=3))
     if inc.get("esercizi", True):
+        cat = E.catalogo(prog.get("esercizi_club"))
+        per_nome = {e["nome"]: e for e in cat.values()}
         visti, schede = set(), []
-        for b in s["blocchi"]:
-            e = E.PER_ID.get(b["esercizio"])
-            if not e or e["id"] in visti:
+        stile = ParagraphStyle("es", parent=S["small"], textColor=ST.INK, fontSize=7.6, leading=10, spaceAfter=3)
+        for b in blocchi:
+            e = cat.get(b.get("esercizio")) or per_nome.get(b.get("nome")) or {}
+            dettagli = (b.get("dettagli") or "").strip()
+            chiave = b.get("nome", "") + dettagli
+            if not (e or dettagli) or chiave in visti:
                 continue
-            visti.add(e["id"])
-            punti = " · ".join(e["punti"])
-            schede.append(Paragraph(f"<b>{_esc(e['nome'])}</b> — {_esc(e['descrizione'])} "
-                                    f"<font color='#6f6d66'>Punti chiave: {_esc(punti)}"
-                                    + (f". Misura: {_esc(e['misura'])}" if e.get("misura") else "") + "</font>",
-                                    ParagraphStyle("es", parent=S["small"], textColor=ST.INK, fontSize=7.6, leading=10,
-                                                   spaceAfter=3)))
+            visti.add(chiave)
+            testo = dettagli or e.get("descrizione", "")
+            extra = ""
+            if e.get("punti") and not dettagli:
+                extra += f"Punti chiave: {_esc(' · '.join(e['punti']))}"
+            if e.get("misura"):
+                extra += (". " if extra else "") + f"Misura: {_esc(e['misura'])}"
+            schede.append(Paragraph(f"<b>{_esc(b.get('nome', ''))}</b> — {_esc(testo)} "
+                                    + (f"<font color='#6f6d66'>{extra}</font>" if extra else ""), stile))
         if schede:
             el += [Spacer(1, 6), Paragraph("Gli esercizi", S["h3"])] + schede
     # spazio per gli appunti a bordo campo
@@ -154,7 +169,7 @@ def _quintetti(ctx, sid, S, W) -> list:
 
 
 def _individuale(g: dict, prog, S, W) -> list:
-    sedute = prog.get("sedute", [])
+    sedute = sorted(prog.get("sedute", []), key=lambda s: s.get("giorno", ""))
     corpo = [Paragraph(f"<b>{_esc(g['nome'])}</b>" + (f"  <font color='#6f6d66'>#{g['maglia']}</font>" if g.get("maglia") else ""),
                        ParagraphStyle("gn", parent=S["h3"], fontSize=12, leading=14, spaceBefore=0))]
     if g["aree"]:
@@ -165,7 +180,8 @@ def _individuale(g: dict, prog, S, W) -> list:
         corpo.append(Paragraph("Nessuna area sotto il livello del ruolo: lavoro di mantenimento sul tiro.", S["small"]))
     if g.get("forza"):
         corpo.append(Paragraph("Punti di forza: " + _esc("; ".join(g["forza"])), S["small"]))
-    es = [E.PER_ID[x] for x in g["esercizi"] if x in E.PER_ID]
+    cat = E.catalogo(prog.get("esercizi_club"))
+    es = [cat[x] for x in g["esercizi"] if x in cat]
     if es:
         corpo += [Spacer(1, 3), Paragraph("Esercizi", S["h3"])]
         corpo += [Paragraph(f"• <b>{_esc(e['nome'])}</b> ({e['durata']}') — {_esc(e['descrizione'])}"
@@ -183,7 +199,7 @@ def _individuale(g: dict, prog, S, W) -> list:
 
 
 def _presenze(ctx, sid, prog, S, W) -> list:
-    sedute = prog.get("sedute", [])
+    sedute = sorted(prog.get("sedute", []), key=lambda s: s.get("giorno", ""))
     pl = ctx.players[ctx.players["squadra_id"] == sid].sort_values("minuti", ascending=False)
     if prog.get("tipo") == "individuale" and prog.get("giocatori"):
         pl = pl[pl["giocatore_id"].isin(prog["giocatori"])]
@@ -227,7 +243,7 @@ def build_programma(ctx, sid: int, prog: dict, giochi: list[dict] | None = None)
     titoli = dict(CAPITOLI)
     capitoli = [titoli[k] for k in ordine if presenti.get(k)]
     cap = Capitoli(capitoli, W)
-    sedute = prog.get("sedute", [])
+    sedute = sorted(prog.get("sedute", []), key=lambda s: s.get("giorno", ""))
     durata = sum(s.get("durata", 0) for s in sedute)
     meta = (f"{len(sedute)} sedute · {durata} minuti in tutto · dal {A.giorno_it(prog.get('dal', ''))}"
             + (f"<br/>Prossima partita: {A.giorno_it(prog['partita']['data'])}, {prog['partita']['casa']} – "

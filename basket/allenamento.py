@@ -219,17 +219,19 @@ def _arrotonda(minuti: float) -> int:
 
 
 def bozza_seduta(durata: int, intensita: str, aree: list[str], individuale: bool = False,
-                 usati: set | None = None, quintetto: str = "", giochi: bool = False) -> list[dict]:
+                 usati: set | None = None, quintetto: str = "", giochi: bool = False,
+                 extra: list[dict] | None = None) -> list[dict]:
     """Blocchi di una seduta: per ogni fase l'esercizio più adatto alle aree (evitando quelli già
-    usati nelle sedute precedenti, quando si può) e i minuti; il totale è la durata."""
+    usati nelle sedute precedenti, quando si può) e i minuti; il totale è la durata. extra: gli
+    esercizi del club, scelti come quelli della libreria."""
     usati = set() if usati is None else usati
     quote = QUOTE_INDIVIDUALE if individuale else QUOTE[intensita]
     blocchi = []
     for fase, q in quote.items():
         # nelle rifiniture niente esercizi ad alta intensità; nelle altre sedute si sceglie per area
-        cand = E.per_aree(aree, fase, intensita_max="media" if intensita == "bassa" else "alta")
+        cand = E.per_aree(aree, fase, intensita_max="media" if intensita == "bassa" else "alta", extra=extra)
         if not cand:
-            cand = E.per_aree(aree, fase)
+            cand = E.per_aree(aree, fase, extra=extra)
         if fase == "collettivo" and intensita == "bassa" and giochi:
             scelte = [E.PER_ID["c_rifinitura"]]
         else:
@@ -250,6 +252,50 @@ def bozza_seduta(durata: int, intensita: str, aree: list[str], individuale: bool
         lungo = coll[-1] if coll else max(blocchi, key=lambda b: b["minuti"])
         lungo["minuti"] = max(5, lungo["minuti"] + diff)
     return blocchi
+
+
+# modelli di seduta pronti: (fase, esercizio, minuti) su una seduta di riferimento; i minuti si
+# adattano alla durata scelta
+MODELLI = {
+    "Carico": ("alta", [("riscaldamento", "r_attivazione", 12), ("tecnica", "t_closeout", 12),
+                        ("tecnica", "t_tagliafuori", 10), ("situazioni", "s_shell", 14), ("situazioni", "s_3c2", 12),
+                        ("collettivo", "c_tema", 20), ("tiro", "t_liberi_fatica", 5),
+                        ("defaticamento", "d_defaticamento", 5)]),
+    "Sviluppo": ("media", [("riscaldamento", "r_passaggi", 10), ("tecnica", "t_tiro_blocchi", 12),
+                           ("tecnica", "t_pnr_letture", 12), ("situazioni", "s_pnr_2c2", 12),
+                           ("situazioni", "s_consegnato", 10), ("collettivo", "c_quintetto", 24),
+                           ("tiro", "t_liberi_coppie", 5), ("defaticamento", "d_defaticamento", 5)]),
+    "Rifinitura pre-partita": ("bassa", [("riscaldamento", "r_attivazione", 12), ("tecnica", "t_catch_shoot", 12),
+                                         ("collettivo", "c_scouting", 18), ("collettivo", "c_rifinitura", 25),
+                                         ("collettivo", "c_finali", 13), ("tiro", "t_liberi_coppie", 5),
+                                         ("defaticamento", "d_defaticamento", 5)]),
+    "Recupero post-partita": ("bassa", [("riscaldamento", "r_attivazione", 15), ("tecnica", "t_ball_handling", 10),
+                                        ("tecnica", "t_tiro_5", 15), ("tiro", "t_liberi_coppie", 10),
+                                        ("defaticamento", "d_defaticamento", 10)]),
+    "Individuale: tiro e tecnica": ("media", [("riscaldamento", "r_mikan", 8), ("tecnica", "t_tiro_5", 12),
+                                              ("tecnica", "t_catch_shoot", 10), ("tecnica", "t_contatto", 8),
+                                              ("tiro", "t_liberi_coppie", 7), ("defaticamento", "d_defaticamento", 5)]),
+}
+PARTENZE = ("dati", "vuoto") + tuple(MODELLI)
+
+
+def da_modello(nome: str, durata: int) -> tuple[str, list[dict]]:
+    """(intensità, blocchi) di un modello, con i minuti adattati alla durata della seduta."""
+    intensita, righe = MODELLI[nome]
+    base = sum(m for _, _, m in righe)
+    blocchi = [{"fase": f, "esercizio": e, "nome": E.PER_ID[e]["nome"], "minuti": _arrotonda(m * durata / base),
+                "gruppi": "", "note": ""} for f, e, m in righe]
+    diff = durata - sum(b["minuti"] for b in blocchi)
+    if blocchi and diff:
+        lungo = max(blocchi, key=lambda b: b["minuti"])
+        lungo["minuti"] = max(5, lungo["minuti"] + diff)
+    return intensita, blocchi
+
+
+def seduta_vuota(giorno: date, durata: int = 90, inizio: str = "18:00") -> dict:
+    """Seduta da riempire a mano: nessun esercizio, campi liberi."""
+    return {"giorno": giorno.isoformat(), "etichetta": "", "intensita": "media", "durata": int(durata),
+            "inizio": inizio, "luogo": "", "obiettivo": "", "blocchi": []}
 
 
 def orari(blocchi: list[dict], inizio: str = "") -> list[str]:
@@ -273,9 +319,11 @@ def orari(blocchi: list[dict], inizio: str = "") -> list[str]:
 
 def nuovo_programma(ctx, sid: int, nome: str, dal: date, giorni: list[int], durata: int = 90,
                     tipo: str = "squadra", giocatori: list[str] | None = None, aree: list[str] | None = None,
-                    inizio: str = "18:00", giochi: list[str] | None = None) -> dict:
+                    inizio: str = "18:00", giochi: list[str] | None = None, partenza: str = "dati",
+                    extra: list[dict] | None = None) -> dict:
     """Programma della settimana che parte da `dal`: una seduta per ogni giorno scelto
-    (0 = lunedì), con intensità dal microciclo e la bozza degli esercizi."""
+    (0 = lunedì). partenza: "dati" (bozza dai numeri, intensità dal microciclo), "vuoto"
+    (sedute da riempire a mano) o il nome di un modello di MODELLI. extra: esercizi del club."""
     ng = ctx.next_game(sid) if hasattr(ctx, "next_game") else None
     partita = None
     if ng and ng.get("data"):
@@ -304,18 +352,26 @@ def nuovo_programma(ctx, sid: int, nome: str, dal: date, giorni: list[int], dura
         etichetta, intensita = microciclo(giorno, partita)
         if individuale:
             intensita = "media" if intensita == "alta" else intensita
-        # si evitano solo gli esercizi della seduta prima: le priorità tornano ogni due sedute
-        blocchi = bozza_seduta(durata, intensita, aree, individuale, set(usati), da_lavorare, bool(giochi))
+        if partenza == "vuoto":
+            s = seduta_vuota(giorno, durata, inizio)
+            s["etichetta"] = etichetta
+            sedute.append(s)
+            continue
+        if partenza in MODELLI:
+            intensita, blocchi = da_modello(partenza, durata)
+        else:
+            # si evitano solo gli esercizi della seduta prima: le priorità tornano ogni due sedute
+            blocchi = bozza_seduta(durata, intensita, aree, individuale, set(usati), da_lavorare, bool(giochi), extra)
         usati = {x["esercizio"] for x in blocchi}
         sedute.append({"giorno": giorno.isoformat(), "etichetta": etichetta, "intensita": intensita,
-                       "durata": durata, "inizio": inizio, "obiettivo": OBIETTIVO_INTENSITA[intensita],
+                       "durata": durata, "inizio": inizio, "luogo": "", "obiettivo": OBIETTIVO_INTENSITA[intensita],
                        "blocchi": blocchi})
     sedute.sort(key=lambda s: s["giorno"])
     return {"id": uuid.uuid4().hex[:12], "nome": nome, "tipo": tipo, "squadra_id": int(sid),
             "giocatori": list(giocatori or []), "dal": dal.isoformat(), "aree": aree,
             "partita": ({"data": str(ng["data"])[:10], "casa": ng.get("casa"), "ospite": ng.get("ospite")}
                         if ng else None),
-            "sedute": sedute, "giochi": list(giochi or []), "note": "",
+            "sedute": sedute, "giochi": list(giochi or []), "note": "", "esercizi_club": list(extra or []),
             "includi": {"obiettivi": True, "sedute": True, "quintetti": not individuale, "individuali": True,
                         "avversaria": bool(ng) and not individuale, "carichi": not individuale,
                         "giochi": bool(giochi), "presenze": True, "esercizi": True}}

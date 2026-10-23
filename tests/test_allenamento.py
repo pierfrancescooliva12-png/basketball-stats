@@ -90,3 +90,42 @@ def test_programma_pdf_e_archivio(tmp_path, monkeypatch):
     assert len(salvati) == 1 and salvati[0]["nome"] == "Rinominato" and arch.programs("altro") == []
     arch.delete_program("club", prog["id"])
     assert arch.programs("club") == []
+
+
+def test_modelli_sedute_vuote_e_esercizi_del_club(tmp_path, monkeypatch):
+    from basket import config, db, update
+    from basket.contesto import Contesto
+    from basket.note import Archivio
+    from basket.report_allenamento import build_programma
+    from tests.test_pbp import Client
+    for nome in A.MODELLI:
+        intensita, blocchi = A.da_modello(nome, 75)
+        assert intensita in E.INTENSITA and sum(b["minuti"] for b in blocchi) == 75
+    mio = E.nuovo_esercizio("Tiro dopo blocco cieco", "Lavoro al video", ["tiro"], 15, "media", 2,
+                            "Tiro in uscita dal blocco cieco del lungo.", ["Tempi", "Piedi pronti"], "Canestri su 20")
+    assert mio["id"].startswith("club_") and mio["club"]
+    # l'esercizio del club entra nelle bozze quando la fase è una di quelle standard
+    tecnico = E.nuovo_esercizio("Arresto e tiro del club", "tecnica", ["tiro"], 10)
+    assert E.per_aree(["tiro"], "tecnica", extra=[tecnico])[0]["id"] == tecnico["id"]
+
+    monkeypatch.setattr(config, "CRONACA_DIR", tmp_path / "cronaca")
+    conn = db.connect(tmp_path / "t.sqlite")
+    update.update_league(conn, Client(), "ita2", "x2627", {2})
+    ctx = Contesto(conn, "x2627")
+    vuoto = A.nuovo_programma(ctx, 10050, "Da zero", date(2026, 10, 26), [0, 2], 80, partenza="vuoto")
+    assert all(s["blocchi"] == [] and s["durata"] == 80 for s in vuoto["sedute"])
+    mod = A.nuovo_programma(ctx, 10050, "Modello", date(2026, 10, 26), [1], 90, partenza="Rifinitura pre-partita")
+    assert mod["sedute"][0]["intensita"] == "bassa" and sum(b["minuti"] for b in mod["sedute"][0]["blocchi"]) == 90
+    # seduta scritta a mano: fase propria, esercizio del club, riga libera con i dettagli
+    vuoto["esercizi_club"] = [mio]
+    vuoto["sedute"][0]["blocchi"] = [
+        {"fase": "Lavoro al video", "esercizio": mio["id"], "nome": mio["nome"], "minuti": 15},
+        {"fase": "Tattica", "esercizio": "", "nome": "Uscite dal timeout", "minuti": 20,
+         "dettagli": "Tre rimesse laterali provate a ritmo partita"}]
+    vuoto["sedute"][0]["luogo"] = "PalaProva"
+    assert build_programma(ctx, 10050, vuoto)[:4] == b"%PDF"
+    arch = Archivio(f"sqlite:///{tmp_path / 'n.sqlite'}")
+    arch.save_exercise("club", mio, "staff")
+    assert [e["nome"] for e in arch.exercises("club")] == [mio["nome"]] and arch.exercises("altro") == []
+    arch.delete_exercise("club", mio["id"])
+    assert arch.exercises("club") == []
