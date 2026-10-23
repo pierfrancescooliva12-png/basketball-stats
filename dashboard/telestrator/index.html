@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lavagna sul video ASSIST</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+/* Lavagna sul video (telestrator): il video si apre dal dispositivo e non lascia mai il browser;
+   disegni e momenti esistono solo in questa sessione, in memoria. */
+:root {
+  --bg: #faf9f5; --pannello: #fffefb; --carta: #f3f1ea; --testo: #141413; --tenue: #6f6d66;
+  --bordo: #e3e0d4; --accento: #e8631c; --attivo: #141413; --attivo-testo: #faf9f5;
+  --corpo: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--testo); font: 15px/1.4 var(--corpo);
+  -webkit-font-smoothing: antialiased; -webkit-user-select: none; user-select: none; }
+[hidden] { display: none !important; }
+button, input, select { font: inherit; color: inherit; }
+.app { display: grid; gap: 10px; padding: 4px 2px 12px; }
+
+/* apertura */
+.apri { display: grid; place-items: center; gap: 10px; text-align: center; padding: 34px 16px;
+  border: 1.5px dashed var(--bordo); border-radius: 16px; background: var(--carta); }
+.apri.sopra { border-color: var(--accento); background: #fbeee4; }
+.apri b { font-size: 1.05rem; }
+.apri small { color: var(--tenue); max-width: 520px; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px;
+  padding: 0 14px; border: 1px solid var(--bordo); border-radius: 999px; background: var(--pannello);
+  cursor: pointer; font-weight: 500; touch-action: manipulation; white-space: nowrap; }
+.btn:hover:not([aria-pressed="true"]):not(.primario) { background: var(--carta); }
+.btn.primario, .btn[aria-pressed="true"] { background: var(--attivo); color: var(--attivo-testo); border-color: var(--attivo); }
+.btn.piccolo { min-height: 38px; padding: 0 11px; font-size: .9rem; }
+.btn svg { width: 22px; height: 18px; flex: none; }
+.btn:focus-visible { outline: 3px solid var(--accento); outline-offset: 2px; }
+
+/* palco: video + disegni */
+.palco { position: relative; background: #0b0b0a; border-radius: 14px; overflow: hidden;
+  aspect-ratio: 16 / 9; max-height: var(--alto, 78vh); touch-action: none; }
+.palco video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+.palco canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; }
+.palco .stato { position: absolute; left: 12px; top: 12px; padding: 4px 11px; border-radius: 999px;
+  background: rgba(20,20,19,.78); color: #faf9f5; font-size: .85rem; font-weight: 600; pointer-events: none; }
+.palco .tasti-vel { position: absolute; right: 12px; top: 12px; display: flex; gap: 4px; }
+/* schermo intero: video, comandi e strumenti insieme; il video prende lo spazio che resta */
+body.grande { background: #141413; }
+body.grande .app { height: 100vh; grid-template-rows: minmax(0, 1fr) auto auto auto; padding: 8px; gap: 6px; }
+body.grande #apri, body.grande #piede, body.grande #aiuto { display: none !important; }
+body.grande #lavoro { min-height: 0; display: flex; }
+body.grande .palco { max-height: none; aspect-ratio: auto !important; width: 100%; height: 100%; border-radius: 10px; }
+body.grande .barra, body.grande .strumenti, body.grande .momenti { color: var(--testo); }
+body.grande .tempo, body.grande .momenti .tit { color: #c9c6bb; }
+body.grande .btn.primario, body.grande #play { background: #faf9f5; color: #141413; border-color: #faf9f5; }
+/* schermi bassi (telefono in orizzontale): comandi su una riga scorrevole, solo icone */
+@media (max-height: 560px) {
+  body.grande .app { padding: 4px 6px; gap: 4px; grid-template-rows: minmax(0, 1fr) auto auto; }
+  body.grande .momenti, body.grande .sep, body.grande .stato { display: none !important; }
+  body.grande .barra, body.grande .strumenti { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
+    -webkit-overflow-scrolling: touch; }
+  body.grande .barra::-webkit-scrollbar, body.grande .strumenti::-webkit-scrollbar { display: none; }
+  body.grande .strumenti { padding: 4px; border-radius: 12px; }
+  body.grande .btn .lab { display: none; }
+  body.grande .btn.piccolo, body.grande .btn { min-height: 34px; padding: 0 9px; font-size: .85rem; flex: none; }
+  body.grande .colore { width: 26px; height: 26px; flex: none; }
+  body.grande #colori, body.grande .spessore { flex: none; }
+  body.grande .spessore button { height: 26px; min-width: 28px; }
+  body.grande .scorri { flex: 1 0 140px; }
+  body.grande .tempo { min-width: 0; font-size: .8rem; flex: none; }
+}
+
+/* barra di riproduzione */
+.barra { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tempo { font-variant-numeric: tabular-nums; color: var(--tenue); font-size: .9rem; min-width: 110px; }
+.scorri { flex: 1 1 220px; accent-color: var(--accento); height: 28px; }
+
+/* strumenti */
+.strumenti { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px;
+  border: 1px solid var(--bordo); border-radius: 16px; background: var(--carta); }
+.sep { width: 1px; align-self: stretch; background: var(--bordo); margin: 0 2px; }
+.colore { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--pannello);
+  box-shadow: 0 0 0 1px var(--bordo); cursor: pointer; padding: 0; }
+.colore[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--attivo); }
+.spessore { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--bordo); border-radius: 999px;
+  background: var(--pannello); }
+.spessore button { border: 0; background: transparent; border-radius: 999px; height: 32px; min-width: 34px;
+  cursor: pointer; }
+.spessore button[aria-pressed="true"] { background: var(--attivo); color: var(--attivo-testo); }
+.spessore i { display: inline-block; background: currentColor; border-radius: 4px; width: 16px; vertical-align: middle; }
+
+/* momenti della sessione */
+.momenti { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.momenti .tit { font-weight: 600; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--tenue); }
+.momento { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 6px 0 12px; border-radius: 999px;
+  border: 1px solid var(--bordo); background: var(--pannello); cursor: pointer; font-variant-numeric: tabular-nums; }
+.momento[aria-current="true"] { border-color: var(--accento); box-shadow: 0 0 0 1px var(--accento); }
+.momento .x { border: 0; background: transparent; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; color: var(--tenue); }
+.nota { color: var(--tenue); font-size: .85rem; margin: 0; }
+.privacy { display: flex; gap: 8px; align-items: center; color: var(--tenue); font-size: .85rem; }
+.privacy::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #2f9e6b; flex: none; }
+@media (max-width: 640px) { .btn .lab { display: none; } .tempo { min-width: 0; } }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <label class="apri" id="apri" for="file">
+    <b>Apri un video dal dispositivo</b>
+    <span class="btn primario">Scegli il video…</span>
+    <small>Il video non viene caricato su ASSIST: resta sul tuo dispositivo e si vede solo qui. Disegni e momenti
+      valgono per questa sessione e spariscono quando chiudi la pagina. Su computer puoi anche trascinarlo qui.</small>
+  </label>
+  <input type="file" id="file" accept="video/*" hidden>
+
+  <div id="lavoro" hidden>
+    <div class="palco" id="palco">
+      <video id="video" playsinline preload="auto"></video>
+      <canvas id="tela"></canvas>
+      <div class="stato" id="stato">In pausa · disegna sul fotogramma</div>
+    </div>
+  </div>
+
+  <div class="barra" id="barra" hidden>
+    <button class="btn primario" id="play" title="Riproduci o metti in pausa (spazio)">▶ <span class="lab">Riproduci</span></button>
+    <button class="btn piccolo" id="indietro5" title="Indietro di 5 secondi (Maiusc + ←)">−5s</button>
+    <button class="btn piccolo" id="indietro1" title="Fotogramma precedente (←)">◀︎ <span class="lab">fotogramma</span></button>
+    <button class="btn piccolo" id="avanti1" title="Fotogramma successivo (→)"><span class="lab">fotogramma</span> ▶︎</button>
+    <button class="btn piccolo" id="avanti5" title="Avanti di 5 secondi (Maiusc + →)">+5s</button>
+    <input type="range" class="scorri" id="scorri" min="0" max="1000" value="0" aria-label="Posizione nel video">
+    <span class="tempo" id="tempo">0:00,0 / 0:00</span>
+    <select class="btn piccolo" id="velocita" aria-label="Velocità">
+      <option value="0.25">0,25×</option><option value="0.5">0,5×</option>
+      <option value="1" selected>1×</option><option value="1.5">1,5×</option><option value="2">2×</option>
+    </select>
+    <button class="btn piccolo" id="schermo" title="Schermo intero">⤢ <span class="lab">Schermo intero</span></button>
+  </div>
+
+  <div class="strumenti" id="strumenti" hidden>
+    <button class="btn piccolo" data-t="penna" aria-pressed="true" title="Penna libera">
+      <svg viewBox="0 0 22 18"><path d="M2 14c4-1 5-8 9-8s3 6 9 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="lab">Penna</span></button>
+    <button class="btn piccolo" data-t="percorso" aria-pressed="false" title="Taglio: percorso con freccia">
+      <svg viewBox="0 0 22 18"><path d="M2 15C6 4 13 4 17 9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15 4l5 7-7 0z" fill="currentColor"/></svg><span class="lab">Taglio</span></button>
+    <button class="btn piccolo" data-t="freccia" aria-pressed="false" title="Freccia dritta">
+      <svg viewBox="0 0 22 18"><path d="M2 9H16" stroke="currentColor" stroke-width="2"/><path d="M15 4l6 5-6 5z" fill="currentColor"/></svg><span class="lab">Freccia</span></button>
+    <button class="btn piccolo" data-t="passaggio" aria-pressed="false" title="Passaggio: freccia tratteggiata">
+      <svg viewBox="0 0 22 18"><path d="M2 9H16" stroke="currentColor" stroke-width="2" stroke-dasharray="3 2"/><path d="M15 4l6 5-6 5z" fill="currentColor"/></svg><span class="lab">Passaggio</span></button>
+    <button class="btn piccolo" data-t="blocco" aria-pressed="false" title="Blocco">
+      <svg viewBox="0 0 22 18"><path d="M2 9H18M18 3v12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><span class="lab">Blocco</span></button>
+    <button class="btn piccolo" data-t="linea" aria-pressed="false" title="Linea">
+      <svg viewBox="0 0 22 18"><path d="M3 15L19 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="lab">Linea</span></button>
+    <button class="btn piccolo" data-t="cerchio" aria-pressed="false" title="Cerchio sotto il giocatore">
+      <svg viewBox="0 0 22 18"><ellipse cx="11" cy="12" rx="8" ry="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span class="lab">Giocatore</span></button>
+    <button class="btn piccolo" data-t="riflettore" aria-pressed="false" title="Riflettore: scurisce il resto">
+      <svg viewBox="0 0 22 18"><rect x="1" y="1" width="20" height="16" rx="3" fill="currentColor" opacity=".35"/><ellipse cx="11" cy="10" rx="5" ry="4" fill="#fff" stroke="currentColor"/></svg><span class="lab">Riflettore</span></button>
+    <button class="btn piccolo" data-t="area" aria-pressed="false" title="Area: contorna una zona">
+      <svg viewBox="0 0 22 18"><path d="M3 13L6 3l12 2 1 9z" fill="currentColor" opacity=".3" stroke="currentColor" stroke-width="1.6"/></svg><span class="lab">Area</span></button>
+    <button class="btn piccolo" data-t="testo" aria-pressed="false" title="Testo">
+      <svg viewBox="0 0 22 18"><path d="M4 3h14M11 3v13" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><span class="lab">Testo</span></button>
+    <button class="btn piccolo" data-t="gomma" aria-pressed="false" title="Gomma: tocca un disegno per toglierlo">
+      <svg viewBox="0 0 22 18"><path d="M5 15h12M7 12l7-9 5 4-7 8H9z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="lab">Gomma</span></button>
+    <span class="sep"></span>
+    <span id="colori"></span>
+    <span class="spessore" role="group" aria-label="Spessore">
+      <button data-s="3" aria-pressed="false" title="Sottile"><i style="height:2px"></i></button>
+      <button data-s="5" aria-pressed="true" title="Medio"><i style="height:4px"></i></button>
+      <button data-s="8" aria-pressed="false" title="Spesso"><i style="height:7px"></i></button>
+    </span>
+    <span class="sep"></span>
+    <button class="btn piccolo" id="annulla" title="Annulla (Z)">↶ <span class="lab">Annulla</span></button>
+    <button class="btn piccolo" id="ripeti" title="Ripeti">↷</button>
+    <button class="btn piccolo" id="pulisci" title="Cancella i disegni di questo fotogramma">Pulisci</button>
+    <button class="btn piccolo" id="tieni" aria-pressed="false" title="Tieni i disegni anche mentre il video scorre">Tieni durante il play</button>
+  </div>
+
+  <div class="momenti" id="momenti" hidden></div>
+  <div class="barra" id="piede" hidden>
+    <span class="privacy">Video solo sul tuo dispositivo · niente viene salvato</span>
+    <span style="flex:1"></span>
+    <button class="btn piccolo" id="cambia">Apri un altro video</button>
+    <button class="btn piccolo" id="chiudi">Chiudi il video</button>
+  </div>
+  <p class="nota" id="aiuto" hidden>Tocca e trascina sul video per disegnare: il video si ferma da solo. Spazio = play/pausa,
+    ← → = un fotogramma, Maiusc + ← → = 5 secondi, Z = annulla. I disegni restano legati al momento in cui li fai:
+    li ritrovi tra i momenti della sessione.</p>
+</div>
+
+<script>
+(function () {
+"use strict";
+const $ = (id) => document.getElementById(id);
+const video = $("video"), tela = $("tela"), palco = $("palco"), g = tela.getContext("2d");
+const COLORI = ["#ffd23f", "#e8631c", "#ff4d4d", "#4fb3ff", "#ffffff", "#141413"];
+const FOTOGRAMMA = 1 / 30;
+let url = null, strumento = "penna", colore = COLORI[0], spessore = 5, tieni = false;
+let momenti = [];            // [{t, forme: [...]}]  solo in memoria
+let corrente = null;         // momento mostrato
+let bozza = null;            // forma che si sta disegnando
+let rifare = [];             // forme annullate (per "ripeti")
+
+// ------------------------------------------------------------------ Streamlit: solo l'altezza
+const IN_APP = window.parent !== window;
+function altezza() {
+  if (!IN_APP) return;
+  window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setFrameHeight",
+                              height: Math.ceil($("app").getBoundingClientRect().bottom + window.scrollY + 8) }, "*");
+}
+if (IN_APP) {
+  window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:componentReady", apiVersion: 1 }, "*");
+  window.addEventListener("message", (ev) => { if ((ev.data || {}).type === "streamlit:render") altezza(); });
+  new ResizeObserver(altezza).observe(document.body);
+}
+
+// ------------------------------------------------------------------ apertura del video
+function apri(file) {
+  if (!file || !file.type.startsWith("video/")) { alert("Scegli un file video."); return; }
+  if (url) URL.revokeObjectURL(url);
+  url = URL.createObjectURL(file);          // il file resta sul dispositivo: nessun caricamento
+  momenti = []; corrente = null; rifare = [];
+  video.src = url; video.load();
+  for (const id of ["lavoro", "barra", "strumenti", "momenti", "piede", "aiuto"]) $(id).hidden = false;
+  $("apri").hidden = true;
+  aggiornaMomenti(); setTimeout(dimensiona, 50);
+}
+$("file").addEventListener("change", (e) => { apri(e.target.files[0]); e.target.value = ""; });
+const zona = $("apri");
+zona.addEventListener("dragover", (e) => { e.preventDefault(); zona.classList.add("sopra"); });
+zona.addEventListener("dragleave", () => zona.classList.remove("sopra"));
+zona.addEventListener("drop", (e) => { e.preventDefault(); zona.classList.remove("sopra"); apri(e.dataTransfer.files[0]); });
+$("cambia").addEventListener("click", () => $("file").click());
+$("chiudi").addEventListener("click", () => {
+  video.pause(); video.removeAttribute("src"); video.load();
+  if (url) URL.revokeObjectURL(url);
+  url = null; momenti = []; corrente = null;
+  for (const id of ["lavoro", "barra", "strumenti", "momenti", "piede", "aiuto"]) $(id).hidden = true;
+  $("apri").hidden = false; disegna();
+});
+
+// ------------------------------------------------------------------ geometria: coordinate sul video
+function rettangolo() {        // dove sta davvero l'immagine dentro il palco (bande nere escluse)
+  const w = tela.clientWidth, h = tela.clientHeight;
+  const vw = video.videoWidth || 16, vh = video.videoHeight || 9;
+  const s = Math.min(w / vw, h / vh), dw = vw * s, dh = vh * s;
+  return { x: (w - dw) / 2, y: (h - dh) / 2, w: dw, h: dh };
+}
+function normalizza(ev) {
+  const b = tela.getBoundingClientRect(), r = rettangolo();
+  return [(ev.clientX - b.left - r.x) / r.w, (ev.clientY - b.top - r.y) / r.h];
+}
+function sulPalco([x, y], r) { return [r.x + x * r.w, r.y + y * r.h]; }
+function dimensiona() {
+  const d = window.devicePixelRatio || 1;
+  tela.width = Math.round(tela.clientWidth * d); tela.height = Math.round(tela.clientHeight * d);
+  g.setTransform(d, 0, 0, d, 0, 0); disegna();
+}
+new ResizeObserver(dimensiona).observe(palco);
+video.addEventListener("loadedmetadata", () => {
+  if (video.videoWidth) palco.style.aspectRatio = `${video.videoWidth} / ${video.videoHeight}`;
+  dimensiona(); aggiornaTempo();
+});
+
+// ------------------------------------------------------------------ disegno delle forme
+function punta(a, b, lw, col) {
+  const ang = Math.atan2(b[1] - a[1], b[0] - a[0]), l = 6 + lw * 2.4;
+  g.fillStyle = col; g.beginPath();
+  g.moveTo(b[0], b[1]);
+  g.lineTo(b[0] - l * Math.cos(ang - 0.45), b[1] - l * Math.sin(ang - 0.45));
+  g.lineTo(b[0] - l * Math.cos(ang + 0.45), b[1] - l * Math.sin(ang + 0.45));
+  g.closePath(); g.fill();
+}
+function tracciato(pts) {
+  g.beginPath(); g.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length - 1; i++) {        // curva morbida tra i punti
+    const m = [(pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2];
+    g.quadraticCurveTo(pts[i][0], pts[i][1], m[0], m[1]);
+  }
+  const u = pts[pts.length - 1]; g.lineTo(u[0], u[1]);
+}
+function forma(f, r) {
+  const pts = f.punti.map((p) => sulPalco(p, r)), lw = f.spessore, col = f.colore;
+  if (!pts.length) return;
+  g.save();
+  g.lineCap = "round"; g.lineJoin = "round"; g.strokeStyle = col; g.lineWidth = lw;
+  g.shadowColor = "rgba(0,0,0,.45)"; g.shadowBlur = 3;
+  const a = pts[0], b = pts[pts.length - 1];
+  if (f.tipo === "penna" || f.tipo === "percorso") {
+    if (pts.length > 1) { tracciato(pts); g.stroke(); }
+    if (f.tipo === "percorso" && pts.length > 2) punta(pts[Math.max(0, pts.length - 4)], b, lw, col);
+  } else if (f.tipo === "freccia" || f.tipo === "passaggio" || f.tipo === "linea") {
+    if (f.tipo === "passaggio") g.setLineDash([lw * 2.4, lw * 1.8]);
+    const fine = f.tipo === "linea" ? b : [b[0] - (b[0] - a[0]) * 0.02, b[1] - (b[1] - a[1]) * 0.02];
+    g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(fine[0], fine[1]); g.stroke(); g.setLineDash([]);
+    if (f.tipo !== "linea") punta(a, b, lw, col);
+  } else if (f.tipo === "blocco") {
+    g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
+    const ang = Math.atan2(b[1] - a[1], b[0] - a[0]) + Math.PI / 2, l = 8 + lw * 2;
+    g.lineWidth = lw * 1.4; g.beginPath();
+    g.moveTo(b[0] - l * Math.cos(ang), b[1] - l * Math.sin(ang)); g.lineTo(b[0] + l * Math.cos(ang), b[1] + l * Math.sin(ang));
+    g.stroke();
+  } else if (f.tipo === "cerchio" || f.tipo === "riflettore") {
+    const rx = Math.max(8, Math.hypot(b[0] - a[0], b[1] - a[1])), ry = rx * 0.42;
+    if (f.tipo === "riflettore") {
+      g.shadowBlur = 0; g.fillStyle = "rgba(0,0,0,.58)";
+      g.beginPath(); g.rect(r.x, r.y, r.w, r.h);
+      g.ellipse(a[0], a[1] - ry * 1.6, rx * 1.05, rx * 1.55, 0, 0, Math.PI * 2);
+      g.fill("evenodd");
+      g.lineWidth = Math.max(2, lw * 0.6); g.beginPath();
+      g.ellipse(a[0], a[1] - ry * 1.6, rx * 1.05, rx * 1.55, 0, 0, Math.PI * 2); g.stroke();
+    } else {                                           // anello "sul parquet" sotto il giocatore
+      g.beginPath(); g.ellipse(a[0], a[1], rx, ry, 0, 0, Math.PI * 2); g.stroke();
+      g.globalAlpha = 0.22; g.fillStyle = col; g.fill(); g.globalAlpha = 1;
+    }
+  } else if (f.tipo === "area") {
+    if (pts.length > 2) {
+      tracciato(pts); g.closePath(); g.globalAlpha = 0.25; g.fillStyle = col; g.fill(); g.globalAlpha = 1; g.stroke();
+    } else if (pts.length > 1) { tracciato(pts); g.stroke(); }
+  } else if (f.tipo === "testo" && f.testo) {
+    const fs = 13 + lw * 1.6;
+    g.font = `600 ${fs}px ${getComputedStyle(document.body).fontFamily}`;
+    const w = g.measureText(f.testo).width;
+    g.shadowBlur = 0; g.fillStyle = "rgba(20,20,19,.82)";
+    g.beginPath(); (g.roundRect ? g.roundRect(a[0] - 8, a[1] - fs - 2, w + 16, fs + 12, 8) : g.rect(a[0] - 8, a[1] - fs - 2, w + 16, fs + 12));
+    g.fill(); g.fillStyle = col === "#141413" ? "#faf9f5" : col; g.fillText(f.testo, a[0], a[1] + 4);
+  }
+  g.restore();
+}
+function disegna() {
+  g.clearRect(0, 0, tela.clientWidth, tela.clientHeight);
+  const visibile = video.paused || tieni;
+  if (!visibile || !url) return;
+  const r = rettangolo();
+  for (const f of (corrente ? corrente.forme : [])) forma(f, r);
+  if (bozza) forma(bozza, r);
+}
+
+// ------------------------------------------------------------------ momenti della sessione
+function momentoQui(crea) {
+  const t = video.currentTime;
+  let m = momenti.find((x) => Math.abs(x.t - t) < 0.02);
+  if (!m && crea) { m = { t, forme: [] }; momenti.push(m); momenti.sort((a, b) => a.t - b.t); }
+  return m || null;
+}
+function orario(s, decimi = true) {
+  if (!isFinite(s)) return "0:00";
+  const m = Math.floor(s / 60), r = s - m * 60;
+  return `${m}:${String(Math.floor(r)).padStart(2, "0")}` + (decimi ? `,${Math.floor((r % 1) * 10)}` : "");
+}
+function aggiornaMomenti() {
+  const box = $("momenti"); box.innerHTML = "";
+  const tit = document.createElement("span"); tit.className = "tit";
+  tit.textContent = momenti.length ? "Momenti della sessione" : "Momenti: ferma il video e disegna, li ritrovi qui";
+  box.appendChild(tit);
+  momenti.filter((m) => m.forme.length).forEach((m) => {
+    const b = document.createElement("span"); b.className = "momento"; b.tabIndex = 0;
+    b.setAttribute("aria-current", corrente === m ? "true" : "false");
+    b.innerHTML = `${orario(m.t)} · ${m.forme.length} ${m.forme.length === 1 ? "disegno" : "disegni"}`;
+    const x = document.createElement("button"); x.className = "x"; x.textContent = "×"; x.title = "Togli il momento";
+    x.addEventListener("click", (e) => { e.stopPropagation(); momenti = momenti.filter((y) => y !== m);
+      if (corrente === m) corrente = null; aggiornaMomenti(); disegna(); });
+    b.appendChild(x);
+    b.addEventListener("click", () => { video.pause(); video.currentTime = m.t; corrente = m; aggiornaMomenti(); disegna(); });
+    box.appendChild(b);
+  });
+  altezza();
+}
+
+// ------------------------------------------------------------------ input: disegnare sul video
+tela.addEventListener("pointerdown", (ev) => {
+  if (!url) return;
+  ev.preventDefault();
+  if (!video.paused) video.pause();             // si disegna sempre su un fotogramma fermo
+  const p = normalizza(ev);
+  if (strumento === "gomma") { cancellaVicino(p); return; }
+  if (strumento === "testo") {
+    const testo = (prompt("Testo da scrivere sul video") || "").trim();
+    if (testo) { aggiungi({ tipo: "testo", colore, spessore, punti: [p], testo }); }
+    return;
+  }
+  tela.setPointerCapture(ev.pointerId);
+  bozza = { tipo: strumento, colore, spessore, punti: [p] };
+  disegna();
+});
+tela.addEventListener("pointermove", (ev) => {
+  if (!bozza) return;
+  const p = normalizza(ev);
+  if (["penna", "percorso", "area"].includes(bozza.tipo)) {
+    const u = bozza.punti[bozza.punti.length - 1];
+    if (Math.hypot(p[0] - u[0], p[1] - u[1]) > 0.004) bozza.punti.push(p);
+  } else bozza.punti = [bozza.punti[0], p];
+  disegna();
+});
+function fine() {
+  if (!bozza) return;
+  const f = bozza; bozza = null;
+  const corta = f.punti.length < 2 || Math.hypot(f.punti[f.punti.length - 1][0] - f.punti[0][0],
+                                                 f.punti[f.punti.length - 1][1] - f.punti[0][1]) < 0.006;
+  if (corta && f.tipo !== "cerchio" && f.tipo !== "riflettore") { disegna(); return; }
+  if (corta) f.punti = [f.punti[0], [f.punti[0][0] + 0.03, f.punti[0][1]]];   // un tocco: cerchio standard
+  aggiungi(f);
+}
+tela.addEventListener("pointerup", fine);
+tela.addEventListener("pointercancel", fine);
+function aggiungi(f) {
+  const m = momentoQui(true); m.forme.push(f); corrente = m; rifare = [];
+  aggiornaMomenti(); disegna();
+}
+function cancellaVicino(p) {
+  const m = corrente; if (!m) return;
+  const r = rettangolo(), P = sulPalco(p, r);
+  let migliore = -1, dist = 28;
+  m.forme.forEach((f, i) => {
+    for (const q of f.punti) {
+      const Q = sulPalco(q, r), d = Math.hypot(Q[0] - P[0], Q[1] - P[1]);
+      if (d < dist) { dist = d; migliore = i; }
+    }
+  });
+  if (migliore >= 0) { rifare.push(m.forme.splice(migliore, 1)[0]); aggiornaMomenti(); disegna(); }
+}
+
+// ------------------------------------------------------------------ strumenti
+document.querySelectorAll("[data-t]").forEach((b) => b.addEventListener("click", () => {
+  strumento = b.dataset.t;
+  document.querySelectorAll("[data-t]").forEach((x) => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+  tela.style.cursor = strumento === "gomma" ? "cell" : strumento === "testo" ? "text" : "crosshair";
+}));
+const boxColori = $("colori");
+COLORI.forEach((c, i) => {
+  const b = document.createElement("button"); b.className = "colore"; b.style.background = c; b.title = "Colore";
+  b.setAttribute("aria-pressed", i === 0 ? "true" : "false");
+  b.addEventListener("click", () => { colore = c;
+    boxColori.querySelectorAll(".colore").forEach((x) => x.setAttribute("aria-pressed", x === b ? "true" : "false")); });
+  boxColori.appendChild(b);
+});
+boxColori.style.display = "inline-flex"; boxColori.style.gap = "4px";
+document.querySelectorAll("[data-s]").forEach((b) => b.addEventListener("click", () => {
+  spessore = Number(b.dataset.s);
+  document.querySelectorAll("[data-s]").forEach((x) => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+}));
+function annulla() {
+  if (corrente && corrente.forme.length) { rifare.push(corrente.forme.pop()); aggiornaMomenti(); disegna(); }
+}
+$("annulla").addEventListener("click", annulla);
+$("ripeti").addEventListener("click", () => {
+  if (!rifare.length) return;
+  const m = corrente || momentoQui(true); m.forme.push(rifare.pop()); corrente = m; aggiornaMomenti(); disegna();
+});
+$("pulisci").addEventListener("click", () => {
+  if (corrente) { rifare = corrente.forme.slice().reverse(); corrente.forme = []; aggiornaMomenti(); disegna(); }
+});
+$("tieni").addEventListener("click", () => {
+  tieni = !tieni; $("tieni").setAttribute("aria-pressed", tieni ? "true" : "false"); disegna();
+});
+
+// ------------------------------------------------------------------ riproduzione
+function playPausa() {
+  if (!url) return;
+  if (video.paused) { video.play(); } else video.pause();
+}
+function vai(dt) {
+  if (!url) return;
+  video.pause();
+  video.currentTime = Math.max(0, Math.min((video.duration || 0), video.currentTime + dt));
+}
+$("play").addEventListener("click", playPausa);
+$("indietro5").addEventListener("click", () => vai(-5));
+$("avanti5").addEventListener("click", () => vai(5));
+$("indietro1").addEventListener("click", () => vai(-FOTOGRAMMA));
+$("avanti1").addEventListener("click", () => vai(FOTOGRAMMA));
+$("velocita").addEventListener("change", (e) => { video.playbackRate = Number(e.target.value); });
+const scorri = $("scorri");
+scorri.addEventListener("input", () => {
+  if (!video.duration) return;
+  video.pause(); video.currentTime = video.duration * scorri.value / 1000;
+});
+function aggiornaTempo() {
+  $("tempo").textContent = `${orario(video.currentTime)} / ${orario(video.duration, false)}`;
+  if (video.duration && document.activeElement !== scorri) scorri.value = Math.round(1000 * video.currentTime / video.duration);
+}
+video.addEventListener("timeupdate", aggiornaTempo);
+video.addEventListener("play", () => {
+  $("play").innerHTML = "❚❚ <span class='lab'>Pausa</span>"; $("stato").hidden = true;
+  if (!tieni) corrente = null;
+  aggiornaMomenti(); disegna();
+});
+video.addEventListener("pause", () => {
+  $("play").innerHTML = "▶ <span class='lab'>Riproduci</span>"; $("stato").hidden = false;
+  corrente = momentoQui(false) || (tieni ? corrente : null); aggiornaMomenti(); disegna();
+});
+video.addEventListener("seeked", () => {
+  if (video.paused) { corrente = momentoQui(false); aggiornaMomenti(); disegna(); }
+  aggiornaTempo();
+});
+video.addEventListener("ended", () => { $("play").innerHTML = "▶ <span class='lab'>Riproduci</span>"; });
+
+// schermo intero di tutta la lavagna (video + comandi). Dove il browser non lo permette (iPhone)
+// il riquadro della lavagna si allarga a tutta la pagina.
+let ripiego = null;
+function grande(si) {
+  document.body.classList.toggle("grande", si);
+  $("schermo").innerHTML = si ? "✕ <span class='lab'>Esci</span>" : "⤢ <span class='lab'>Schermo intero</span>";
+  setTimeout(() => { dimensiona(); altezza(); }, 80);
+}
+function esciRipiego() {
+  if (!ripiego) return;
+  const fe = window.frameElement;
+  if (fe) fe.setAttribute("style", ripiego.style || "");
+  try { window.parent.document.body.style.overflow = ripiego.overflow; } catch (e) { /* niente */ }
+  ripiego = null;
+}
+$("schermo").addEventListener("click", () => {
+  const fs = document.fullscreenElement || document.webkitFullscreenElement;
+  if (fs) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+  if (document.body.classList.contains("grande")) { esciRipiego(); grande(false); return; }
+  grande(true);
+  const el = document.documentElement, req = el.requestFullscreen || el.webkitRequestFullscreen;
+  const ripiega = () => {
+    const fe = window.frameElement;
+    if (!fe) return;
+    let overflow = "";
+    try { overflow = window.parent.document.body.style.overflow; window.parent.document.body.style.overflow = "hidden"; }
+    catch (e) { /* niente */ }
+    ripiego = { style: fe.getAttribute("style"), overflow };
+    fe.setAttribute("style", "position:fixed;inset:0;width:100vw;height:100vh;z-index:999999;border:0;background:#141413");
+    setTimeout(() => { dimensiona(); }, 80);
+  };
+  if (req) { try { const p = req.call(el); if (p && p.catch) p.catch(ripiega); } catch (e) { ripiega(); } }
+  else ripiega();
+});
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement && !ripiego) grande(false);
+  setTimeout(dimensiona, 80);
+});
+document.addEventListener("webkitfullscreenchange", () => {
+  if (!document.webkitFullscreenElement && !ripiego) grande(false);
+});
+// nella pagina normale il video non supera l'altezza dello schermo (telefono in orizzontale)
+function altoSchermo() {
+  let h = window.innerHeight;
+  try { if (window.parent !== window) h = window.parent.innerHeight; } catch (e) { /* niente */ }
+  document.documentElement.style.setProperty("--alto", Math.max(220, Math.round(h * 0.72)) + "px");
+}
+altoSchermo();
+try { window.parent.addEventListener("resize", altoSchermo); } catch (e) { window.addEventListener("resize", altoSchermo); }
+
+// tastiera
+document.addEventListener("keydown", (e) => {
+  if (!url || e.target.tagName === "INPUT" && e.target.type !== "range") return;
+  if (e.code === "Space") { e.preventDefault(); playPausa(); }
+  else if (e.key === "ArrowLeft") { e.preventDefault(); vai(e.shiftKey ? -5 : -FOTOGRAMMA); }
+  else if (e.key === "ArrowRight") { e.preventDefault(); vai(e.shiftKey ? 5 : FOTOGRAMMA); }
+  else if (e.key.toLowerCase() === "z") { e.preventDefault(); annulla(); }
+  else if (e.key === "Escape" && ripiego) { esciRipiego(); grande(false); }
+});
+// alla chiusura della pagina il video e i disegni spariscono
+window.addEventListener("pagehide", () => { if (url) URL.revokeObjectURL(url); });
+altezza();
+})();
+</script>
+</body>
+</html>

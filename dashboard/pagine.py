@@ -357,6 +357,12 @@ def p_lavagna():
     lavagna_ui.render_nostri(APP)
 
 
+def p_video():
+    titolo_pagina("Lavagna sul video", "ferma il video e disegna sul fotogramma: niente viene caricato o salvato")
+    from . import telestrator_ui
+    telestrator_ui.render()
+
+
 def p_avvisi():
     titolo_pagina("Avvisi", "cosa è cambiato dopo l'ultima giornata")
     nuove.render_avvisi(APP)
@@ -409,6 +415,7 @@ def mappa(admin: bool = False, club: bool = False) -> dict:
                            P(p_allenamento, "Programmi di allenamento", "allenamento", "allenamento"),
                            P(p_live, "Live · partita in diretta", "live", "live"),
                            P(p_lavagna, "Lavagna dei giochi", "lavagna", "lavagna"),
+                           P(p_video, "Lavagna sul video", "video", "video"),
                            P(p_avvisi, "Avvisi", "avvisi", "avvisi")],
         "Campionato": [P(p_panoramica, "Panoramica", "panoramica", "panoramica"),
                        P(p_classifica, "Classifica", "classifica", "classifica"),
