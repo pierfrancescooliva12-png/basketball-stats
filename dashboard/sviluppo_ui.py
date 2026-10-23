@@ -35,12 +35,15 @@ def _pdf_giocatore(_ctx, mtime: float, stagione: str, sid: int, gid: str) -> byt
 
 
 def _report(a: App, sid: int):
-    """Funzione per le figurine: giocatore → (crea il PDF al clic, nome del file)."""
+    """Funzione per le figurine: giocatore → (PDF già pronto, nome del file).
+
+    Il PDF si prepara prima del clic (e resta in cache 6 ore): sui telefoni, soprattutto
+    Safari su iPhone, uno scaricamento che parte dopo l'attesa del server non viene avviato."""
     from basket import report_giocatore as RG
     nomi = a.ctx.nomi_giocatori
 
     def per(gid):
-        return (lambda: _pdf_giocatore(a.ctx, a.mtime, a.stagione, sid, gid)), RG.nome_file(nomi.get(gid, gid))
+        return _pdf_giocatore(a.ctx, a.mtime, a.stagione, sid, gid), RG.nome_file(nomi.get(gid, gid))
     return per
 
 
@@ -112,6 +115,10 @@ def render(a: App):
                       if x and pd.notna(x["punti_pg"]) else "–",
                       "Altre aree": len(g["aree"]) - 1 if x else 0})
     show(pd.DataFrame(righe), voci=[])
+
+    with st.spinner("Preparo i report PDF dei giocatori…"):     # una volta: poi restano in cache
+        for g in giocatori:
+            _pdf_giocatore(a.ctx, a.mtime, a.stagione, sid, g["giocatore_id"])
 
     from . import figurine_ui
     from .stato import tema_squadra

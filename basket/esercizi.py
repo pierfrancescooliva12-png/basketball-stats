@@ -211,14 +211,32 @@ PER_ID = {e["id"]: e for e in ESERCIZI}
 PER_NOME = {e["nome"]: e for e in ESERCIZI}
 
 
-def per_aree(aree: list[str], fase: str | None = None, intensita_max: str = "alta") -> list[dict]:
+def per_aree(aree: list[str], fase: str | None = None, intensita_max: str = "alta",
+             extra: list[dict] | None = None) -> list[dict]:
     """Esercizi che allenano le aree date (i primi allenano le prime aree), filtrati per fase
-    e per intensità massima."""
+    e per intensità massima. extra: gli esercizi creati dal club, insieme a quelli della libreria."""
     lim = INTENSITA.index(intensita_max)
-    candidati = [e for e in ESERCIZI if (fase is None or e["fase"] == fase)
-                 and INTENSITA.index(e["intensita"]) <= lim]
+    candidati = [e for e in list(extra or []) + ESERCIZI if (fase is None or e.get("fase") == fase)
+                 and INTENSITA.index(e.get("intensita", "media") if e.get("intensita") in INTENSITA else "media") <= lim]
 
     def punteggio(e):
-        pos = [aree.index(a) for a in e["aree"] if a in aree]
+        pos = [aree.index(a) for a in e.get("aree", []) if a in aree]
         return (min(pos) if pos else 99, -len(pos))
     return sorted(candidati, key=punteggio)
+
+
+def nuovo_esercizio(nome: str, fase: str, aree: list[str], durata: int = 10, intensita: str = "media",
+                    giocatori: int = 1, descrizione: str = "", punti: list[str] | None = None,
+                    misura: str = "", id_: str | None = None) -> dict:
+    """Esercizio creato dallo staff (si salva nell'archivio del club): stessi campi della libreria.
+    La fase può essere una delle fasi standard o una fase propria del club."""
+    import uuid
+    return {"id": id_ or f"club_{uuid.uuid4().hex[:10]}", "nome": nome.strip(), "fase": fase, "aree": list(aree),
+            "durata": int(durata), "intensita": intensita if intensita in INTENSITA else "media",
+            "giocatori": int(giocatori), "descrizione": descrizione.strip(),
+            "punti": [p.strip() for p in (punti or []) if p.strip()], "misura": misura.strip(), "club": True}
+
+
+def catalogo(extra: list[dict] | None = None) -> dict:
+    """Tutti gli esercizi (libreria e del club) per id."""
+    return {**PER_ID, **{e["id"]: e for e in extra or []}}
