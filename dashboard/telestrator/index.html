@@ -102,6 +102,37 @@ body.grande .btn.primario, body.grande #play { background: #faf9f5; color: #1414
 .privacy { display: flex; gap: 8px; align-items: center; color: var(--tenue); font-size: .85rem; }
 .privacy::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #2f9e6b; flex: none; }
 @media (max-width: 640px) { .btn .lab { display: none; } .tempo { min-width: 0; } }
+.palco video { transform-origin: 0 0; }
+/* pannelli: azioni marcate, cronaca della partita, gioco dal video */
+.schede { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--bordo); border-radius: 999px;
+  background: var(--carta); width: fit-content; max-width: 100%; overflow-x: auto; }
+.schede button { border: 0; background: transparent; border-radius: 999px; height: 36px; padding: 0 14px;
+  cursor: pointer; font-weight: 500; white-space: nowrap; }
+.schede button[aria-pressed="true"] { background: var(--attivo); color: var(--attivo-testo); }
+.pannello { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--bordo); border-radius: 16px; background: var(--pannello); }
+.riga { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.riga label { font-size: .85rem; color: var(--tenue); display: inline-flex; gap: 6px; align-items: center; }
+.riga select, .riga input[type=text] { height: 38px; border: 1px solid var(--bordo); border-radius: 10px;
+  background: var(--pannello); padding: 0 10px; min-width: 0; }
+.tag { border: 1px solid var(--bordo); background: var(--carta); border-radius: 999px; height: 40px; padding: 0 14px;
+  cursor: pointer; font-weight: 600; touch-action: manipulation; }
+.tag i { font-style: normal; opacity: .55; font-weight: 500; margin-left: 6px; font-size: .8rem; }
+.tag:active { transform: scale(.97); }
+.lista { max-height: 300px; overflow: auto; border: 1px solid var(--bordo); border-radius: 12px; }
+.voce { display: grid; grid-template-columns: 74px 1fr auto; gap: 8px; align-items: center; padding: 7px 10px;
+  border-bottom: 1px solid var(--bordo); cursor: pointer; font-size: .9rem; }
+.voce:last-child { border-bottom: 0; }
+.voce:hover { background: var(--carta); }
+.voce[aria-current="true"] { background: #fbeee4; }
+.voce .quando { font-variant-numeric: tabular-nums; color: var(--tenue); font-size: .82rem; }
+.voce .x { border: 0; background: transparent; cursor: pointer; color: var(--tenue); width: 26px; height: 26px; border-radius: 50%; }
+.voce.spenta { opacity: .45; }
+.vuoto { color: var(--tenue); font-size: .9rem; padding: 10px; }
+.passi { display: flex; flex-wrap: wrap; gap: 6px; }
+.passi span { font-size: .82rem; padding: 4px 10px; border-radius: 999px; background: var(--carta); color: var(--tenue); }
+.passi span.fatto { background: #e5f3ec; color: #1f6b47; }
+.passi span.ora { background: #fbeee4; color: var(--testo); font-weight: 600; }
+body.grande .schede, body.grande .pannello { display: none !important; }
 </style>
 </head>
 <body>
@@ -134,6 +165,9 @@ body.grande .btn.primario, body.grande #play { background: #faf9f5; color: #1414
       <option value="0.25">0,25×</option><option value="0.5">0,5×</option>
       <option value="1" selected>1×</option><option value="1.5">1,5×</option><option value="2">2×</option>
     </select>
+    <button class="btn piccolo" id="zoomMeno" title="Riduci lo zoom">−</button>
+    <button class="btn piccolo" id="zoomRiporta" title="Immagine intera">1:1</button>
+    <button class="btn piccolo" id="zoomPiu" title="Ingrandisci (anche con due dita o con la rotella)">＋</button>
     <button class="btn piccolo" id="schermo" title="Schermo intero">⤢ <span class="lab">Schermo intero</span></button>
   </div>
 
@@ -158,6 +192,8 @@ body.grande .btn.primario, body.grande #play { background: #faf9f5; color: #1414
       <svg viewBox="0 0 22 18"><path d="M3 13L6 3l12 2 1 9z" fill="currentColor" opacity=".3" stroke="currentColor" stroke-width="1.6"/></svg><span class="lab">Area</span></button>
     <button class="btn piccolo" data-t="testo" aria-pressed="false" title="Testo">
       <svg viewBox="0 0 22 18"><path d="M4 3h14M11 3v13" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><span class="lab">Testo</span></button>
+    <button class="btn piccolo" data-t="mano" aria-pressed="false" title="Sposta l'immagine ingrandita">
+      <svg viewBox="0 0 22 18"><path d="M11 1v16M3 9h16M11 1l-3 3M11 1l3 3M11 17l-3-3M11 17l3-3M3 9l3-3M3 9l3 3M19 9l-3-3M19 9l-3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span class="lab">Sposta</span></button>
     <button class="btn piccolo" data-t="gomma" aria-pressed="false" title="Gomma: tocca un disegno per toglierlo">
       <svg viewBox="0 0 22 18"><path d="M5 15h12M7 12l7-9 5 4-7 8H9z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="lab">Gomma</span></button>
     <span class="sep"></span>
@@ -175,6 +211,71 @@ body.grande .btn.primario, body.grande #play { background: #faf9f5; color: #1414
   </div>
 
   <div class="momenti" id="momenti" hidden></div>
+
+  <div class="schede" id="schede" role="tablist" hidden>
+    <button data-p="azioni" aria-pressed="true">Azioni marcate</button>
+    <button data-p="cronaca" aria-pressed="false">Cronaca della partita</button>
+    <button data-p="gioco" aria-pressed="false">Crea un gioco</button>
+  </div>
+
+  <div class="pannello" id="p-azioni" hidden>
+    <div class="riga" id="tasti-tag"></div>
+    <div class="riga">
+      <input type="text" id="nuovo-tag" placeholder="Nuova etichetta, es. Horns" maxlength="24" style="flex:1 1 160px">
+      <button class="btn piccolo" id="aggiungi-tag">+ Etichetta</button>
+      <label>Prima <select id="prima"><option value="3">3 s</option><option value="5" selected>5 s</option><option value="8">8 s</option></select></label>
+      <label>Dopo <select id="dopo"><option value="2">2 s</option><option value="3" selected>3 s</option><option value="5">5 s</option></select></label>
+    </div>
+    <div class="riga">
+      <label>Mostra <select id="filtro-tag"><option value="">Tutte</option></select></label>
+      <span style="flex:1"></span>
+      <button class="btn piccolo primario" id="seq-tag">▶ In sequenza</button>
+    </div>
+    <div class="lista" id="lista-tag"></div>
+    <p class="nota">Tocca un'etichetta mentre il video scorre per marcare l'azione (sulla tastiera i numeri 1–9). Restano
+      solo in questa sessione: «In sequenza» le rivede una dopo l'altra, con i secondi prima e dopo.</p>
+  </div>
+
+  <div class="pannello" id="p-cronaca" hidden>
+    <div class="vuoto" id="cronaca-vuota">Scegli la partita sopra la lavagna: qui compare la cronaca (canestri, tiri,
+      palle perse, falli…) e un tocco porta il video all'azione.</div>
+    <div id="cronaca-piena" hidden>
+      <div class="riga" id="sync"></div>
+      <div class="riga">
+        <label>Azioni <select id="f-tipo"></select></label>
+        <label>Squadra <select id="f-squadra"></select></label>
+        <label>Giocatore <select id="f-giocatore"></select></label>
+        <label>Quarto <select id="f-quarto"></select></label>
+        <span style="flex:1"></span>
+        <button class="btn piccolo" id="qui" title="Il video è sull'azione selezionata: usala per sincronizzare">📍 L'azione è qui</button>
+        <button class="btn piccolo primario" id="seq-cronaca">▶ In sequenza</button>
+      </div>
+      <div class="lista" id="lista-cronaca"></div>
+      <p class="nota" id="nota-sync">Per arrivare alle azioni segna l'inizio di ogni quarto: porta il video al primo
+        possesso e tocca «Inizio 1° quarto qui». Se un'azione non coincide, porta il video al momento giusto e tocca
+        «📍 L'azione è qui»: le altre si allineano di conseguenza.</p>
+    </div>
+  </div>
+
+  <div class="pannello" id="p-gioco" hidden>
+    <div class="passi" id="passi-gioco"></div>
+    <div class="riga">
+      <button class="btn piccolo" id="tara">1 · Tara il campo</button>
+      <button class="btn piccolo" id="righe" aria-pressed="false">Mostra le righe</button>
+      <button class="btn piccolo" id="posiziona">2 · Tocca i giocatori</button>
+      <button class="btn piccolo" id="annulla-g">↶ Togli l'ultimo</button>
+      <button class="btn piccolo" id="senza-difesa">Fine (senza difesa)</button>
+    </div>
+    <div class="riga">
+      <input type="text" id="nome-gioco" placeholder="Nome del gioco" style="flex:1 1 180px">
+      <label>Di chi <select id="di-chi"></select></label>
+      <label>Palla a <select id="palla"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+      <button class="btn piccolo primario" id="crea-gioco">Crea il gioco nella lavagna</button>
+    </div>
+    <p class="nota" id="nota-gioco">Ferma il video su una situazione: tocca i 4 angoli dell'area (serve una volta per
+      inquadratura), poi i piedi dei 5 attaccanti dall'1 al 5 e, se vuoi, dei 5 difensori. Il gioco si apre nella
+      lavagna con le posizioni, da completare con i movimenti. Del video non resta niente.</p>
+  </div>
   <div class="barra" id="piede" hidden>
     <span class="privacy">Video solo sul tuo dispositivo · niente viene salvato</span>
     <span style="flex:1"></span>
@@ -198,6 +299,16 @@ let momenti = [];            // [{t, forme: [...]}]  solo in memoria
 let corrente = null;         // momento mostrato
 let bozza = null;            // forma che si sta disegnando
 let rifare = [];             // forme annullate (per "ripeti")
+let vista = { s: 1, tx: 0, ty: 0 };   // zoom e spostamento dell'immagine
+const dita = new Map();               // tocchi attivi: con due dita si ingrandisce
+let pizzico = null, trascina = null;
+let modo = null;                      // null, "taratura" (4 angoli dell'area), "giocatori"
+let tocchiArea = [], H = null, Hinv = null, mostraRighe = false, posti = [], senzaDifesa = false;
+let etichette = ["Pick and roll", "Transizione", "Palla persa", "Tiro aperto", "Rimbalzo", "Buona difesa",
+                 "Errore difensivo", "Fallo"];
+let azioni = [];                      // azioni marcate: [{id, t, etichetta}]
+let coda = null;                      // sequenza in riproduzione: {clip: [{a, b, lab}], i}
+let cronaca = { partita: null, eventi: [], squadre: [], inizi: {} }, ancore = {}, scelto = null;
 
 // ------------------------------------------------------------------ Streamlit: solo l'altezza
 const IN_APP = window.parent !== window;
@@ -206,9 +317,20 @@ function altezza() {
   window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setFrameHeight",
                               height: Math.ceil($("app").getBoundingClientRect().bottom + window.scrollY + 8) }, "*");
 }
+// verso la piattaforma vanno solo il gioco creato (posizioni sul campo) e, se lo chiedi, i minuti
+// di inizio dei quarti: mai il video, i fotogrammi o i disegni
+function invia(valore) {
+  if (IN_APP) window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setComponentValue",
+                                          value: valore, dataType: "json" }, "*");
+}
 if (IN_APP) {
   window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:componentReady", apiVersion: 1 }, "*");
-  window.addEventListener("message", (ev) => { if ((ev.data || {}).type === "streamlit:render") altezza(); });
+  window.addEventListener("message", (ev) => {
+    const d = ev.data || {};
+    if (d.type !== "streamlit:render") return;
+    riceviDati(d.args || {});
+    altezza();
+  });
   new ResizeObserver(altezza).observe(document.body);
 }
 
@@ -217,10 +339,11 @@ function apri(file) {
   if (!file || !file.type.startsWith("video/")) { alert("Scegli un file video."); return; }
   if (url) URL.revokeObjectURL(url);
   url = URL.createObjectURL(file);          // il file resta sul dispositivo: nessun caricamento
-  momenti = []; corrente = null; rifare = [];
+  momenti = []; corrente = null; rifare = []; azioni = []; coda = null; ancore = {}; posti = [];
+  vista = { s: 1, tx: 0, ty: 0 };
   video.src = url; video.load();
-  for (const id of ["lavoro", "barra", "strumenti", "momenti", "piede", "aiuto"]) $(id).hidden = false;
-  $("apri").hidden = true;
+  for (const id of ["lavoro", "barra", "strumenti", "momenti", "piede", "aiuto", "schede"]) $(id).hidden = false;
+  $("apri").hidden = true; mostraPannello(pannello); aggiornaAzioni(); aggiornaCronaca();
   aggiornaMomenti(); setTimeout(dimensiona, 50);
 }
 $("file").addEventListener("change", (e) => { apri(e.target.files[0]); e.target.value = ""; });
@@ -232,18 +355,46 @@ $("cambia").addEventListener("click", () => $("file").click());
 $("chiudi").addEventListener("click", () => {
   video.pause(); video.removeAttribute("src"); video.load();
   if (url) URL.revokeObjectURL(url);
-  url = null; momenti = []; corrente = null;
-  for (const id of ["lavoro", "barra", "strumenti", "momenti", "piede", "aiuto"]) $(id).hidden = true;
+  url = null; momenti = []; corrente = null; azioni = []; coda = null; posti = [];
+  for (const id of ["lavoro", "barra", "strumenti", "momenti", "piede", "aiuto", "schede",
+                    "p-azioni", "p-cronaca", "p-gioco"]) $(id).hidden = true;
   $("apri").hidden = false; disegna();
 });
 
 // ------------------------------------------------------------------ geometria: coordinate sul video
-function rettangolo() {        // dove sta davvero l'immagine dentro il palco (bande nere escluse)
+function rettangolo() {        // dove sta davvero l'immagine dentro il palco (bande nere escluse), con lo zoom
   const w = tela.clientWidth, h = tela.clientHeight;
   const vw = video.videoWidth || 16, vh = video.videoHeight || 9;
   const s = Math.min(w / vw, h / vh), dw = vw * s, dh = vh * s;
-  return { x: (w - dw) / 2, y: (h - dh) / 2, w: dw, h: dh };
+  const b = { x: (w - dw) / 2, y: (h - dh) / 2, w: dw, h: dh };
+  return { x: b.x * vista.s + vista.tx, y: b.y * vista.s + vista.ty, w: b.w * vista.s, h: b.h * vista.s };
 }
+// ------------------------------------------------------------------ zoom
+function applicaVista() {
+  const w = tela.clientWidth, h = tela.clientHeight;
+  vista.s = Math.min(6, Math.max(1, vista.s));
+  vista.tx = Math.min(0, Math.max(w - w * vista.s, vista.tx));
+  vista.ty = Math.min(0, Math.max(h - h * vista.s, vista.ty));
+  video.style.transform = vista.s === 1 ? "" : `translate(${vista.tx}px, ${vista.ty}px) scale(${vista.s})`;
+  $("zoomRiporta").textContent = vista.s === 1 ? "1:1" : `${vista.s.toFixed(1).replace(".", ",")}×`;
+  disegna();
+}
+function zoomA(px, py, fattore) {
+  const s2 = Math.min(6, Math.max(1, vista.s * fattore));
+  vista.tx = px - (px - vista.tx) * (s2 / vista.s);
+  vista.ty = py - (py - vista.ty) * (s2 / vista.s);
+  vista.s = s2; applicaVista();
+}
+function centro() { return [tela.clientWidth / 2, tela.clientHeight / 2]; }
+$("zoomPiu").addEventListener("click", () => zoomA(...centro(), 1.5));
+$("zoomMeno").addEventListener("click", () => zoomA(...centro(), 1 / 1.5));
+$("zoomRiporta").addEventListener("click", () => { vista = { s: 1, tx: 0, ty: 0 }; applicaVista(); });
+tela.addEventListener("wheel", (e) => {
+  if (!url) return;
+  e.preventDefault();
+  const b = tela.getBoundingClientRect();
+  zoomA(e.clientX - b.left, e.clientY - b.top, Math.exp(-e.deltaY * 0.0015));
+}, { passive: false });
 function normalizza(ev) {
   const b = tela.getBoundingClientRect(), r = rettangolo();
   return [(ev.clientX - b.left - r.x) / r.w, (ev.clientY - b.top - r.y) / r.h];
@@ -252,7 +403,7 @@ function sulPalco([x, y], r) { return [r.x + x * r.w, r.y + y * r.h]; }
 function dimensiona() {
   const d = window.devicePixelRatio || 1;
   tela.width = Math.round(tela.clientWidth * d); tela.height = Math.round(tela.clientHeight * d);
-  g.setTransform(d, 0, 0, d, 0, 0); disegna();
+  g.setTransform(d, 0, 0, d, 0, 0); applicaVista();
 }
 new ResizeObserver(dimensiona).observe(palco);
 video.addEventListener("loadedmetadata", () => {
@@ -332,6 +483,21 @@ function disegna() {
   const r = rettangolo();
   for (const f of (corrente ? corrente.forme : [])) forma(f, r);
   if (bozza) forma(bozza, r);
+  if (mostraRighe && Hinv) righeCampo(r);
+  g.save();
+  g.font = `700 12px ${getComputedStyle(document.body).fontFamily}`; g.textAlign = "center"; g.textBaseline = "middle";
+  tocchiArea.forEach((p, i) => {
+    const [x, y] = sulPalco(p, r);
+    g.fillStyle = "#4fb3ff"; g.beginPath(); g.arc(x, y, 9, 0, Math.PI * 2); g.fill();
+    g.fillStyle = "#141413"; g.fillText(String(i + 1), x, y + 0.5);
+  });
+  for (const q of posti) {
+    const [x, y] = sulPalco(q.p, r), att = q.id[0] === "o";
+    g.fillStyle = att ? "#2a6fd0" : "#d2551f"; g.strokeStyle = "#ffffff"; g.lineWidth = 2;
+    g.beginPath(); g.arc(x, y, 11, 0, Math.PI * 2); g.fill(); g.stroke();
+    g.fillStyle = "#ffffff"; g.fillText(att ? q.id.slice(1) : "X" + q.id.slice(1), x, y + 0.5);
+  }
+  g.restore();
 }
 
 // ------------------------------------------------------------------ momenti della sessione
@@ -380,8 +546,20 @@ document.addEventListener("touchmove", (e) => {
 tela.addEventListener("pointerdown", (ev) => {
   if (!url) return;
   ev.preventDefault();
+  dita.set(ev.pointerId, [ev.clientX, ev.clientY]);
+  try { tela.setPointerCapture(ev.pointerId); } catch (e) { /* niente */ }
+  if (dita.size === 2) {                         // due dita: zoom e spostamento, niente disegno
+    bozza = null; trascina = null;
+    const [a, b] = [...dita.values()], bb = tela.getBoundingClientRect();
+    pizzico = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, m: [(a[0] + b[0]) / 2 - bb.left, (a[1] + b[1]) / 2 - bb.top],
+                s: vista.s, tx: vista.tx, ty: vista.ty };
+    disegna(); return;
+  }
+  if (dita.size > 2) return;
+  if (strumento === "mano" && !modo) { trascina = { x: ev.clientX, y: ev.clientY, tx: vista.tx, ty: vista.ty }; return; }
   if (!video.paused) video.pause();             // si disegna sempre su un fotogramma fermo
   const p = normalizza(ev);
+  if (modo) { toccoGioco(p); return; }
   if (strumento === "gomma") { cancellaVicino(p); return; }
   if (strumento === "testo") {
     const testo = (prompt("Testo da scrivere sul video") || "").trim();
@@ -393,6 +571,18 @@ tela.addEventListener("pointerdown", (ev) => {
   disegna();
 });
 tela.addEventListener("pointermove", (ev) => {
+  if (dita.has(ev.pointerId)) dita.set(ev.pointerId, [ev.clientX, ev.clientY]);
+  if (pizzico && dita.size === 2) {
+    const [a, b] = [...dita.values()], bb = tela.getBoundingClientRect();
+    const d = Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, m = [(a[0] + b[0]) / 2 - bb.left, (a[1] + b[1]) / 2 - bb.top];
+    const s2 = Math.min(6, Math.max(1, pizzico.s * d / pizzico.d));
+    const cx = (pizzico.m[0] - pizzico.tx) / pizzico.s, cy = (pizzico.m[1] - pizzico.ty) / pizzico.s;
+    vista = { s: s2, tx: m[0] - cx * s2, ty: m[1] - cy * s2 }; applicaVista(); return;
+  }
+  if (trascina) {
+    vista.tx = trascina.tx + ev.clientX - trascina.x; vista.ty = trascina.ty + ev.clientY - trascina.y;
+    applicaVista(); return;
+  }
   if (!bozza) return;
   const p = normalizza(ev);
   if (["penna", "percorso", "area"].includes(bozza.tipo)) {
@@ -410,8 +600,14 @@ function fine() {
   if (corta) f.punti = [f.punti[0], [f.punti[0][0] + 0.03, f.punti[0][1]]];   // un tocco: cerchio standard
   aggiungi(f);
 }
-tela.addEventListener("pointerup", fine);
-tela.addEventListener("pointercancel", fine);
+function rilascia(ev) {
+  dita.delete(ev.pointerId);
+  if (dita.size < 2) pizzico = null;
+  trascina = null;
+  fine();
+}
+tela.addEventListener("pointerup", rilascia);
+tela.addEventListener("pointercancel", rilascia);
 function aggiungi(f) {
   const m = momentoQui(true); m.forme.push(f); corrente = m; rifare = [];
   aggiornaMomenti(); disegna();
@@ -470,6 +666,7 @@ function playPausa() {
 }
 function vai(dt) {
   if (!url) return;
+  coda = null;
   video.pause();
   video.currentTime = Math.max(0, Math.min((video.duration || 0), video.currentTime + dt));
 }
@@ -482,20 +679,31 @@ $("velocita").addEventListener("change", (e) => { video.playbackRate = Number(e.
 const scorri = $("scorri");
 scorri.addEventListener("input", () => {
   if (!video.duration) return;
-  video.pause(); video.currentTime = video.duration * scorri.value / 1000;
+  coda = null; video.pause(); video.currentTime = video.duration * scorri.value / 1000;
 });
 function aggiornaTempo() {
   $("tempo").textContent = `${orario(video.currentTime)} / ${orario(video.duration, false)}`;
   if (video.duration && document.activeElement !== scorri) scorri.value = Math.round(1000 * video.currentTime / video.duration);
 }
-video.addEventListener("timeupdate", aggiornaTempo);
+video.addEventListener("timeupdate", () => {
+  aggiornaTempo();
+  if (coda && !video.paused && video.currentTime >= coda.clip[coda.i].b) {
+    coda.i += 1;
+    if (coda.i < coda.clip.length) vaiClip();
+    else { coda = null; video.pause(); }
+  }
+});
 video.addEventListener("play", () => {
-  $("play").innerHTML = "❚❚ <span class='lab'>Pausa</span>"; $("stato").hidden = true;
+  $("play").innerHTML = "❚❚ <span class='lab'>Pausa</span>";
+  if (coda) { const c = coda.clip[coda.i]; $("stato").textContent = `${coda.i + 1} di ${coda.clip.length} · ${c.lab}`; }
+  $("stato").hidden = !coda;
   if (!tieni) corrente = null;
   aggiornaMomenti(); disegna();
 });
 video.addEventListener("pause", () => {
   $("play").innerHTML = "▶ <span class='lab'>Riproduci</span>"; $("stato").hidden = false;
+  $("stato").textContent = modo === "taratura" ? "Taratura: tocca l'angolo indicato" :
+    modo === "giocatori" ? "Tocca i piedi del giocatore indicato" : "In pausa · disegna sul fotogramma";
   corrente = momentoQui(false) || (tieni ? corrente : null); aggiornaMomenti(); disegna();
 });
 video.addEventListener("seeked", () => {
@@ -557,6 +765,379 @@ function altoSchermo() {
 altoSchermo();
 try { window.parent.addEventListener("resize", altoSchermo); } catch (e) { window.addEventListener("resize", altoSchermo); }
 
+// ------------------------------------------------------------------ pannelli
+let pannello = "azioni";
+function mostraPannello(k) {
+  pannello = k;
+  document.querySelectorAll("[data-p]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.p === k ? "true" : "false"));
+  for (const p of ["azioni", "cronaca", "gioco"]) $("p-" + p).hidden = !url || p !== k;
+  altezza();
+}
+document.querySelectorAll("[data-p]").forEach((b) => b.addEventListener("click", () => mostraPannello(b.dataset.p)));
+const secondi = (id) => Number($(id).value);
+
+// ------------------------------------------------------------------ sequenze di clip
+function unisci(clip) {          // clip che si sovrappongono diventano una sola
+  const out = [];
+  for (const c of clip.sort((x, y) => x.a - y.a)) {
+    const u = out[out.length - 1];
+    if (u && c.a <= u.b) { u.b = Math.max(u.b, c.b); u.lab = u.lab === c.lab ? u.lab : `${u.lab} + ${c.lab}`; }
+    else out.push({ ...c });
+  }
+  return out;
+}
+function riproduci(clip) {
+  if (!clip.length) return;
+  coda = { clip: unisci(clip), i: 0 }; vaiClip();
+}
+function vaiClip() {
+  const c = coda.clip[coda.i];
+  corrente = null;
+  video.currentTime = Math.max(0, c.a);
+  video.play();
+  $("stato").textContent = `${coda.i + 1} di ${coda.clip.length} · ${c.lab}`; $("stato").hidden = false;
+}
+
+// ------------------------------------------------------------------ azioni marcate
+function marca(etichetta) {
+  if (!url) return;
+  azioni.push({ id: Date.now() + Math.random(), t: video.currentTime, etichetta });
+  azioni.sort((a, b) => a.t - b.t);
+  $("stato").textContent = `Marcata: ${etichetta} · ${orario(video.currentTime)}`; $("stato").hidden = false;
+  if (!video.paused) setTimeout(() => { if (!video.paused && !coda) $("stato").hidden = true; }, 1200);
+  aggiornaAzioni();
+}
+function filtrate() {
+  const f = $("filtro-tag").value;
+  return azioni.filter((x) => !f || x.etichetta === f);
+}
+function aggiornaAzioni() {
+  const tasti = $("tasti-tag"); tasti.innerHTML = "";
+  etichette.forEach((e, i) => {
+    const n = azioni.filter((x) => x.etichetta === e).length;
+    const b = document.createElement("button"); b.className = "tag";
+    b.innerHTML = `${i < 9 ? `<i>${i + 1}</i> ` : ""}${e}${n ? `<i>${n}</i>` : ""}`;
+    b.title = "Marca l'azione in questo momento";
+    b.addEventListener("click", () => marca(e));
+    tasti.appendChild(b);
+  });
+  const sel = $("filtro-tag"), prima = sel.value;
+  sel.innerHTML = `<option value="">Tutte (${azioni.length})</option>` +
+    etichette.filter((e) => azioni.some((x) => x.etichetta === e))
+      .map((e) => `<option value="${e}">${e} (${azioni.filter((x) => x.etichetta === e).length})</option>`).join("");
+  sel.value = [...sel.options].some((o) => o.value === prima) ? prima : "";
+  const lista = $("lista-tag"); lista.innerHTML = "";
+  const voci = filtrate();
+  if (!voci.length) { lista.innerHTML = '<div class="vuoto">Nessuna azione marcata.</div>'; altezza(); return; }
+  for (const x of voci) {
+    const r = document.createElement("div"); r.className = "voce";
+    r.innerHTML = `<span class="quando">${orario(x.t)}</span><span>${x.etichetta}</span>`;
+    const del = document.createElement("button"); del.className = "x"; del.textContent = "×"; del.title = "Togli";
+    del.addEventListener("click", (e) => { e.stopPropagation(); azioni = azioni.filter((y) => y !== x); aggiornaAzioni(); });
+    r.appendChild(del);
+    r.addEventListener("click", () => riproduci([{ a: x.t - secondi("prima"), b: x.t + secondi("dopo"), lab: x.etichetta }]));
+    lista.appendChild(r);
+  }
+  altezza();
+}
+$("filtro-tag").addEventListener("change", aggiornaAzioni);
+$("aggiungi-tag").addEventListener("click", () => {
+  const v = $("nuovo-tag").value.trim();
+  if (v && !etichette.includes(v)) { etichette.push(v); $("nuovo-tag").value = ""; aggiornaAzioni(); }
+});
+$("nuovo-tag").addEventListener("keydown", (e) => { if (e.key === "Enter") $("aggiungi-tag").click(); e.stopPropagation(); });
+$("seq-tag").addEventListener("click", () => riproduci(filtrate().map((x) => ({
+  a: x.t - secondi("prima"), b: x.t + secondi("dopo"), lab: x.etichetta }))));
+
+// ------------------------------------------------------------------ cronaca della partita
+const GRUPPI = {
+  "": "Tutte", canestri: "Canestri", tre: "Tiri da 3", sbagliati: "Tiri sbagliati", liberi: "Tiri liberi",
+  perse: "Palle perse", recuperi: "Palle recuperate", rimb_off: "Rimbalzi offensivi", rimb_dif: "Rimbalzi difensivi",
+  falli: "Falli", stoppate: "Stoppate", assist: "Assist", timeout: "Timeout",
+};
+const IN_GRUPPO = {
+  canestri: (t) => t === "tiro2_fatto" || t === "tiro3_fatto", tre: (t) => t.startsWith("tiro3"),
+  sbagliati: (t) => t.endsWith("_sbagliato") && t.startsWith("tiro"), liberi: (t) => t.startsWith("tl_"),
+  perse: (t) => t === "persa", recuperi: (t) => t === "recupero", rimb_off: (t) => t === "rimb_off",
+  rimb_dif: (t) => t === "rimb_dif", falli: (t) => t.startsWith("fallo"), stoppate: (t) => t === "stoppata",
+  assist: (t) => t === "assist", timeout: (t) => t === "timeout",
+};
+const nomeQuarto = (p) => p <= 4 ? `${p}° quarto` : `${p - 4}° suppl.`;
+const durataQuarto = (p) => p <= 4 ? 600 : 300;
+function riceviDati(a) {
+  if (Array.isArray(a.squadre)) cronaca.squadre = a.squadre;
+  const pid = a.partita_id || null;
+  if (pid !== cronaca.partita) {
+    cronaca.partita = pid; cronaca.eventi = Array.isArray(a.eventi) ? a.eventi : []; ancore = {}; scelto = null;
+    cronaca.inizi = {};
+    for (const [k, v] of Object.entries(a.inizi || {})) if (v != null) cronaca.inizi[Number(k)] = Number(v);
+    cronaca.nome = a.partita_nome || "";
+    preparaFiltri();
+  }
+  aggiornaCronaca(); aggiornaDiChi();
+  if (a.esito && a.esito.t !== window.__esito) { window.__esito = a.esito.t; $("nota-gioco").textContent = a.esito.testo; }
+}
+function preparaFiltri() {
+  const ev = cronaca.eventi;
+  $("f-tipo").innerHTML = Object.entries(GRUPPI).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+  const sq = [...new Set(ev.map((e) => e.sq).filter(Boolean))];
+  $("f-squadra").innerHTML = '<option value="">Entrambe</option>' + sq.map((x) => `<option>${x}</option>`).join("");
+  const qs = [...new Set(ev.map((e) => e.p))].sort((x, y) => x - y);
+  $("f-quarto").innerHTML = '<option value="">Tutti</option>' + qs.map((p) => `<option value="${p}">${nomeQuarto(p)}</option>`).join("");
+  preparaGiocatori();
+}
+function preparaGiocatori() {
+  const sq = $("f-squadra").value;
+  const gg = [...new Set(cronaca.eventi.filter((e) => e.g && (!sq || e.sq === sq)).map((e) => e.g))].sort();
+  $("f-giocatore").innerHTML = '<option value="">Tutti</option>' + gg.map((x) => `<option>${x}</option>`).join("");
+}
+for (const id of ["f-tipo", "f-squadra", "f-giocatore", "f-quarto"]) $(id).addEventListener("change", () => {
+  if (id === "f-squadra") preparaGiocatori();
+  aggiornaCronaca();
+});
+// minuto del video di un'azione: inizi dei quarti segnati dallo staff, più le correzioni ("l'azione è qui");
+// tra due punti noti si interpola, oltre l'ultimo si usa il ritmo misurato (o 2,3 secondi reali per secondo di gioco)
+function pendenza(pts) {
+  if (pts.length >= 2) {
+    const a = pts[pts.length - 2], b = pts[pts.length - 1];
+    return Math.min(3.5, Math.max(1.2, (b[1] - a[1]) / Math.max(1, b[0] - a[0])));
+  }
+  return 2.3;
+}
+function valuta(pts, s) {
+  if (!pts.length) return null;
+  if (s <= pts[0][0]) return pts[0][1] - (pts[0][0] - s) * pendenza(pts.slice(0, 2));
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i], b = pts[i + 1];
+    if (s <= b[0]) return a[1] + (s - a[0]) * (b[1] - a[1]) / Math.max(1, b[0] - a[0]);
+  }
+  const u = pts[pts.length - 1];
+  return u[1] + (s - u[0]) * pendenza(pts);
+}
+function inizioStimato(p, prof = 0) {
+  if (cronaca.inizi[p] != null) return cronaca.inizi[p];
+  if (p <= 1 || prof > 8) return null;
+  const pts = puntiPeriodo(p - 1, prof + 1);
+  if (!pts.length) return null;
+  return valuta(pts, durataQuarto(p - 1)) + (p - 1 === 2 ? 900 : 120);   // intervallo lungo dopo il 2° quarto
+}
+function puntiPeriodo(p, prof = 0) {
+  const pts = (ancore[p] || []).slice();
+  const i0 = inizioStimato(p, prof);
+  if (i0 != null && !pts.some((x) => x[0] === 0)) pts.push([0, i0]);
+  return pts.sort((x, y) => x[0] - y[0]);
+}
+function stima(e) {
+  const v = valuta(puntiPeriodo(e.p), e.s);
+  return v == null ? null : Math.max(0, v);
+}
+function eventiFiltrati() {
+  const t = $("f-tipo").value, sq = $("f-squadra").value, gi = $("f-giocatore").value, q = $("f-quarto").value;
+  return cronaca.eventi.filter((e) => (!t || IN_GRUPPO[t](e.tipo)) && (!sq || e.sq === sq) && (!gi || e.g === gi) &&
+                                      (!q || String(e.p) === q));
+}
+function aggiornaSync() {
+  const box = $("sync"); box.innerHTML = "";
+  const qs = [...new Set(cronaca.eventi.map((e) => e.p))].sort((x, y) => x - y);
+  for (const p of qs) {
+    const b = document.createElement("button"); b.className = "btn piccolo";
+    const fatto = cronaca.inizi[p] != null;
+    b.innerHTML = fatto ? `${nomeQuarto(p)} ✓ ${orario(cronaca.inizi[p], false)}` : `Inizio ${nomeQuarto(p)} qui`;
+    b.title = "Porta il video all'inizio del quarto e tocca";
+    if (fatto) b.style.borderColor = "#2f9e6b";
+    b.addEventListener("click", () => { cronaca.inizi[p] = video.currentTime; aggiornaCronaca(); });
+    box.appendChild(b);
+  }
+  if (IN_APP && cronaca.partita) {
+    const r = document.createElement("button"); r.className = "btn piccolo";
+    r.textContent = "Ricorda gli inizi per questa partita";
+    r.title = "Salva solo i minuti di inizio dei quarti (non il video), per la prossima volta";
+    r.addEventListener("click", () => {
+      invia({ azione: "sync", partita_id: cronaca.partita, inizi: cronaca.inizi, t: Date.now() });
+      r.textContent = "Inizi ricordati ✓";
+    });
+    box.appendChild(r);
+  }
+}
+function aggiornaCronaca() {
+  const c = cronaca.eventi.length > 0;
+  $("cronaca-vuota").hidden = c; $("cronaca-piena").hidden = !c;
+  if (!c) { altezza(); return; }
+  aggiornaSync();
+  const lista = $("lista-cronaca"); lista.innerHTML = "";
+  const voci = eventiFiltrati();
+  if (!voci.length) lista.innerHTML = '<div class="vuoto">Nessuna azione con questi filtri.</div>';
+  for (const e of voci.slice(0, 400)) {
+    const t = stima(e), r = document.createElement("div");
+    r.className = "voce" + (t == null ? " spenta" : "");
+    r.setAttribute("aria-current", scelto === e ? "true" : "false");
+    r.innerHTML = `<span class="quando">${e.p <= 4 ? e.p + "°" : "S" + (e.p - 4)} ${e.cron}</span>` +
+      `<span>${e.g ? `<b>${e.g}</b> · ` : ""}${e.testo}${e.sq ? ` · ${e.sq}` : ""}` +
+      `${e.pt ? ` <span class="quando">${e.pt}</span>` : ""}</span>` +
+      `<span class="quando">${t == null ? "—" : orario(t, false)}</span>`;
+    r.addEventListener("click", () => {
+      scelto = e;
+      const v = stima(e);
+      if (v == null) {
+        $("nota-sync").textContent = `Prima segna l'inizio del ${nomeQuarto(e.p)}: porta il video al primo possesso del quarto e tocca «Inizio ${nomeQuarto(e.p)} qui».`;
+        aggiornaCronaca(); return;
+      }
+      aggiornaCronaca();
+      riproduci([{ a: v - secondi("prima"), b: v + secondi("dopo"), lab: `${e.g ? e.g + " · " : ""}${e.testo}` }]);
+    });
+    lista.appendChild(r);
+  }
+  altezza();
+}
+$("qui").addEventListener("click", () => {
+  if (!scelto) { $("nota-sync").textContent = "Scegli prima un'azione dall'elenco, poi porta il video al momento giusto."; return; }
+  const p = scelto.p;
+  ancore[p] = (ancore[p] || []).filter((x) => x[0] !== scelto.s);
+  ancore[p].push([scelto.s, video.currentTime]);
+  $("nota-sync").textContent = `Sincronizzato: ${scelto.testo} del ${nomeQuarto(p)} al minuto ${orario(video.currentTime, false)} del video. Le azioni vicine si sono allineate.`;
+  aggiornaCronaca();
+});
+$("seq-cronaca").addEventListener("click", () => {
+  const clip = eventiFiltrati().map((e) => [e, stima(e)]).filter(([, v]) => v != null)
+    .map(([e, v]) => ({ a: v - secondi("prima"), b: v + secondi("dopo"), lab: `${e.g ? e.g + " · " : ""}${e.testo}` }));
+  if (!clip.length) { $("nota-sync").textContent = "Segna prima l'inizio dei quarti: poi le azioni si possono rivedere in sequenza."; return; }
+  riproduci(clip);
+});
+
+// ------------------------------------------------------------------ dal video alla lavagna dei giochi
+const PUNTI_AREA = ["angolo dell'area sul fondo, lato lontano", "angolo dell'area sul fondo, lato vicino",
+                    "angolo della lunetta, lato lontano", "angolo della lunetta, lato vicino"];
+const AREA = { sinistra: [[50.5, 0], [99.5, 0], [50.5, 58], [99.5, 58]],     // come la taratura del modulo video
+               destra: [[99.5, 0], [50.5, 0], [99.5, 58], [50.5, 58]] };
+const ORDINE = ["o1", "o2", "o3", "o4", "o5", "x1", "x2", "x3", "x4", "x5"];
+function risolvi(A, b) {                 // eliminazione di Gauss con pivot
+  const n = b.length, M = A.map((r, i) => [...r, b[i]]);
+  for (let c = 0; c < n; c++) {
+    let p = c;
+    for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+    if (Math.abs(M[p][c]) < 1e-12) return null;
+    [M[c], M[p]] = [M[p], M[c]];
+    for (let r = 0; r < n; r++) {
+      if (r === c) continue;
+      const k = M[r][c] / M[c][c];
+      for (let j = c; j <= n; j++) M[r][j] -= k * M[c][j];
+    }
+  }
+  return M.map((r, i) => r[n] / r[i]);
+}
+function omografia(da, a) {              // 4 punti -> 4 punti
+  const A = [], b = [];
+  for (let i = 0; i < 4; i++) {
+    const [x, y] = da[i], [u, v] = a[i];
+    A.push([x, y, 1, 0, 0, 0, -u * x, -u * y]); b.push(u);
+    A.push([0, 0, 0, x, y, 1, -v * x, -v * y]); b.push(v);
+  }
+  const h = risolvi(A, b);
+  return h ? [...h, 1] : null;
+}
+function proietta(h, [x, y]) {
+  const w = h[6] * x + h[7] * y + h[8];
+  return [(h[0] * x + h[1] * y + h[2]) / w, (h[3] * x + h[4] * y + h[5]) / w];
+}
+function righeCampo(r) {
+  const seg = [[[0, 0], [150, 0]], [[50.5, 0], [50.5, 58]], [[99.5, 0], [99.5, 58]], [[50.5, 58], [99.5, 58]],
+               [[0, 0], [0, 140]], [[150, 0], [150, 140]], [[9, 0], [9, 29.9]], [[141, 0], [141, 29.9]]];
+  for (const [cx, cy, rr, a0, a1] of [[75, 15.75, 67.5, 0.32, Math.PI - 0.32], [75, 58, 18, 0, Math.PI * 2]]) {
+    let prev = null;
+    for (let i = 0; i <= 40; i++) {
+      const a = a0 + (a1 - a0) * i / 40, q = [cx + rr * Math.cos(a), cy + rr * Math.sin(a)];
+      if (prev) seg.push([prev, q]);
+      prev = q;
+    }
+  }
+  g.save(); g.strokeStyle = "rgba(79,179,255,.9)"; g.lineWidth = 2;
+  for (const [a, b] of seg) {
+    const A = proietta(Hinv, a), B = proietta(Hinv, b);
+    if (![...A, ...B].every((v) => isFinite(v) && v > -2 && v < 3)) continue;
+    const P = sulPalco(A, r), Q = sulPalco(B, r);
+    g.beginPath(); g.moveTo(P[0], P[1]); g.lineTo(Q[0], Q[1]); g.stroke();
+  }
+  g.restore();
+}
+function aggiornaPassi() {
+  const box = $("passi-gioco");
+  const att = posti.filter((q) => q.id[0] === "o").length, dif = posti.length - att;
+  const passi = [
+    [H ? "Campo tarato ✓" : `Taratura: ${tocchiArea.length} di 4`, H ? "fatto" : modo === "taratura" ? "ora" : ""],
+    [`Attaccanti: ${att} di 5`, att === 5 ? "fatto" : modo === "giocatori" && att < 5 ? "ora" : ""],
+    [senzaDifesa ? "Senza difesa" : `Difensori: ${dif} di 5`, dif === 5 || senzaDifesa ? "fatto" : modo === "giocatori" && att === 5 ? "ora" : ""],
+  ];
+  box.innerHTML = passi.map(([t, c]) => `<span class="${c}">${t}</span>`).join("");
+  if (modo === "taratura") $("stato").textContent = `Tocca: ${PUNTI_AREA[tocchiArea.length]}`;
+  if (modo === "giocatori") {
+    const prossimo = ORDINE[posti.length];
+    $("stato").textContent = prossimo ? `Tocca i piedi ${prossimo[0] === "o" ? "dell'attaccante " + prossimo[1] : "del difensore X" + prossimo[1]}` : "Fatto";
+  }
+  if (modo) $("stato").hidden = false;
+  $("righe").setAttribute("aria-pressed", mostraRighe ? "true" : "false");
+}
+function toccoGioco(p) {
+  if (modo === "taratura") {
+    tocchiArea.push(p);
+    if (tocchiArea.length === 4) {
+      const lato = (tocchiArea[0][0] + tocchiArea[1][0]) / 2 < (tocchiArea[2][0] + tocchiArea[3][0]) / 2 ? "sinistra" : "destra";
+      H = omografia(tocchiArea, AREA[lato]); Hinv = omografia(AREA[lato], tocchiArea);
+      modo = null; mostraRighe = !!H; tocchiArea = [];
+      $("nota-gioco").textContent = H ? "Campo tarato: le righe azzurre devono coincidere con quelle del parquet. Se non coincidono, rifai la taratura." :
+        "Taratura non riuscita: tocca i 4 angoli con più precisione.";
+    }
+  } else if (modo === "giocatori") {
+    posti.push({ id: ORDINE[posti.length], p });
+    if (posti.length === 10) modo = null;
+  }
+  aggiornaPassi(); disegna();
+}
+$("tara").addEventListener("click", () => {
+  if (!url) return;
+  video.pause(); modo = "taratura"; tocchiArea = []; H = null; Hinv = null; mostraRighe = false;
+  aggiornaPassi(); disegna();
+});
+$("righe").addEventListener("click", () => { mostraRighe = !mostraRighe && !!Hinv; aggiornaPassi(); disegna(); });
+$("posiziona").addEventListener("click", () => {
+  if (!url) return;
+  if (!H) { $("nota-gioco").textContent = "Prima tara il campo: tocca i 4 angoli dell'area."; return; }
+  video.pause(); modo = "giocatori"; posti = []; senzaDifesa = false; aggiornaPassi(); disegna();
+});
+$("annulla-g").addEventListener("click", () => {
+  if (modo === "taratura") tocchiArea.pop();
+  else { posti.pop(); if (posti.length < 10 && H) modo = "giocatori"; senzaDifesa = false; }
+  aggiornaPassi(); disegna();
+});
+$("senza-difesa").addEventListener("click", () => {
+  if (posti.filter((q) => q.id[0] === "o").length < 5) { $("nota-gioco").textContent = "Tocca prima i 5 attaccanti."; return; }
+  posti = posti.filter((q) => q.id[0] === "o"); senzaDifesa = true; modo = null; aggiornaPassi(); disegna();
+});
+function aggiornaDiChi() {
+  const sel = $("di-chi"), prima = sel.value;
+  sel.innerHTML = (cronaca.squadre || []).map((q) => `<option value="${q.id}">${q.mia ? "Nostro · " : ""}${q.nome}</option>`).join("");
+  if ([...sel.options].some((o) => o.value === prima)) sel.value = prima;
+  $("crea-gioco").disabled = !IN_APP || !sel.options.length;
+}
+$("crea-gioco").addEventListener("click", () => {
+  const att = posti.filter((q) => q.id[0] === "o");
+  if (!H || att.length < 5) { $("nota-gioco").textContent = "Servono il campo tarato e i 5 attaccanti."; return; }
+  const giocatori = posti.map((q) => {
+    let [x, y] = proietta(H, q.p);
+    x = Math.round(Math.min(150, Math.max(0, x)) * 10) / 10; y = Math.round(Math.min(140, Math.max(0, y)) * 10) / 10;
+    return { id: q.id, tipo: q.id[0], n: Number(q.id.slice(1)), x, y };
+  });
+  const difesa = giocatori.some((q) => q.tipo === "x");
+  const rif = $("di-chi").value, mia = (cronaca.squadre.find((q) => String(q.id) === rif) || {}).mia;
+  const palla = "o" + $("palla").value, quando = orario(video.currentTime, false);
+  const gioco = {
+    id: "v" + Date.now(), nome: $("nome-gioco").value.trim() || `Dal video · ${quando}`,
+    tipo: mia ? "nostro" : "avversaria", palla, difesa, difesaTipo: difesa ? "manuale" : "nessuna",
+    fasi: [{ giocatori, linee: [], palla, nota: `Posizioni dal video al minuto ${quando}${cronaca.nome ? ` (${cronaca.nome})` : ""}.` }],
+  };
+  invia({ azione: "gioco", riferimento: rif, gioco, t: Date.now() });
+  $("nota-gioco").textContent = "Gioco inviato alla lavagna…";
+});
+
 // tastiera
 document.addEventListener("keydown", (e) => {
   if (!url || e.target.tagName === "INPUT" && e.target.type !== "range") return;
@@ -564,6 +1145,7 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === "ArrowLeft") { e.preventDefault(); vai(e.shiftKey ? -5 : -FOTOGRAMMA); }
   else if (e.key === "ArrowRight") { e.preventDefault(); vai(e.shiftKey ? 5 : FOTOGRAMMA); }
   else if (e.key.toLowerCase() === "z") { e.preventDefault(); annulla(); }
+  else if (/^[1-9]$/.test(e.key) && etichette[Number(e.key) - 1]) { e.preventDefault(); marca(etichette[Number(e.key) - 1]); }
   else if (e.key === "Escape" && ripiego) { esciRipiego(); grande(false); }
 });
 // alla chiusura della pagina il video e i disegni spariscono
