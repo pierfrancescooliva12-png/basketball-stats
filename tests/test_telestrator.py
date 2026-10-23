@@ -22,6 +22,18 @@ def test_il_video_non_lascia_il_dispositivo():
     assert sorted(azioni) == ["gioco", "sync"], azioni
 
 
+def test_lettura_della_grafica_sul_dispositivo():
+    s = HTML.read_text()
+    cartella = HTML.parent / "ocr"
+    # l'OCR è servito dalla piattaforma insieme al componente, non da servizi esterni
+    for f in ("tesseract.min.js", "worker.min.js", "tesseract-core-simd-lstm.wasm.js", "tesseract-core-lstm.wasm.js",
+              "eng.traineddata.gz", "LICENSE-tesseract.js.md", "LICENSE-tesseract-core"):
+        assert (cartella / f).exists(), f
+    assert 'new URL("ocr/", location.href)' in s
+    esterni = set(re.findall(r"https?://([\w.-]+)", s))
+    assert esterni <= {"fonts.googleapis.com"}, esterni
+
+
 def test_strumenti_disponibili():
     s = HTML.read_text()
     for t in ("penna", "percorso", "freccia", "passaggio", "blocco", "linea", "cerchio", "riflettore", "area",
@@ -29,7 +41,8 @@ def test_strumenti_disponibili():
         assert f'data-t="{t}"' in s, t
     for id_ in ("annulla", "ripeti", "pulisci", "indietro1", "avanti1", "schermo", "velocita",
                 "zoomPiu", "zoomMeno", "zoomRiporta", "tasti-tag", "seq-tag", "lista-tag",
-                "lista-cronaca", "qui", "seq-cronaca", "tara", "posiziona", "crea-gioco"):
+                "lista-cronaca", "qui", "seq-cronaca", "tara", "posiziona", "crea-gioco",
+                "ocr-zona", "ocr-avvia", "ocr-ferma", "ocr-da"):
         assert f'id="{id_}"' in s, id_
     for p in ("azioni", "cronaca", "gioco"):
         assert f'data-p="{p}"' in s, p
