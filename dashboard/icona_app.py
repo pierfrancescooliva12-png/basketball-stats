@@ -51,7 +51,7 @@ def _logo(tema) -> bytes | None:
         return None
 
 
-@st.cache_data(show_spinner=False, ttl=24 * 3600)
+@st.cache_data(show_spinner=False, ttl=24 * 3600, max_entries=40)
 def _file(chiave: str, nome: str, colore: str, logo: bytes | None, quota: float = 0.66) -> dict:
     return icona.prepara(chiave, nome, logo, colore, quota=quota)
 

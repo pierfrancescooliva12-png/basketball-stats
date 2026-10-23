@@ -13,7 +13,7 @@ from basket import config
 
 from . import analisi, chiavi_ui, lavagna_ui, nuove, previsioni_ui, schede
 from .stato import App
-from .ui import (badge_pos, brand_hero, esc, frase, it, kpis, note_html, num, pills, quadrante, section,
+from .ui import (badge_pos, brand_hero, documento, esc, frase, it, kpis, note_html, num, pills, quadrante, section,
                  short, titolo_pagina)
 
 APP: App | None = None
@@ -201,21 +201,18 @@ def _home():
         pulsante(c[0], "Scouting dell'avversaria", "scouting", primary=True, f_sq=avv)
         pulsante(c[1], "Anteprima della partita", "anteprima", f_sq=mia)
         with c[2]:
-            st.download_button("⬇ PDF avversaria", nuove._pdf(a.ctx, a.mtime, a.stagione, avv, mia,
-                                                                lavagna_ui.giochi_json(a, avv),
-                                                                nuove.note_json(a, avv)),
-                               file_name=f"scouting_{analisi.slug(pr.loc[avv, 'squadra'])}.pdf",
-                               mime="application/pdf", width="stretch")
-            st.download_button("⬇ Word avversaria (con spazio per le note)",
-                               nuove._docx(a.ctx, a.mtime, a.stagione, avv, mia),
-                               file_name=f"scouting_{analisi.slug(pr.loc[avv, 'squadra'])}.docx",
-                               mime=nuove.DOCX, width="stretch")
+            documento(f"home_pdf_{avv}_{mia}", "Prepara il PDF avversaria", "⬇ PDF avversaria",
+                      lambda: nuove._pdf(a.ctx, a.mtime, a.stagione, avv, mia, lavagna_ui.giochi_json(a, avv),
+                                         nuove.note_json(a, avv)),
+                      f"scouting_{analisi.slug(pr.loc[avv, 'squadra'])}.pdf", "application/pdf", largo=True)
+            documento(f"home_docx_{avv}_{mia}", "Prepara il Word avversaria", "⬇ Word avversaria (con spazio per le note)",
+                      lambda: nuove._docx(a.ctx, a.mtime, a.stagione, avv, mia),
+                      f"scouting_{analisi.slug(pr.loc[avv, 'squadra'])}.docx", nuove.DOCX, largo=True)
     if ultima:
         with c[3]:
-            st.download_button("⬇ PDF post-partita",
-                               analisi.pdf_post_partita(a, mia, ultima),
-                               file_name=f"post_partita_{analisi.slug(me['squadra'])}.pdf",
-                               mime="application/pdf", width="stretch")
+            documento(f"home_post_{mia}_{ultima}", "Prepara il PDF post-partita", "⬇ PDF post-partita",
+                      lambda: analisi.pdf_post_partita(a, mia, ultima),
+                      f"post_partita_{analisi.slug(me['squadra'])}.pdf", "application/pdf", largo=True)
 
     if avv is not None:
         frase(f"La prossima avversaria in una frase · {short(pr.loc[avv, 'squadra'])}",

@@ -130,7 +130,7 @@ def carta(c: dict, squadra: str, i: int = 0, pdf: bool = False) -> str:
             f'<div class="stats">{stats}</div><div class="piede">{esc(c["piede"])}</div></div>')
 
 
-@st.cache_data(show_spinner="Preparo le figurine…", ttl=6 * 3600)
+@st.cache_data(show_spinner="Preparo le figurine…", ttl=6 * 3600, max_entries=10)
 def _carte(_ctx, mtime: float, stagione: str, sid: int) -> list[dict]:
     return FG.carte(_ctx, storico(mtime), sid)
 

@@ -15,7 +15,7 @@ from basket.report_pdf import build_pdf, slug
 
 from . import analisi
 from .stato import App, partite_df, storico
-from .ui import (ARANCIO, BLU, GRIGIO, SUPERFICIE, TESTO, esc, hero, kpis, note_html, pills, quadrante,
+from .ui import (ARANCIO, BLU, GRIGIO, SUPERFICIE, TESTO, documento, esc, hero, kpis, note_html, pills, quadrante,
                  plot, section, short, show)
 
 
@@ -31,14 +31,14 @@ def _team(df: pd.DataFrame, sid) -> pd.DataFrame:
     return df[df["squadra_id"] == sid]
 
 
-@st.cache_data(show_spinner="Preparo il PDF…")
+@st.cache_data(show_spinner="Preparo il PDF…", max_entries=12)
 def _pdf(_ctx, mtime: float, stagione: str, sid: int, mia: int | None = None,
          giochi_json: str = "[]", note_json: str = "[]") -> bytes:
     import json
     return build_pdf(_ctx, sid, mia, json.loads(giochi_json), json.loads(note_json))
 
 
-@st.cache_data(show_spinner="Preparo il file Word…")
+@st.cache_data(show_spinner="Preparo il file Word…", max_entries=8)
 def _docx(_ctx, mtime: float, stagione: str, sid: int, mia: int | None = None) -> bytes:
     from basket.report_word import build_docx
     return build_docx(_ctx, sid, mia)
@@ -57,7 +57,7 @@ def note_json(a: App, sid) -> str:
         return "[]"
 
 
-@st.cache_data(show_spinner="Preparo il PDF della squadra…")
+@st.cache_data(show_spinner="Preparo il PDF della squadra…", max_entries=8)
 def _pdf_mia(_ctx, mtime: float, stagione: str, sid: int, obiettivi_json: str,
              giochi_json: str) -> bytes:
     import json
@@ -491,7 +491,7 @@ def render_anteprima(a: App):
             "punti_casa": "PC", "punti_ospite": "PO", "ospite": "Ospite"}))
 
 
-@st.cache_data(show_spinner="Simulo il resto della stagione…")
+@st.cache_data(show_spinner="Simulo il resto della stagione…", max_entries=4)
 def _simulation(_ctx, mtime: float, stagione: str, camp: str) -> pd.DataFrame:
     return _ctx.simulation(camp, n=5000)
 
@@ -686,16 +686,14 @@ def render_mia_squadra(a: App):
     import json
     from . import lavagna_ui
     giochi = lavagna_ui.giochi(a, sid)
-    st.download_button(
-        "⬇ PDF completo della squadra" + (f" (con {len(giochi)} giochi)" if giochi else ""),
-        _pdf_mia(a.ctx, a.mtime, a.stagione, sid, json.dumps(a.archivio.goals(a.club),
-                                                              sort_keys=True),
-                 json.dumps(giochi)),
-        file_name=f"mia_squadra_{slug(me['squadra'])}.pdf", mime="application/pdf",
-        key="pdf_mia_squadra", type="primary",
-        help="Tutte le voci di questa pagina in un documento: sintesi, aree da migliorare, "
-             "quintetti migliori e peggiori, obiettivi, andamento, giocatori, rotazioni, "
-             "avvisi e i giochi della lavagna.")
+    extra = f" (con {len(giochi)} giochi)" if giochi else ""
+    documento(f"pdf_mia_{sid}", "Prepara il PDF completo della squadra" + extra, "⬇ Scarica il PDF completo della squadra",
+              lambda: _pdf_mia(a.ctx, a.mtime, a.stagione, sid, json.dumps(a.archivio.goals(a.club), sort_keys=True),
+                               json.dumps(giochi)),
+              f"mia_squadra_{slug(me['squadra'])}.pdf", "application/pdf", primario=True,
+              aiuto="Tutte le voci di questa pagina in un documento: sintesi, aree da migliorare, "
+                    "quintetti migliori e peggiori, obiettivi, andamento, giocatori, rotazioni, "
+                    "avvisi e i giochi della lavagna.")
 
     from . import miglioramento_ui
     miglioramento_ui.render(a, sid)

@@ -18,7 +18,7 @@ from .ui import (ARANCIO, BLU, GRIGIO, NEUTRO, SUPERFICIE, TESTO, badge_pos, esc
 
 # ------------------------------------------------------------------ PDF
 
-@st.cache_data(show_spinner="Preparo il PDF post-partita…")
+@st.cache_data(show_spinner="Preparo il PDF post-partita…", max_entries=10)
 def _pdf_post(_ctx, mtime: float, stagione: str, sid: int, pid: str, obiettivi: tuple) -> bytes:
     return R.build_post_partita(_ctx, sid, pid, dict(obiettivi))
 
@@ -28,7 +28,7 @@ def pdf_post_partita(a: App, sid: int, pid: str) -> bytes:
                      tuple(sorted(a.archivio.goals(a.club).items())))
 
 
-@st.cache_data(show_spinner="Preparo il report del giocatore…")
+@st.cache_data(show_spinner="Preparo il report del giocatore…", max_entries=20)
 def _pdf_giocatore(_ctx, _hist, mtime: float, stagione: str, gid: str, sid: int) -> bytes:
     return R.build_giocatore(_ctx, gid, sid, _hist)
 
@@ -250,7 +250,7 @@ def ultima_partita(a: App):
                        mime="application/pdf", type="primary")
 
 
-@st.cache_data(show_spinner="Confronto le chiavi della vigilia con la partita…")
+@st.cache_data(show_spinner="Confronto le chiavi della vigilia con la partita…", max_entries=12)
 def _verifica(_ctx, mtime: float, stagione: str, sid: int, pid: str):
     from basket import verifica_chiavi as VK
     v = VK.verifica(_ctx, sid, pid)

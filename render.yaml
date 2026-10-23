@@ -7,7 +7,7 @@ services:
     name: assist
     runtime: python
     region: frankfurt          # Europa: più vicino ai club, dati nell'UE
-    plan: starter              # 512 MB; se i log segnalano memoria esaurita passare a standard
+    plan: starter              # 512 MB; con molti club collegati insieme passare a standard (2 GB)
     branch: main
     autoDeploy: true
     buildCommand: pip install -r requirements.txt

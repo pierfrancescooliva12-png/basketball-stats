@@ -217,3 +217,16 @@ with barra:
 
 pagine.APP = a
 nav.run()
+
+# memoria: dopo ogni pagina si restituisce al sistema quella liberata (al massimo ogni 20 secondi).
+# Sul server da 512 MB evita che la memoria cresca fino al riavvio del servizio (errore 502).
+import time as _time
+if _time.monotonic() - st.session_state.get("_rilascio", 0) > 20:
+    st.session_state["_rilascio"] = _time.monotonic()
+    try:
+        import ctypes
+        import gc
+        gc.collect()
+        ctypes.CDLL("libc.so.6").malloc_trim(0)
+    except Exception:          # sistemi senza glibc (Mac, Windows): niente da fare
+        pass

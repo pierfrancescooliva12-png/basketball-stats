@@ -108,7 +108,7 @@ def scenari(a: App, forze, casa: int, ospite: int, hca: float, nomi: dict):
 
 # ------------------------------------------------------------------ proiezione classifica
 
-@st.cache_data(show_spinner="Simulo il resto della stagione…")
+@st.cache_data(show_spinner="Simulo il resto della stagione…", max_entries=4)
 def _simulazione(_ctx, mtime: float, stagione: str, camp: str) -> pd.DataFrame:
     return _ctx.simulation(camp, n=5000)
 
@@ -146,7 +146,7 @@ def render_proiezione(a: App):
 
 # ------------------------------------------------------------------ affidabilità
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=2)
 def _validazione(mtime: float) -> pd.DataFrame:
     return V.carica()
 

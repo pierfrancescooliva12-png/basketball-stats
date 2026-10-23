@@ -29,7 +29,7 @@ def brand_club(squadra_id: int) -> dict:
     return out
 
 
-@st.cache_data(ttl=6 * 3600, show_spinner=False)
+@st.cache_data(ttl=6 * 3600, show_spinner=False, max_entries=80)
 def _tema(squadra_id: int, nome: str, correzioni_json: str, logo_ok: bool):
     import json
     from basket import brand
@@ -91,14 +91,14 @@ def loghi_piccoli(squadre: tuple) -> dict:
     return {s: memo.get(s) for s in squadre}
 
 
-@st.cache_resource(show_spinner="Preparo le analisi…")
+@st.cache_resource(show_spinner="Preparo le analisi…", max_entries=2)
 def contesto(db_mtime: float, stagione: str) -> Contesto:
     ctx = Contesto(db.connect(config.DB_PATH, readonly=True), stagione)
     _ = ctx.players, ctx.profile        # calcolo iniziale
     return ctx
 
 
-@st.cache_resource(show_spinner="Carico l'archivio delle stagioni…")
+@st.cache_resource(show_spinner="Carico l'archivio delle stagioni…", max_entries=1)
 def storico(db_mtime: float) -> pd.DataFrame:
     return mercato.season_lines(db.connect(config.DB_PATH, readonly=True))
 
@@ -157,13 +157,13 @@ class App:
         return mid if mid in set(self.profile["squadra_id"]) else self.sq
 
 
-@st.cache_resource
+@st.cache_resource(max_entries=12)
 def report(db_mtime: float, stagione: str, squadra_id: int):
     from basket import scouting
     return scouting.build_report(db.connect(config.DB_PATH, readonly=True), squadra_id, stagione)
 
 
-@st.cache_data
+@st.cache_data(max_entries=2)
 def partite_df(db_mtime: float, stagione: str) -> pd.DataFrame:
     conn = db.connect(config.DB_PATH, readonly=True)
     cols = {r[1] for r in conn.execute("PRAGMA table_info(calendario)")}

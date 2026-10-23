@@ -13,7 +13,7 @@ from .ui import (ARANCIO, BLU, TESTO, esc, it, kpis, note_html, num, plot, secti
                  show)
 
 
-@st.cache_data(show_spinner="Calcolo lo scarto rispetto al previsto di ogni partita…")
+@st.cache_data(show_spinner="Calcolo lo scarto rispetto al previsto di ogni partita…", max_entries=2)
 def _scarti_stagione(_conn, mtime: float, stagione: str) -> pd.DataFrame:
     bt = V.carica()
     if not bt.empty and stagione in set(bt["stagione"]):
