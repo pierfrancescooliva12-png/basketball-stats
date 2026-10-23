@@ -8,10 +8,10 @@ from basket import sviluppo as SV
 from basket.report_pdf import build_sviluppo, slug
 
 from .stato import App, storico
-from .ui import esc, note_html, section, show
+from .ui import documento, esc, note_html, section, show
 
 
-@st.cache_data(show_spinner="Analizzo i giocatori…")
+@st.cache_data(show_spinner="Analizzo i giocatori…", max_entries=8)
 def _schede_calc(_ctx, mtime: float, stagione: str, sid: int) -> list[dict]:
     return SV.squadra(_ctx, sid)
 
@@ -22,12 +22,12 @@ def _schede(_ctx, mtime: float, stagione: str, sid: int) -> list[dict]:
     return SG.completa_foto(_schede_calc(_ctx, mtime, stagione, sid))
 
 
-@st.cache_data(show_spinner="Preparo il PDF…")
+@st.cache_data(show_spinner="Preparo il PDF…", max_entries=8)
 def _pdf(_ctx, mtime: float, stagione: str, sid: int) -> bytes:
     return build_sviluppo(_ctx, sid)
 
 
-@st.cache_data(show_spinner=False, ttl=6 * 3600)
+@st.cache_data(show_spinner=False, ttl=6 * 3600, max_entries=80)
 def _pdf_giocatore(_ctx, mtime: float, stagione: str, sid: int, gid: str) -> bytes:
     from basket import report_giocatore as RG
     g = next((x for x in _schede(_ctx, mtime, stagione, sid) if x["giocatore_id"] == gid), None)
@@ -95,8 +95,9 @@ def render(a: App):
     if not giocatori:
         st.info("Nessun giocatore con almeno 5 minuti a partita.")
         return
-    st.download_button("⬇ Report sviluppo dei giocatori (PDF)", _pdf(a.ctx, a.mtime, a.stagione, sid),
-                       file_name=f"sviluppo_giocatori_{slug(nome)}.pdf", mime="application/pdf", type="primary")
+    documento(f"pdf_sviluppo_{sid}", "Prepara il report sviluppo dei giocatori (PDF)",
+              "⬇ Scarica il report sviluppo dei giocatori", lambda: _pdf(a.ctx, a.mtime, a.stagione, sid),
+              f"sviluppo_giocatori_{slug(nome)}.pdf", "application/pdf", primario=True)
     note_html("Ogni giocatore è confrontato con i giocatori di rotazione del campionato dello stesso ruolo "
               "(esterni, ali, lunghi). Un'area di miglioramento è una voce in cui è tra i più bassi del ruolo; "
               "l'obiettivo è il valore normale del ruolo e, quando si può stimare, quanti punti a partita vale "

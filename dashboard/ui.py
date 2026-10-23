@@ -731,6 +731,23 @@ def quadrante(p: float, titolo: str, sx: str, dx: str, nota: str = "",
             + (f'<div class="qn">{esc(nota)}</div>' if nota else "") + '</div></div>')
 
 
+def documento(chiave: str, prepara: str, scarica: str, crea, file_name: str, mime: str,
+              primario: bool = False, aiuto: str | None = None, largo: bool = False):
+    """Documento (PDF, Word) in due tocchi: «prepara» lo crea, «scarica» lo scarica subito.
+    Così la pagina si apre senza costruire report che nessuno ha chiesto (memoria e tempo sul
+    server), e sul telefono lo scaricamento parte dal tocco con il file già pronto.
+    crea(): la funzione (in cache) che restituisce i byte; chiave: unica per documento e squadra."""
+    tipo = "primary" if primario else "secondary"
+    larghezza = "stretch" if largo else "content"
+    if st.session_state.get(f"_doc_{chiave}"):
+        st.download_button(scarica, crea(), file_name=file_name, mime=mime, type=tipo, on_click="ignore",
+                           key=f"_doc_dl_{chiave}", help=aiuto, width=larghezza)
+    elif st.button(prepara, type=tipo, key=f"_doc_prep_{chiave}", help=aiuto, width=larghezza):
+        crea()                       # lo spinner è quello della funzione in cache
+        st.session_state[f"_doc_{chiave}"] = True
+        st.rerun()
+
+
 def note_html(text: str, key: str | None = None):
     st.markdown(f'<div class="note">{esc(text)}{tip(key)}</div>', unsafe_allow_html=True)
 

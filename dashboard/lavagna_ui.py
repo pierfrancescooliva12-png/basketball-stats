@@ -47,7 +47,7 @@ _prepara()
 _lavagna = components.declare_component("lavagna_assist", path=str(CARTELLA))
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=1)
 def _pdf_archivio() -> bytes:
     return build_giochi(SCHEMI, "Archivio schemi ASSIST")
 

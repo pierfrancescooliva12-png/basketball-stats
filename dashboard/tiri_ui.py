@@ -12,7 +12,7 @@ SCELTE = {"tutti": "Tutti i tiri", "area_tot": "Area", "media": "Media distanza"
           "tre": "Da 3", "schiacciata": "Schiacciate"}
 
 
-@st.cache_data(show_spinner="Preparo i tiri della stagione…")
+@st.cache_data(show_spinner="Preparo i tiri della stagione…", max_entries=2)
 def _tiri(_ctx, mtime: float, stagione: str) -> pd.DataFrame:
     return T.tiri(_ctx.ev)
 

@@ -15,7 +15,7 @@ from basket.glossario import G
 
 from .stato import App, partite_df, report
 from .ui import (ACQUA, ARANCIO, BLU, COURT_SVG, GRIGIO, NEUTRO, SUPERFICIE, TESTO, badge,
-                 badge_pos, esc, frase, it, kpis, leader_cards, note_html, num, pills, plot, section,
+                 badge_pos, documento, esc, frase, it, kpis, leader_cards, note_html, num, pills, plot, section,
                  short, show, tip)
 
 
@@ -337,7 +337,7 @@ def render_giocatore(a: App):
              .drop(columns=["Campionato", "Giocatore", "Squadra"]))
 
 
-@st.cache_data(show_spinner="Valuto l'impatto dei giocatori…")
+@st.cache_data(show_spinner="Valuto l'impatto dei giocatori…", max_entries=16)
 def _obiettivi(_ctx, mtime: float, stagione: str, sid: int, avversaria: bool = True) -> list[dict]:
     from basket import impatto as I
     return I.obiettivi(_ctx, sid, n=5 if avversaria else 6, avversaria=avversaria)
@@ -401,16 +401,14 @@ def render_scouting(a: App):
         from . import lavagna_ui
         from .nuove import DOCX, _docx, _pdf, note_json
         from basket.report_pdf import slug
-        st.download_button("⬇ Report PDF per la riunione tecnica",
-                           _pdf(a.ctx, a.mtime, a.stagione, sq,
-                                a.utente.get("squadra_id") or st.session_state.get(f"ch_mia_{sq}"),
-                                lavagna_ui.giochi_json(a, sq), note_json(a, sq)),
-                           file_name=f"scouting_{slug(r.squadra)}.pdf", mime="application/pdf",
-                           type="primary")
-        st.download_button("⬇ Report in Word, da completare con le note dello staff",
-                           _docx(a.ctx, a.mtime, a.stagione, sq,
-                                 a.utente.get("squadra_id") or st.session_state.get(f"ch_mia_{sq}")),
-                           file_name=f"scouting_{slug(r.squadra)}.docx", mime=DOCX)
+        mia = a.utente.get("squadra_id") or st.session_state.get(f"ch_mia_{sq}")
+        documento(f"scout_pdf_{sq}_{mia}", "Prepara il report PDF per la riunione tecnica",
+                  "⬇ Scarica il report PDF per la riunione tecnica",
+                  lambda: _pdf(a.ctx, a.mtime, a.stagione, sq, mia, lavagna_ui.giochi_json(a, sq), note_json(a, sq)),
+                  f"scouting_{slug(r.squadra)}.pdf", "application/pdf", primario=True)
+        documento(f"scout_docx_{sq}_{mia}", "Prepara il report in Word, da completare con le note dello staff",
+                  "⬇ Scarica il report in Word", lambda: _docx(a.ctx, a.mtime, a.stagione, sq, mia),
+                  f"scouting_{slug(r.squadra)}.docx", DOCX)
         pr = profile.set_index("squadra_id")
         kpis([
             ("Net rating", f"{pf['net_rtg']:+.1f}", badge_pos(X.posizione(pr["net_rtg"], sq))),

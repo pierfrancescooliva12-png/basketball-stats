@@ -21,7 +21,7 @@ COLORI = {3: "#ff6b5a", 2: "#ff9d2e", 1: "#9aa6b8"}
 ETICHETTA = {3: "ADESSO", 2: "PRESTO", 1: "DA TENERE D'OCCHIO"}
 
 
-@st.cache_data(ttl=AGGIORNA - 5, show_spinner=False)
+@st.cache_data(ttl=AGGIORNA - 5, show_spinner=False, max_entries=8)
 def _cronaca(gameid: str, campionato: str, stagione: str) -> dict:
     return live.scarica(gameid, campionato, stagione)
 
