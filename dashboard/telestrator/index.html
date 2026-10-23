@@ -251,9 +251,10 @@ body.grande .schede, body.grande .pannello { display: none !important; }
         <button class="btn piccolo primario" id="seq-cronaca">▶ In sequenza</button>
       </div>
       <div class="lista" id="lista-cronaca"></div>
-      <p class="nota" id="nota-sync">Per arrivare alle azioni segna l'inizio di ogni quarto: porta il video al primo
-        possesso e tocca «Inizio 1° quarto qui». Se un'azione non coincide, porta il video al momento giusto e tocca
-        «📍 L'azione è qui»: le altre si allineano di conseguenza.</p>
+      <p class="nota" id="nota-sync">Per arrivare alle azioni basta segnare il salto a due: porta il video alla palla
+        a due e tocca «Salto a due qui». Il minuto di ogni azione tiene conto dei tempi morti scritti in cronaca (timeout,
+        falli, liberi, cambi) e degli intervalli. Se un'azione non coincide, porta il video al momento giusto e tocca
+        «📍 L'azione è qui»: le successive si ricalcolano sul ritmo reale di questa partita.</p>
     </div>
   </div>
 
@@ -308,7 +309,7 @@ let etichette = ["Pick and roll", "Transizione", "Palla persa", "Tiro aperto", "
                  "Errore difensivo", "Fallo"];
 let azioni = [];                      // azioni marcate: [{id, t, etichetta}]
 let coda = null;                      // sequenza in riproduzione: {clip: [{a, b, lab}], i}
-let cronaca = { partita: null, eventi: [], squadre: [], inizi: {} }, ancore = {}, scelto = null;
+let cronaca = { partita: null, eventi: [], squadre: [], inizi: {}, fine: {} }, ancore = {}, scelto = null;
 
 // ------------------------------------------------------------------ Streamlit: solo l'altezza
 const IN_APP = window.parent !== window;
@@ -869,7 +870,8 @@ function riceviDati(a) {
   const pid = a.partita_id || null;
   if (pid !== cronaca.partita) {
     cronaca.partita = pid; cronaca.eventi = Array.isArray(a.eventi) ? a.eventi : []; ancore = {}; scelto = null;
-    cronaca.inizi = {};
+    cronaca.inizi = {}; cronaca.fine = {};
+    for (const [k, v] of Object.entries(a.fine || {})) if (v != null) cronaca.fine[Number(k)] = Number(v);
     for (const [k, v] of Object.entries(a.inizi || {})) if (v != null) cronaca.inizi[Number(k)] = Number(v);
     cronaca.nome = a.partita_nome || "";
     preparaFiltri();
@@ -895,40 +897,53 @@ for (const id of ["f-tipo", "f-squadra", "f-giocatore", "f-quarto"]) $(id).addEv
   if (id === "f-squadra") preparaGiocatori();
   aggiornaCronaca();
 });
-// minuto del video di un'azione: inizi dei quarti segnati dallo staff, più le correzioni ("l'azione è qui");
-// tra due punti noti si interpola, oltre l'ultimo si usa il ritmo misurato (o 2,3 secondi reali per secondo di gioco)
+// minuto del video di un'azione. Ogni evento ha i secondi reali stimati dall'inizio del quarto (m): il
+// cronometro più le pause tipiche di timeout, falli, liberi e cambi. Basta segnare il salto a due: gli
+// altri quarti seguono dalla durata stimata più l'intervallo. Le correzioni ("l'azione è qui") sono punti
+// noti: tra due si interpola, oltre l'ultimo si usa il ritmo misurato su quella partita.
 function pendenza(pts) {
   if (pts.length >= 2) {
-    const a = pts[pts.length - 2], b = pts[pts.length - 1];
-    return Math.min(3.5, Math.max(1.2, (b[1] - a[1]) / Math.max(1, b[0] - a[0])));
+    const a = pts[pts.length - 2], b = pts[pts.length - 1], tratto = Math.max(1, b[0] - a[0]);
+    // il ritmo misurato conta in proporzione al tratto che lo sostiene: una correzione a pochi secondi
+    // dall'inizio sposta le azioni successive, ma non le dilata per tutto il quarto
+    const peso = Math.min(1, tratto / 400);
+    return 1 + peso * (Math.min(1.6, Math.max(0.7, (b[1] - a[1]) / tratto)) - 1);
   }
-  return 2.3;
+  return 1;
 }
-function valuta(pts, s) {
+function valuta(pts, m) {
   if (!pts.length) return null;
-  if (s <= pts[0][0]) return pts[0][1] - (pts[0][0] - s) * pendenza(pts.slice(0, 2));
+  if (m <= pts[0][0]) return pts[0][1] - (pts[0][0] - m) * pendenza(pts.slice(0, 2));
   for (let i = 0; i < pts.length - 1; i++) {
     const a = pts[i], b = pts[i + 1];
-    if (s <= b[0]) return a[1] + (s - a[0]) * (b[1] - a[1]) / Math.max(1, b[0] - a[0]);
+    if (m <= b[0]) return a[1] + (m - a[0]) * (b[1] - a[1]) / Math.max(1, b[0] - a[0]);
   }
   const u = pts[pts.length - 1];
-  return u[1] + (s - u[0]) * pendenza(pts);
+  return u[1] + (m - u[0]) * pendenza(pts);
 }
+const fineReale = (p) => cronaca.fine[p] != null ? cronaca.fine[p] : 1.25 * durataQuarto(p) + 500;
 function inizioStimato(p, prof = 0) {
   if (cronaca.inizi[p] != null) return cronaca.inizi[p];
   if (p <= 1 || prof > 8) return null;
   const pts = puntiPeriodo(p - 1, prof + 1);
   if (!pts.length) return null;
-  return valuta(pts, durataQuarto(p - 1)) + (p - 1 === 2 ? 900 : 120);   // intervallo lungo dopo il 2° quarto
+  return valuta(pts, fineReale(p - 1)) + (p - 1 === 2 ? 900 : 120);   // intervallo lungo dopo il 2° quarto
 }
 function puntiPeriodo(p, prof = 0) {
   const pts = (ancore[p] || []).slice();
   const i0 = inizioStimato(p, prof);
   if (i0 != null && !pts.some((x) => x[0] === 0)) pts.push([0, i0]);
+  // inizio del quarto dopo segnato dallo staff: fissa anche la fine reale di questo
+  const dopo = cronaca.inizi[p + 1], fine = fineReale(p);
+  if (dopo != null && i0 != null && !pts.some((x) => x[0] >= fine)) {
+    const t = dopo - (p === 2 ? 900 : 120);
+    if (t > i0) pts.push([fine, Math.min(i0 + 1.6 * fine, Math.max(i0 + 0.7 * fine, t))]);
+  }
   return pts.sort((x, y) => x[0] - y[0]);
 }
+const reale = (e) => e.m != null ? e.m : e.s * 2.3;
 function stima(e) {
-  const v = valuta(puntiPeriodo(e.p), e.s);
+  const v = valuta(puntiPeriodo(e.p), reale(e));
   return v == null ? null : Math.max(0, v);
 }
 function eventiFiltrati() {
@@ -942,8 +957,10 @@ function aggiornaSync() {
   for (const p of qs) {
     const b = document.createElement("button"); b.className = "btn piccolo";
     const fatto = cronaca.inizi[p] != null;
-    b.innerHTML = fatto ? `${nomeQuarto(p)} ✓ ${orario(cronaca.inizi[p], false)}` : `Inizio ${nomeQuarto(p)} qui`;
-    b.title = "Porta il video all'inizio del quarto e tocca";
+    b.innerHTML = fatto ? `${p === 1 ? "Salto a due" : nomeQuarto(p)} ✓ ${orario(cronaca.inizi[p], false)}` :
+      p === 1 ? "Salto a due qui" : `Inizio ${nomeQuarto(p)} qui${inizioStimato(p) != null ? " (facoltativo)" : ""}`;
+    b.title = p === 1 ? "Porta il video al salto a due e tocca: gli altri quarti si calcolano da soli" :
+      "Facoltativo: se l'inizio stimato non coincide, porta il video al primo possesso del quarto e tocca";
     if (fatto) b.style.borderColor = "#2f9e6b";
     b.addEventListener("click", () => { cronaca.inizi[p] = video.currentTime; aggiornaCronaca(); });
     box.appendChild(b);
@@ -979,7 +996,7 @@ function aggiornaCronaca() {
       scelto = e;
       const v = stima(e);
       if (v == null) {
-        $("nota-sync").textContent = `Prima segna l'inizio del ${nomeQuarto(e.p)}: porta il video al primo possesso del quarto e tocca «Inizio ${nomeQuarto(e.p)} qui».`;
+        $("nota-sync").textContent = "Prima segna il salto a due: porta il video alla palla a due e tocca «Salto a due qui».";
         aggiornaCronaca(); return;
       }
       aggiornaCronaca();
@@ -992,15 +1009,15 @@ function aggiornaCronaca() {
 $("qui").addEventListener("click", () => {
   if (!scelto) { $("nota-sync").textContent = "Scegli prima un'azione dall'elenco, poi porta il video al momento giusto."; return; }
   const p = scelto.p;
-  ancore[p] = (ancore[p] || []).filter((x) => x[0] !== scelto.s);
-  ancore[p].push([scelto.s, video.currentTime]);
+  ancore[p] = (ancore[p] || []).filter((x) => x[0] !== reale(scelto));
+  ancore[p].push([reale(scelto), video.currentTime]);
   $("nota-sync").textContent = `Sincronizzato: ${scelto.testo} del ${nomeQuarto(p)} al minuto ${orario(video.currentTime, false)} del video. Le azioni vicine si sono allineate.`;
   aggiornaCronaca();
 });
 $("seq-cronaca").addEventListener("click", () => {
   const clip = eventiFiltrati().map((e) => [e, stima(e)]).filter(([, v]) => v != null)
     .map(([e, v]) => ({ a: v - secondi("prima"), b: v + secondi("dopo"), lab: `${e.g ? e.g + " · " : ""}${e.testo}` }));
-  if (!clip.length) { $("nota-sync").textContent = "Segna prima l'inizio dei quarti: poi le azioni si possono rivedere in sequenza."; return; }
+  if (!clip.length) { $("nota-sync").textContent = "Segna prima il salto a due: poi le azioni si possono rivedere in sequenza."; return; }
   riproduci(clip);
 });
 

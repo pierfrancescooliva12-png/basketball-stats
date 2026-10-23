@@ -70,8 +70,8 @@ def mappa_e_cronologia(a: App, t: pd.DataFrame, lega: pd.DataFrame, chiave: str,
         "Assist": [nomi.get(x, "") if isinstance(x, str) else "" for x in sel["assist_id"]],
     })
     if pid and inizi:
-        tab["Video ≈"] = [T.hms(T.stima_video(int(p), s, inizi))
-                          for p, s in zip(sel["periodo"], sel["secondi"])]
+        video = T.stime_video(a.ctx.ev[a.ctx.ev["partita_id"] == pid], inizi)
+        tab["Video ≈"] = [T.hms(video.get(int(n))) for n in sel["n"]]
     st.markdown(f"**{len(sel)} tiri** · {esc(SCELTE[zona].lower())}. Il tempo è quello del "
                 "tabellone (minuti e secondi alla fine del quarto).")
     show(tab, height=min(36 * (len(tab) + 1) + 4, 460), voci=[])
@@ -85,16 +85,17 @@ def _sincronizza(a: App, pid: str) -> dict:
     inizi = a.archivio.video_sync(a.club, pid)
     with st.expander("Sincronizza con il video della partita" +
                      (" · fatto" if inizi else ""), expanded=False):
-        note_html("Apri la partita su LNP Pass e scrivi il minuto del video in cui inizia ogni "
-                  "quarto (per esempio 0:12:30). Nella cronologia compare il minuto stimato di ogni "
-                  "tiro: si arriva entro pochi secondi, poi si usa il cronometro sul tabellone.")
+        note_html("Apri la partita su LNP Pass e scrivi il minuto del video del salto a due (per "
+                  "esempio 0:12:30); gli altri quarti sono facoltativi e rendono la stima più precisa. "
+                  "Nella cronologia compare il minuto stimato di ogni tiro, calcolato con i tempi morti "
+                  "della cronaca (timeout, falli, liberi, cambi): poi si usa il cronometro sul tabellone.")
         if isinstance(url, str) and url:
             st.link_button("▶ Apri la partita su LNP Pass", url)
         with st.form(f"sync_{pid}"):
             cols = st.columns(4)
             valori = {}
             for i, p in enumerate((1, 2, 3, 4)):
-                valori[p] = cols[i].text_input(f"Inizio {p}° quarto", value=T.hms(inizi[p])
+                valori[p] = cols[i].text_input("Salto a due" if p == 1 else f"Inizio {p}° quarto", value=T.hms(inizi[p])
                                                if p in inizi else "", placeholder="0:12:30",
                                                key=f"sync_{pid}_{p}")
             if st.form_submit_button("Salva"):

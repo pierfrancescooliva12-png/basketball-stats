@@ -45,23 +45,30 @@ def _etichetta(r) -> str:
             f"{r['punti_casa']}-{r['punti_ospite']}")
 
 
-def eventi(a: App, pid: str) -> list[dict]:
+def cronaca(a: App, pid: str) -> tuple[list[dict], dict]:
     """Cronaca della partita nel formato del componente: periodo, secondi dall'inizio del periodo,
-    tempo sul tabellone, testo, squadra, giocatore e punteggio."""
-    ev = a.ctx.ev
-    ev = ev[(ev["partita_id"] == pid) & ev["tipo"].isin(TESTI)].sort_values("n")
+    secondi reali stimati (con le pause di timeout, falli, liberi e cambi), tempo sul tabellone,
+    testo, squadra, giocatore e punteggio; più la durata reale stimata di ogni periodo."""
+    tutti = a.ctx.ev[a.ctx.ev["partita_id"] == pid].sort_values("n")
+    reali, fine = T.tempi_reali(tutti)
+    ev = tutti[tutti["tipo"].isin(TESTI)]
     nomi_g, nomi_s = a.ctx.nomi_giocatori, a.ctx.nomi_squadre
     out = []
     for r in ev.itertuples():
         p, s = int(r.periodo), float(r.secondi)
         g = r.giocatore_id if isinstance(r.giocatore_id, str) else None
         sq = nomi_s.get(r.squadra_id, "") if pd.notna(r.squadra_id) else ""
-        out.append({"p": p, "s": round(s - T.inizio_periodo(p), 1), "cron": T.cronometro(p, s),
+        out.append({"p": p, "s": round(s - T.inizio_periodo(p), 1), "m": float(reali[r.Index]),
+                    "cron": T.cronometro(p, s),
                     "tipo": r.tipo, "testo": TESTI[r.tipo], "sq": escape(sq),
                     "g": escape(nomi_g.get(g, "")) if g else "",
                     "pt": f"{int(r.punti_casa)}-{int(r.punti_ospite)}"
                     if pd.notna(r.punti_casa) and pd.notna(r.punti_ospite) else ""})
-    return out
+    return out, {int(k): round(v, 1) for k, v in fine.items()}
+
+
+def eventi(a: App, pid: str) -> list[dict]:
+    return cronaca(a, pid)[0]
 
 
 def _squadre(a: App, sid: int | None, partita: pd.Series | None) -> list[dict]:
@@ -99,8 +106,9 @@ def render(a: App):
             if pid:
                 partita = pg[pg["partita_id"] == pid].iloc[0]
                 nome = etichette[pid]
+    ev, fine = cronaca(a, pid) if pid else ([], {})
     valore = _lavagna_video(squadre=_squadre(a, sid, partita), partita_id=pid, partita_nome=escape(nome),
-                            eventi=eventi(a, pid) if pid else [],
+                            eventi=ev, fine=fine,
                             inizi=a.archivio.video_sync(a.club, pid) if pid else {},
                             esito=st.session_state.get("telestrator_esito"), key="telestrator", default=None)
     if isinstance(valore, dict) and valore.get("t") != st.session_state.get("telestrator_ultimo"):
