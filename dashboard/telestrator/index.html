@@ -34,6 +34,7 @@ button, input, select { font: inherit; color: inherit; }
 .btn:hover:not([aria-pressed="true"]):not(.primario) { background: var(--carta); }
 .btn.primario, .btn[aria-pressed="true"] { background: var(--attivo); color: var(--attivo-testo); border-color: var(--attivo); }
 .btn.piccolo { min-height: 38px; padding: 0 11px; font-size: .9rem; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
 .btn svg { width: 22px; height: 18px; flex: none; }
 .btn:focus-visible { outline: 3px solid var(--accento); outline-offset: 2px; }
 
@@ -240,6 +241,15 @@ body.grande .schede, body.grande .pannello { display: none !important; }
     <div class="vuoto" id="cronaca-vuota">Scegli la partita sopra la lavagna: qui compare la cronaca (canestri, tiri,
       palle perse, falli…) e un tocco porta il video all'azione.</div>
     <div id="cronaca-piena" hidden>
+      <div class="riga" id="auto">
+        <span class="nota" style="color:var(--testo);font-weight:600">Dalla grafica del video</span>
+        <button class="btn piccolo" id="ocr-zona" title="Ferma il video su un fotogramma con la grafica e riquadra il cronometro">1 · Riquadra il cronometro</button>
+        <label>Il video parte dal <select id="ocr-da"><option value="1">1° quarto</option><option value="2">2° quarto</option>
+          <option value="3">3° quarto</option><option value="4">4° quarto</option></select></label>
+        <button class="btn piccolo primario" id="ocr-avvia" disabled>2 · Sincronizza in automatico</button>
+        <button class="btn piccolo" id="ocr-ferma" hidden>Ferma</button>
+        <span class="nota" id="ocr-stato">Se il video ha la grafica con il tempo, ASSIST la legge e allinea ogni azione al secondo. La lettura avviene sul dispositivo.</span>
+      </div>
       <div class="riga" id="sync"></div>
       <div class="riga">
         <label>Azioni <select id="f-tipo"></select></label>
@@ -303,7 +313,9 @@ let rifare = [];             // forme annullate (per "ripeti")
 let vista = { s: 1, tx: 0, ty: 0 };   // zoom e spostamento dell'immagine
 const dita = new Map();               // tocchi attivi: con due dita si ingrandisce
 let pizzico = null, trascina = null;
-let modo = null;                      // null, "taratura" (4 angoli dell'area), "giocatori"
+let modo = null;                      // null, "taratura" (4 angoli dell'area), "giocatori", "orologio"
+let zonaOrologio = null, riquadro = null;   // riquadro del cronometro sulla grafica (coordinate del video 0-1)
+let letture = {};                        // {periodo: [[secondi di gioco, secondi del video], ...]} lette dalla grafica
 let tocchiArea = [], H = null, Hinv = null, mostraRighe = false, posti = [], senzaDifesa = false;
 let etichette = ["Pick and roll", "Transizione", "Palla persa", "Tiro aperto", "Rimbalzo", "Buona difesa",
                  "Errore difensivo", "Fallo"];
@@ -341,6 +353,7 @@ function apri(file) {
   if (url) URL.revokeObjectURL(url);
   url = URL.createObjectURL(file);          // il file resta sul dispositivo: nessun caricamento
   momenti = []; corrente = null; rifare = []; azioni = []; coda = null; ancore = {}; posti = [];
+  fermaOcr(); letture = {}; zonaOrologio = null; riquadro = null; aggiornaOcr();
   vista = { s: 1, tx: 0, ty: 0 };
   video.src = url; video.load();
   for (const id of ["lavoro", "barra", "strumenti", "momenti", "piede", "aiuto", "schede"]) $(id).hidden = false;
@@ -357,6 +370,7 @@ $("chiudi").addEventListener("click", () => {
   video.pause(); video.removeAttribute("src"); video.load();
   if (url) URL.revokeObjectURL(url);
   url = null; momenti = []; corrente = null; azioni = []; coda = null; posti = [];
+  fermaOcr(); letture = {}; zonaOrologio = null;
   for (const id of ["lavoro", "barra", "strumenti", "momenti", "piede", "aiuto", "schede",
                     "p-azioni", "p-cronaca", "p-gioco"]) $(id).hidden = true;
   $("apri").hidden = false; disegna();
@@ -485,6 +499,13 @@ function disegna() {
   for (const f of (corrente ? corrente.forme : [])) forma(f, r);
   if (bozza) forma(bozza, r);
   if (mostraRighe && Hinv) righeCampo(r);
+  const zr = riquadro ? [riquadro.a, riquadro.b] : modo === "orologio" && zonaOrologio ?
+    [[zonaOrologio[0], zonaOrologio[1]], [zonaOrologio[2], zonaOrologio[3]]] : null;
+  if (zr) {
+    const [x0, y0] = sulPalco(zr[0], r), [x1, y1] = sulPalco(zr[1], r);
+    g.save(); g.setLineDash([6, 4]); g.lineWidth = 2; g.strokeStyle = "#ffd43b";
+    g.strokeRect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0)); g.restore();
+  }
   g.save();
   g.font = `700 12px ${getComputedStyle(document.body).fontFamily}`; g.textAlign = "center"; g.textBaseline = "middle";
   tocchiArea.forEach((p, i) => {
@@ -560,6 +581,7 @@ tela.addEventListener("pointerdown", (ev) => {
   if (strumento === "mano" && !modo) { trascina = { x: ev.clientX, y: ev.clientY, tx: vista.tx, ty: vista.ty }; return; }
   if (!video.paused) video.pause();             // si disegna sempre su un fotogramma fermo
   const p = normalizza(ev);
+  if (modo === "orologio") { riquadro = { a: p, b: p }; disegna(); return; }
   if (modo) { toccoGioco(p); return; }
   if (strumento === "gomma") { cancellaVicino(p); return; }
   if (strumento === "testo") {
@@ -584,6 +606,7 @@ tela.addEventListener("pointermove", (ev) => {
     vista.tx = trascina.tx + ev.clientX - trascina.x; vista.ty = trascina.ty + ev.clientY - trascina.y;
     applicaVista(); return;
   }
+  if (riquadro) { riquadro.b = normalizza(ev); disegna(); return; }
   if (!bozza) return;
   const p = normalizza(ev);
   if (["penna", "percorso", "area"].includes(bozza.tipo)) {
@@ -605,6 +628,7 @@ function rilascia(ev) {
   dita.delete(ev.pointerId);
   if (dita.size < 2) pizzico = null;
   trascina = null;
+  if (riquadro) { chiudiRiquadro(); return; }
   fine();
 }
 tela.addEventListener("pointerup", rilascia);
@@ -943,6 +967,8 @@ function puntiPeriodo(p, prof = 0) {
 }
 const reale = (e) => e.m != null ? e.m : e.s * 2.3;
 function stima(e) {
+  const o = stimaGrafica(e);
+  if (o) return Math.max(0, o.t);
   const v = valuta(puntiPeriodo(e.p), reale(e));
   return v == null ? null : Math.max(0, v);
 }
@@ -992,8 +1018,9 @@ function aggiornaCronaca() {
       `<span>${e.g ? `<b>${e.g}</b> · ` : ""}${e.testo}${e.sq ? ` · ${e.sq}` : ""}` +
       `${e.pt ? ` <span class="quando">${e.pt}</span>` : ""}</span>` +
       `<span class="quando">${t == null ? "—" : orario(t, false)}</span>`;
-    r.addEventListener("click", () => {
+    r.addEventListener("click", async () => {
       scelto = e;
+      if (letture[e.p]) await affina(e);
       const v = stima(e);
       if (v == null) {
         $("nota-sync").textContent = "Prima segna il salto a due: porta il video alla palla a due e tocca «Salto a due qui».";
@@ -1014,12 +1041,251 @@ $("qui").addEventListener("click", () => {
   $("nota-sync").textContent = `Sincronizzato: ${scelto.testo} del ${nomeQuarto(p)} al minuto ${orario(video.currentTime, false)} del video. Le azioni vicine si sono allineate.`;
   aggiornaCronaca();
 });
-$("seq-cronaca").addEventListener("click", () => {
+$("seq-cronaca").addEventListener("click", async () => {
+  const voci = eventiFiltrati().filter((e) => letture[e.p]).slice(0, 60);
+  for (let i = 0; i < voci.length; i++) {
+    $("nota-sync").textContent = `Allineo le azioni sulla grafica: ${i + 1} di ${voci.length}…`;
+    await affina(voci[i]);
+  }
   const clip = eventiFiltrati().map((e) => [e, stima(e)]).filter(([, v]) => v != null)
     .map(([e, v]) => ({ a: v - secondi("prima"), b: v + secondi("dopo"), lab: `${e.g ? e.g + " · " : ""}${e.testo}` }));
   if (!clip.length) { $("nota-sync").textContent = "Segna prima il salto a due: poi le azioni si possono rivedere in sequenza."; return; }
   riproduci(clip);
 });
+
+// ------------------------------------------------------------------ sincronizzazione dalla grafica del video
+// Il cronometro in sovrimpressione si legge con un OCR che gira nel browser (Tesseract, file serviti
+// dalla piattaforma): fotogrammi e letture restano sul dispositivo. Si scorre il video a passi regolari,
+// poi per ogni azione si stringe l'intervallo fino al secondo con una ricerca binaria.
+const PASSO_OCR = 12;
+let ocr = null, scansione = null, catena = Promise.resolve();
+const inCoda = (fn) => { const p = catena.then(fn); catena = p.catch(() => {}); return p; };
+function caricaScript(src) {
+  return new Promise((ok, ko) => {
+    const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = ko; document.head.appendChild(s);
+  });
+}
+async function preparaOcr() {
+  if (ocr) return ocr;
+  const base = new URL("ocr/", location.href).href;
+  if (!window.Tesseract) await caricaScript(base + "tesseract.min.js");
+  const worker = await Tesseract.createWorker("eng", 1, { workerPath: base + "worker.min.js", corePath: base,
+                                                          langPath: base.slice(0, -1), gzip: true });
+  await worker.setParameters({ tessedit_char_whitelist: "0123456789:.", tessedit_pageseg_mode: "7" });
+  const v = document.createElement("video");
+  v.muted = true; v.playsInline = true; v.preload = "auto";
+  v.style.cssText = "position:absolute;left:-9999px;width:2px;height:2px;opacity:0";
+  document.body.appendChild(v); v.src = url;
+  await new Promise((ok) => v.addEventListener("loadeddata", ok, { once: true }));
+  try { await v.play(); v.pause(); } catch (e) { /* alcuni browser non lo chiedono */ }
+  const tela2 = document.createElement("canvas");
+  ocr = { worker, v, tela2, g2: tela2.getContext("2d", { willReadFrequently: true }) };
+  return ocr;
+}
+function fermaOcr() {
+  if (scansione) scansione.stop = true;
+  if (ocr) { ocr.worker.terminate(); ocr.v.removeAttribute("src"); ocr.v.load(); ocr.v.remove(); ocr = null; }
+  catena = Promise.resolve();
+}
+function cerca(v, t) {
+  return new Promise((ok) => {
+    const fatto = () => { v.removeEventListener("seeked", fatto); clearTimeout(tm); ok(); };
+    const tm = setTimeout(fatto, 4000);
+    v.addEventListener("seeked", fatto); v.currentTime = Math.max(0, Math.min(t, (v.duration || t) - 0.05));
+  });
+}
+// testo letto -> secondi che mancano alla fine del periodo ("08:27", "45.3", "0827")
+function leggiTesto(t) {
+  t = (t || "").replace(/\s/g, "").replace(/,/g, ".");
+  let m = t.match(/(\d{1,2}):(\d{2})/);
+  if (m && +m[2] < 60 && +m[1] <= 12) return +m[1] * 60 + +m[2];
+  m = t.match(/^(\d{1,2})\.(\d)$/);
+  if (m && +m[1] < 60) return +m[1] + +m[2] / 10;
+  m = t.match(/^(\d{1,2})(\d{2})$/);
+  if (m && +m[2] < 60 && +m[1] <= 12) return +m[1] * 60 + +m[2];
+  return null;
+}
+async function leggiFotogramma(v) {
+  const { worker, tela2, g2 } = ocr, z = zonaOrologio, W = v.videoWidth, H = v.videoHeight;
+  const sx = Math.max(0, z[0] * W), sy = Math.max(0, z[1] * H);
+  const sw = Math.min(W - sx, (z[2] - z[0]) * W), sh = Math.min(H - sy, (z[3] - z[1]) * H);
+  if (sw < 4 || sh < 4) return null;
+  const k = Math.max(1, Math.min(6, 80 / sh)), pad = 12;
+  tela2.width = Math.round(sw * k) + 2 * pad; tela2.height = Math.round(sh * k) + 2 * pad;
+  g2.drawImage(v, sx, sy, sw, sh, pad, pad, tela2.width - 2 * pad, tela2.height - 2 * pad);
+  // bianco e nero con soglia di Otsu, testo scuro su fondo chiaro
+  const d = g2.getImageData(0, 0, tela2.width, tela2.height), px = d.data, ist = new Array(256).fill(0), lum = [];
+  for (let y = 0; y < tela2.height; y++) for (let x = 0; x < tela2.width; x++) {
+    const i = (y * tela2.width + x) * 4, dentro = x >= pad && y >= pad && x < tela2.width - pad && y < tela2.height - pad;
+    const l = dentro ? Math.round(0.3 * px[i] + 0.59 * px[i + 1] + 0.11 * px[i + 2]) : -1;
+    lum.push(l); if (l >= 0) ist[l]++;
+  }
+  let tot = 0, somma = 0; for (let i = 0; i < 256; i++) { tot += ist[i]; somma += i * ist[i]; }
+  let sB = 0, wB = 0, soglia = 128, meglio = -1;
+  for (let i = 0; i < 256; i++) {
+    wB += ist[i]; if (!wB || wB === tot) continue;
+    sB += i * ist[i];
+    const mB = sB / wB, mF = (somma - sB) / (tot - wB), v2 = wB * (tot - wB) * (mB - mF) ** 2;
+    if (v2 > meglio) { meglio = v2; soglia = i; }
+  }
+  const chiari = lum.filter((l) => l > soglia).length, dentro = lum.filter((l) => l >= 0).length;
+  const testoChiaro = chiari < dentro / 2;                 // poche cifre chiare su fondo scuro
+  lum.forEach((l, j) => {
+    const nero = l >= 0 && (testoChiaro ? l > soglia : l <= soglia);
+    px[j * 4] = px[j * 4 + 1] = px[j * 4 + 2] = nero ? 0 : 255; px[j * 4 + 3] = 255;
+  });
+  g2.putImageData(d, 0, 0);
+  const { data } = await worker.recognize(tela2);
+  return leggiTesto(data.text);
+}
+const leggiA = (t) => inCoda(async () => { await cerca(ocr.v, t); return leggiFotogramma(ocr.v); });
+function chiudiRiquadro() {
+  const [a, b] = [riquadro.a, riquadro.b]; riquadro = null;
+  const z = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])]
+    .map((x) => Math.min(1, Math.max(0, x)));
+  if (z[2] - z[0] < 0.01 || z[3] - z[1] < 0.01) { $("ocr-stato").textContent = "Riquadro troppo piccolo: trascina dall'angolo in alto a sinistra a quello in basso a destra del cronometro."; disegna(); return; }
+  zonaOrologio = z; disegna();
+  provaLettura();
+}
+async function provaLettura() {
+  $("ocr-stato").textContent = "Leggo il cronometro…"; $("ocr-avvia").disabled = true;
+  try {
+    await preparaOcr();
+    const r = await leggiA(video.currentTime);
+    if (r == null) { $("ocr-stato").textContent = "Non riesco a leggere il cronometro: riquadra solo le cifre del tempo (senza punteggio) su un fotogramma con la grafica."; return; }
+    $("ocr-stato").textContent = `Letto: ${orologio(r)}. Se è giusto, avvia la sincronizzazione.`;
+    $("ocr-avvia").disabled = false; modo = null; aggiornaOcr();
+  } catch (err) {
+    $("ocr-stato").textContent = "Lettura automatica non disponibile su questo dispositivo: usa il salto a due.";
+  }
+}
+const orologio = (r) => r >= 60 ? `${String(Math.floor(r / 60)).padStart(2, "0")}:${String(Math.floor(r % 60)).padStart(2, "0")}` : r.toFixed(1);
+// periodi dalla sequenza delle letture: il cronometro scende; quando torna pieno inizia un nuovo periodo
+function assegnaPeriodi(campioni, da) {
+  let p = da, pulito = [];
+  for (const [t, r] of campioni) {
+    if (r == null) continue;
+    const u = pulito[pulito.length - 1];
+    if (u && u.p === p && r > u.r + 20 && r >= durataQuarto(p + 1) - 100 && u.r <= 150) p += 1;
+    if (r > durataQuarto(p) + 0.5) continue;
+    pulito.push({ t, r, p });
+  }
+  // dentro un periodo il tempo che manca non può salire: via le letture isolate sbagliate
+  for (let giro = 0; giro < 4; giro++) {
+    pulito = pulito.filter((x, i) => {
+      const prima = pulito[i - 1], dopo = pulito[i + 1];
+      if (prima && prima.p === x.p && x.r > prima.r + 1.5) return false;
+      if (dopo && dopo.p === x.p && x.r < dopo.r - 1.5) return false;
+      return true;
+    });
+  }
+  const out = {};
+  for (const x of pulito) (out[x.p] = out[x.p] || []).push([durataQuarto(x.p) - x.r, x.t]);
+  return out;
+}
+function inserisci(p, gs, t) {
+  const L = letture[p] || (letture[p] = []);
+  L.push([gs, t]); L.sort((a, b) => a[1] - b[1]);
+}
+// intervallo del video in cui il cronometro ha raggiunto il secondo di gioco s del periodo p
+function intervallo(p, s) {
+  const L = letture[p];
+  if (!L || L.length < 2) return null;
+  const j = L.findIndex((x) => x[0] >= s - 0.05);
+  if (j === -1) { const u = L[L.length - 1]; return { lo: u[1] + (s - u[0]), hi: u[1] + (s - u[0]), a: u[1], b: null }; }
+  if (j === 0) { const a = L[0]; return { lo: a[1] - (a[0] - s), hi: a[1], a: null, b: a[1] }; }
+  const a = L[j - 1], b = L[j];
+  return { lo: Math.min(b[1], a[1] + (s - a[0])), hi: Math.max(a[1], b[1] - (b[0] - s)), a: a[1], b: b[1] };
+}
+// azioni allo stesso secondo di gioco (fallo, liberi, rimbalzo): il cronometro resta fermo tra la prima
+// e la ripresa del gioco; il modello dà le pause relative, la grafica la durata vera della fermata
+function gruppo(e) {
+  const stessi = cronaca.eventi.filter((x) => x.p === e.p && x.s === e.s).sort((a, b) => reale(a) - reale(b));
+  const dopo = cronaca.eventi.filter((x) => x.p === e.p && x.s > e.s).sort((a, b) => a.s - b.s || reale(a) - reale(b))[0];
+  const m0 = reale(stessi[0]);
+  // fine della fermata secondo il modello: dove il cronometro riparte prima dell'azione seguente
+  const fineModello = dopo ? reale(dopo) - 1.25 * (dopo.s - e.s) - m0 : null;
+  return { stessi, m0, fineModello };
+}
+function stimaGrafica(e) {
+  const iv = intervallo(e.p, e.s);
+  if (!iv) return null;
+  const inizio = (iv.lo + iv.hi) / 2, { stessi, m0, fineModello } = gruppo(e), off = reale(e) - m0;
+  if (stessi.length < 2 || off <= 0) return { t: inizio, incerto: iv.hi - iv.lo };
+  const ivf = intervallo(e.p, e.s + 0.6), ripresa = ivf ? (ivf.lo + ivf.hi) / 2 - 0.5 : null;
+  if (ripresa != null && fineModello > 1 && ripresa - inizio > 2) {
+    const k = Math.min(3, Math.max(0.3, (ripresa - inizio) / fineModello));
+    return { t: Math.min(ripresa, inizio + off * k), incerto: iv.hi - iv.lo };
+  }
+  return { t: inizio + off, incerto: iv.hi - iv.lo };
+}
+async function affina(e) {
+  await affinaS(e.p, e.s);
+  if (cronaca.eventi.filter((x) => x.p === e.p && x.s === e.s).length > 1) await affinaS(e.p, e.s + 0.6);
+}
+async function affinaS(p, sec) {
+  if (!ocr || !zonaOrologio) return;
+  const e = { p, s: sec };
+  for (let k = 0; k < 8; k++) {
+    const iv = intervallo(e.p, e.s);
+    if (!iv || iv.a == null || iv.b == null || iv.b - iv.a <= 1.2) return;
+    // grafica assente (replay, pubblicità): si provano punti vicini dentro l'intervallo
+    const meta = (iv.a + iv.b) / 2, largo = (iv.b - iv.a) / 2;
+    let letta = false;
+    for (const d of [0, 2, -3, 5, -6, 8]) {
+      if (Math.abs(d) >= largo) continue;
+      const r = await leggiA(meta + d);
+      if (r != null && r <= durataQuarto(e.p) + 0.5) { inserisci(e.p, durataQuarto(e.p) - r, meta + d); letta = true; break; }
+    }
+    if (!letta) return;
+    // la nuova lettura deve rispettare l'ordine, altrimenti si scarta
+    const L = letture[e.p];
+    letture[e.p] = L.filter((x, i) => !(i > 0 && x[0] < L[i - 1][0] - 1.5) && !(i < L.length - 1 && x[0] > L[i + 1][0] + 1.5));
+  }
+}
+async function scansiona() {
+  if (!zonaOrologio) return;
+  const stato = (t) => { $("ocr-stato").textContent = t; };
+  scansione = { stop: false }; aggiornaOcr();
+  try {
+    await preparaOcr();
+    const dur = ocr.v.duration || video.duration, campioni = [], t0 = performance.now();
+    for (let t = 0; t < dur && !scansione.stop; t += PASSO_OCR) {
+      campioni.push([t, await leggiA(t)]);
+      const fatto = t / dur, pass = (performance.now() - t0) / 1000;
+      stato(`Leggo la grafica: ${Math.round(100 * fatto)}%` + (fatto > 0.05 ? ` · circa ${Math.ceil(pass * (1 - fatto) / fatto)} s alla fine` : ""));
+    }
+    if (scansione.stop) { stato("Sincronizzazione interrotta."); return; }
+    letture = assegnaPeriodi(campioni, Number($("ocr-da").value));
+    const periodi = Object.keys(letture).map(Number);
+    if (!periodi.length) { stato("Non ho trovato il cronometro nel video: controlla il riquadro o usa il salto a due."); return; }
+    // inizio di ogni periodo: l'istante in cui il cronometro parte da 10:00
+    for (const p of periodi) {
+      await affinaS(p, 0.5);
+      const iv = intervallo(p, 0.5);
+      if (iv) cronaca.inizi[p] = Math.max(0, (iv.lo + iv.hi) / 2 - 0.5);
+    }
+    const n = periodi.reduce((k, p) => k + letture[p].length, 0);
+    stato(`Sincronizzato dalla grafica: ${n} letture, ${periodi.length} periodi. Tocca un'azione: il video si allinea al secondo.`);
+  } catch (err) {
+    stato("Lettura automatica non riuscita su questo dispositivo: usa il salto a due.");
+  } finally {
+    scansione = null; aggiornaOcr(); aggiornaCronaca();
+  }
+}
+function aggiornaOcr() {
+  const attiva = !!scansione;
+  $("ocr-zona").disabled = attiva; $("ocr-avvia").disabled = attiva || !zonaOrologio; $("ocr-ferma").hidden = !attiva;
+  $("ocr-zona").classList.toggle("primario", modo === "orologio");
+}
+$("ocr-zona").addEventListener("click", () => {
+  if (!url) return;
+  video.pause(); modo = modo === "orologio" ? null : "orologio";
+  $("ocr-stato").textContent = modo ? "Trascina un rettangolo attorno alle cifre del cronometro della grafica." : "";
+  aggiornaOcr(); disegna();
+});
+$("ocr-avvia").addEventListener("click", () => { modo = null; aggiornaOcr(); disegna(); scansiona(); });
+$("ocr-ferma").addEventListener("click", () => { if (scansione) scansione.stop = true; });
 
 // ------------------------------------------------------------------ dal video alla lavagna dei giochi
 const PUNTI_AREA = ["angolo dell'area sul fondo, lato lontano", "angolo dell'area sul fondo, lato vicino",

@@ -58,7 +58,7 @@ def cronaca(a: App, pid: str) -> tuple[list[dict], dict]:
         p, s = int(r.periodo), float(r.secondi)
         g = r.giocatore_id if isinstance(r.giocatore_id, str) else None
         sq = nomi_s.get(r.squadra_id, "") if pd.notna(r.squadra_id) else ""
-        out.append({"p": p, "s": round(s - T.inizio_periodo(p), 1), "m": float(reali[r.Index]),
+        out.append({"n": int(r.n), "p": p, "s": round(s - T.inizio_periodo(p), 1), "m": float(reali[r.Index]),
                     "cron": T.cronometro(p, s),
                     "tipo": r.tipo, "testo": TESTI[r.tipo], "sq": escape(sq),
                     "g": escape(nomi_g.get(g, "")) if g else "",
@@ -90,7 +90,8 @@ def render(a: App):
     note_html("Apri un video della partita o dell'allenamento: fermalo e disegna sul fotogramma (tagli, passaggi, "
               "blocchi, cerchi sotto i giocatori, riflettore, aree, testo). Ogni fermo-immagine disegnato diventa "
               "un momento della sessione. Sotto il video: marca le azioni con un tocco e rivedile in sequenza, "
-              "salta alle azioni della cronaca, ingrandisci il fotogramma, trasforma le posizioni dei giocatori "
+              "salta alle azioni della cronaca (con la grafica del tempo nel video la sincronizzazione è automatica, "
+              "letta sul dispositivo), ingrandisci il fotogramma, trasforma le posizioni dei giocatori "
               "in un gioco della lavagna. Il video non viene caricato su ASSIST: disegni, momenti e azioni "
               "marcate spariscono chiudendo la pagina.")
     sid = a.mia_squadra
