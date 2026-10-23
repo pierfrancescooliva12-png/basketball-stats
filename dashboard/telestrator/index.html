@@ -224,7 +224,7 @@ body.grande .schede, body.grande .pannello { display: none !important; }
     <div class="riga">
       <input type="text" id="nuovo-tag" placeholder="Nuova etichetta, es. Horns" maxlength="24" style="flex:1 1 160px">
       <button class="btn piccolo" id="aggiungi-tag">+ Etichetta</button>
-      <label>Prima <select id="prima"><option value="3">3 s</option><option value="5" selected>5 s</option><option value="8">8 s</option></select></label>
+      <label>Prima <select id="prima"><option value="4">4 s</option><option value="8" selected>8 s</option><option value="12">12 s</option></select></label>
       <label>Dopo <select id="dopo"><option value="2">2 s</option><option value="3" selected>3 s</option><option value="5">5 s</option></select></label>
     </div>
     <div class="riga">
@@ -256,6 +256,8 @@ body.grande .schede, body.grande .pannello { display: none !important; }
         <label>Squadra <select id="f-squadra"></select></label>
         <label>Giocatore <select id="f-giocatore"></select></label>
         <label>Quarto <select id="f-quarto"></select></label>
+        <label>Clip <select id="c-da"><option value="azione" selected>dall'inizio dell'azione</option>
+          <option value="4">da 4 s prima</option><option value="8">da 8 s prima</option></select></label>
         <span style="flex:1"></span>
         <button class="btn piccolo" id="qui" title="Il video è sull'azione selezionata: usala per sincronizzare">📍 L'azione è qui</button>
         <button class="btn piccolo primario" id="seq-cronaca">▶ In sequenza</button>
@@ -875,6 +877,42 @@ $("seq-tag").addEventListener("click", () => riproduci(filtrate().map((x) => ({
   a: x.t - secondi("prima"), b: x.t + secondi("dopo"), lab: x.etichetta }))));
 
 // ------------------------------------------------------------------ cronaca della partita
+// clip di un'azione della cronaca: non solo il gesto, ma l'azione che l'ha preparato. Si parte da quando
+// la squadra in attacco ha preso palla (rimbalzo difensivo, recupero, canestro o palla persa degli
+// avversari, inizio del periodo), con almeno 4 secondi e al massimo 30 prima; si chiude 3 secondi dopo.
+const DIFESA = new Set(["rimb_dif", "recupero", "stoppata", "fallo"]);
+function attacco(e) {
+  if (!e.sq) return null;
+  if (!DIFESA.has(e.tipo)) return e.sq;
+  const altra = cronaca.eventi.find((x) => x.sq && x.sq !== e.sq);
+  return altra ? altra.sq : null;
+}
+function prendePalla(x, sq) {
+  if (!x.sq) return false;
+  if (x.sq === sq) return x.tipo === "rimb_dif" || x.tipo === "recupero";
+  return x.tipo === "tiro2_fatto" || x.tipo === "tiro3_fatto" || x.tipo === "persa" || x.tipo === "tl_fatto";
+}
+function eventoInizio(e) {
+  const sq = attacco(e);
+  if (!sq || e.tipo.startsWith("tl_")) return undefined;
+  return cronaca.eventi.filter((x) => x.p === e.p && reale(x) < reale(e) - 0.01 && prendePalla(x, sq))
+    .sort((a, b) => reale(b) - reale(a))[0] || null;
+}
+function inizioAzione(e, v) {
+  const prima = eventoInizio(e);
+  if (prima === undefined) return null;
+  const t = prima ? stima(prima) : inizioStimato(e.p);
+  return t == null || t >= v ? null : t;
+}
+function clipAzione(e, v) {
+  const lab = `${e.g ? e.g + " · " : ""}${e.testo}`, da = $("c-da").value;
+  let a = v - (da === "azione" ? 4 : Number(da));
+  if (da === "azione") {
+    const t = inizioAzione(e, v);
+    if (t != null) a = Math.min(a, Math.max(v - 30, t - 1));
+  }
+  return { a: Math.max(0, a), b: v + 3, lab };
+}
 const GRUPPI = {
   "": "Tutte", canestri: "Canestri", tre: "Tiri da 3", sbagliati: "Tiri sbagliati", liberi: "Tiri liberi",
   perse: "Palle perse", recuperi: "Palle recuperate", rimb_off: "Rimbalzi offensivi", rimb_dif: "Rimbalzi difensivi",
@@ -1020,14 +1058,18 @@ function aggiornaCronaca() {
       `<span class="quando">${t == null ? "—" : orario(t, false)}</span>`;
     r.addEventListener("click", async () => {
       scelto = e;
-      if (letture[e.p]) await affina(e);
+      if (letture[e.p]) {
+        await affina(e);
+        const pr = eventoInizio(e);
+        if (pr) await affina(pr);
+      }
       const v = stima(e);
       if (v == null) {
         $("nota-sync").textContent = "Prima segna il salto a due: porta il video alla palla a due e tocca «Salto a due qui».";
         aggiornaCronaca(); return;
       }
       aggiornaCronaca();
-      riproduci([{ a: v - secondi("prima"), b: v + secondi("dopo"), lab: `${e.g ? e.g + " · " : ""}${e.testo}` }]);
+      riproduci([clipAzione(e, v)]);
     });
     lista.appendChild(r);
   }
@@ -1048,7 +1090,7 @@ $("seq-cronaca").addEventListener("click", async () => {
     await affina(voci[i]);
   }
   const clip = eventiFiltrati().map((e) => [e, stima(e)]).filter(([, v]) => v != null)
-    .map(([e, v]) => ({ a: v - secondi("prima"), b: v + secondi("dopo"), lab: `${e.g ? e.g + " · " : ""}${e.testo}` }));
+    .map(([e, v]) => clipAzione(e, v));
   if (!clip.length) { $("nota-sync").textContent = "Segna prima il salto a due: poi le azioni si possono rivedere in sequenza."; return; }
   riproduci(clip);
 });
