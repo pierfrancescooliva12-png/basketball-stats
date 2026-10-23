@@ -1137,8 +1137,10 @@ function cerca(v, t) {
   });
 }
 // testo letto -> secondi che mancano alla fine del periodo ("08:27", "45.3", "0827")
+let pulito = false, fiducia = 0;         // l'ultima lettura conteneva solo il cronometro; sicurezza dell'OCR
 function leggiTesto(t) {
-  t = (t || "").replace(/\s/g, "").replace(/,/g, ".");
+  t = (t || "").replace(/\s/g, "").replace(/,/g, ".").replace(/^[.:]+|[.:]+$/g, "");   // segni dei bordi della grafica
+  pulito = /^(\d{1,2}:\d{2}|\d{1,2}\.\d|\d{3,4})$/.test(t);
   let m = t.match(/(\d{1,2}):(\d{2})/);
   if (m && +m[2] < 60 && +m[1] <= 12) return +m[1] * 60 + +m[2];
   m = t.match(/^(\d{1,2})\.(\d)$/);
@@ -1147,12 +1149,14 @@ function leggiTesto(t) {
   if (m && +m[2] < 60 && +m[1] <= 12) return +m[1] * 60 + +m[2];
   return null;
 }
-async function leggiFotogramma(v) {
+let ritaglio = null;                     // posizione dell'ultimo ritaglio nel video (per le parole trovate)
+async function leggiFotogramma(v, opzioni) {
   const { worker, tela2, g2 } = ocr, z = zonaOrologio, W = v.videoWidth, H = v.videoHeight;
   const sx = Math.max(0, z[0] * W), sy = Math.max(0, z[1] * H);
   const sw = Math.min(W - sx, (z[2] - z[0]) * W), sh = Math.min(H - sy, (z[3] - z[1]) * H);
   if (sw < 4 || sh < 4) return null;
   const k = Math.max(1, Math.min(6, 80 / sh)), pad = 12;
+  ritaglio = { sx, sy, k, pad, W, H };
   tela2.width = Math.round(sw * k) + 2 * pad; tela2.height = Math.round(sh * k) + 2 * pad;
   g2.drawImage(v, sx, sy, sw, sh, pad, pad, tela2.width - 2 * pad, tela2.height - 2 * pad);
   // bianco e nero con soglia di Otsu, testo scuro su fondo chiaro
@@ -1177,7 +1181,9 @@ async function leggiFotogramma(v) {
     px[j * 4] = px[j * 4 + 1] = px[j * 4 + 2] = nero ? 0 : 255; px[j * 4 + 3] = 255;
   });
   g2.putImageData(d, 0, 0);
+  if (opzioni) return (await worker.recognize(tela2, {}, opzioni)).data;
   const { data } = await worker.recognize(tela2);
+  fiducia = data.confidence || 0;
   return leggiTesto(data.text);
 }
 const leggiA = (t) => inCoda(async () => { await cerca(ocr.v, t); return leggiFotogramma(ocr.v); });
@@ -1189,14 +1195,59 @@ function chiudiRiquadro() {
   zonaOrologio = z; disegna();
   provaLettura();
 }
+// il riquadro fatto con il dito spesso prende anche quarto, 24 secondi o punteggio: si cerca dentro
+// la fascia che contiene solo il cronometro e si usa quella per tutta la lettura
+async function stringiZona(t) {
+  return inCoda(async () => {
+    const z = zonaOrologio, dur = ocr.v.duration || video.duration || 0;
+    const t2 = t + 1.5 < dur ? t + 1.5 : Math.max(0, t - 1.5);
+    // conferma su un secondo fotogramma: tempo fermo o sceso di quanto è passato
+    const conferma = async (c, r) => {
+      zonaOrologio = c; await cerca(ocr.v, t2);
+      const r2 = await leggiFotogramma(ocr.v);
+      return r2 != null && pulito && r2 <= r + 0.6 && r2 >= r - Math.abs(t2 - t) - 1.2;
+    };
+    await cerca(ocr.v, t);
+    const r0 = await leggiFotogramma(ocr.v);
+    if (r0 != null && pulito && fiducia >= 60 && await conferma(z, r0)) return r0;
+    // il riquadro prende anche altro: si cercano le parole a forma di cronometro e ci si stringe lì sopra
+    await ocr.worker.setParameters({ tessedit_pageseg_mode: "11" });
+    const posti = [];
+    try {
+      for (const tt of [t, t + 1, t + 2, t - 1, t + 3]) {
+        if (tt < 0 || tt > dur) continue;
+        zonaOrologio = z; await cerca(ocr.v, tt);
+        const dati = await leggiFotogramma(ocr.v, { blocks: true }), rt = ritaglio;
+        for (const bl of dati.blocks || []) for (const pa of bl.paragraphs || []) for (const li of pa.lines || []) for (const w of li.words || []) {
+          if (!/^\d{1,2}[:.]\d{1,2}$/.test((w.text || "").trim())) continue;
+          const bb = w.bbox, mx = (bb.x1 - bb.x0) * 0.15, my = (bb.y1 - bb.y0) * 0.25;
+          const nx = (x) => ((x - rt.pad) / rt.k + rt.sx) / rt.W, ny = (y) => ((y - rt.pad) / rt.k + rt.sy) / rt.H;
+          posti.push([nx(bb.x0 - mx), ny(bb.y0 - my), nx(bb.x1 + mx), ny(bb.y1 + my)]);
+        }
+        if (posti.length) break;
+      }
+    } finally {
+      await ocr.worker.setParameters({ tessedit_pageseg_mode: "7" });
+    }
+    for (const c of posti) {
+      zonaOrologio = c; await cerca(ocr.v, t);
+      const r = await leggiFotogramma(ocr.v);
+      if (r != null && pulito && await conferma(c, r)) { zonaOrologio = c; return r; }
+    }
+    zonaOrologio = z;
+    return null;
+  });
+}
 async function provaLettura() {
-  $("ocr-stato").textContent = "Leggo il cronometro…"; $("ocr-avvia").disabled = true;
+  $("ocr-stato").textContent = "Cerco il cronometro nel riquadro…"; $("ocr-avvia").disabled = true;
   try {
     await preparaOcr();
-    const r = await leggiA(video.currentTime);
+    const r = await stringiZona(video.currentTime);
+    modo = "orologio"; disegna();
     if (r == null) { $("ocr-stato").textContent = "Non riesco a leggere il cronometro: riquadra solo le cifre del tempo (senza punteggio) su un fotogramma con la grafica."; return; }
-    $("ocr-stato").textContent = `Letto: ${orologio(r)}. Se è giusto, avvia la sincronizzazione.`;
-    $("ocr-avvia").disabled = false; modo = null; aggiornaOcr();
+    $("ocr-stato").textContent = `Letto: ${orologio(r)} (riquadro giallo). Se è giusto, avvia la sincronizzazione.`;
+    $("ocr-avvia").disabled = false; aggiornaOcr();
+    setTimeout(() => { if (modo === "orologio") { modo = null; aggiornaOcr(); disegna(); } }, 2500);
   } catch (err) {
     $("ocr-stato").textContent = "Lettura automatica non disponibile su questo dispositivo: usa il salto a due.";
   }
@@ -1303,6 +1354,7 @@ async function scansiona() {
     if (!periodi.length) { stato("Non ho trovato il cronometro nel video: controlla il riquadro o usa il salto a due."); return; }
     // inizio di ogni periodo: l'istante in cui il cronometro parte da 10:00
     for (const p of periodi) {
+      if (letture[p][0][0] > PASSO_OCR + 3) continue;   // il video non contiene l'inizio di questo periodo
       await affinaS(p, 0.5);
       const iv = intervallo(p, 0.5);
       if (iv) cronaca.inizi[p] = Math.max(0, (iv.lo + iv.hi) / 2 - 0.5);
