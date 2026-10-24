@@ -10,6 +10,7 @@ import streamlit as st
 
 from basket import live
 from basket import previsioni as F
+from basket.scraper import NonDisponibile
 
 from . import leverage_ui
 from .stato import App
@@ -132,8 +133,15 @@ def diretta(a: App, noi, nomi: dict):
         def aggiorna():
             try:
                 cr = _cronaca(r.gameid, r.campionato_id, r.stagione)
+            except NonDisponibile:
+                st.info("La lega non ha ancora pubblicato la cronaca di questa partita: sul suo sito compare "
+                        "«I dati di questa partita non sono ancora disponibili». Succede prima della palla a due "
+                        "e, per alcune partite (spesso in Serie B Nazionale), fino alla fine della gara. "
+                        f"ASSIST riprova da solo ogni {AGGIORNA} secondi: appena la lega pubblica i dati, compaiono qui.")
+                return
             except Exception as e:                                  # noqa: BLE001 (sito non raggiungibile)
-                st.warning(f"Cronaca non disponibile in questo momento ({type(e).__name__}): riprovo tra {AGGIORNA} secondi.")
+                st.warning("Il sito della lega non risponde o ha cambiato la pagina della cronaca "
+                           f"({type(e).__name__}): riprovo tra {AGGIORNA} secondi.")
                 return
             ev = live.da_cronaca(cr, r.squadra_casa_id, r.squadra_ospite_id, r.partita_id)
             pannello(a, ev, sguardo, {**nomi, **cr.get("nomi", {})}, r.casa, r.ospite,

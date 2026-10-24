@@ -42,7 +42,7 @@ def test_strumenti_disponibili():
     for id_ in ("annulla", "ripeti", "pulisci", "indietro1", "avanti1", "schermo", "velocita",
                 "zoomPiu", "zoomMeno", "zoomRiporta", "tasti-tag", "seq-tag", "lista-tag",
                 "lista-cronaca", "qui", "seq-cronaca", "tara", "posiziona", "crea-gioco",
-                "ocr-zona", "ocr-avvia", "ocr-ferma", "ocr-da"):
+                "ocr-zona", "ocr-avvia", "ocr-ferma", "ocr-da", "c-da"):
         assert f'id="{id_}"' in s, id_
     for p in ("azioni", "cronaca", "gioco"):
         assert f'data-p="{p}"' in s, p
