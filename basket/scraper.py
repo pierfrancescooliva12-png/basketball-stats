@@ -30,6 +30,11 @@ class ParseError(Exception):
     """La pagina non ha la struttura attesa: il sito potrebbe essere cambiato."""
 
 
+class NonDisponibile(ParseError):
+    """La lega non ha ancora pubblicato i dati della partita (prima della palla a due o, per
+    alcune partite, fino alla fine)."""
+
+
 # ---------------------------------------------------------------- calendario
 
 def fetch_schedule(client: RateLimitedClient, league: str, giornata: int,
@@ -304,6 +309,8 @@ def parse_pbp(html: str) -> dict:
     soup = BeautifulSoup(html, "lxml")
     table = soup.select_one("table.sticky-table") or soup.select_one(".play-by-play-content table")
     if table is None:
+        if "non sono ancora disponibili" in soup.get_text(" "):
+            raise NonDisponibile("cronaca non ancora pubblicata dalla lega")
         raise ParseError("tabella play-by-play non trovata")
     head = [th.get_text(strip=True) for th in table.select("thead th")]
     if len(head) != 5 or head[0] != "Minuto":
