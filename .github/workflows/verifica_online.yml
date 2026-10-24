@@ -40,8 +40,22 @@ jobs:
               print("TABELLA", t.get("class"), [th.get_text(strip=True) for th in t.select("thead th")], len(t.select("tbody tr")))
               for tr in t.select("tbody tr")[:3]:
                   print("  RIGA", str(tr)[:400])
-          i = h.find("play-by-play")
-          print("INTORNO", re.sub(r"\s+", " ", h[max(0, i - 300):i + 2500]))
+          for f in soup.select("iframe"):
+              print("IFRAME", f.get("src"), f.get("id"), f.get("class"))
+          for sc in soup.select("script[src]"):
+              src = sc.get("src", "")
+              if "static.legapallacanestro.com/sites/default/files/js/" not in src:
+                  print("SCRIPT", src)
+          for k in ("livestats", "fibalivestats", "genius", "wh.geniussports", "diretta", "live", "matchcentre", "ajax", "json"):
+              print("PAROLA", k, h.lower().count(k))
+          for sc in soup.select("script:not([src])"):
+              t = sc.get_text()
+              if any(k in t.lower() for k in ("live", "play", "ajax", "json")):
+                  print("SCRIPT INLINE", re.sub(r"\s+", " ", t)[:1200])
+          corpo = soup.select_one("#main, .main-container, .region-content, main") or soup.body
+          print("TESTO", re.sub(r"\s+", " ", corpo.get_text(" "))[:2500])
+          for m in re.finditer(r"play-by-play|pbp", h):
+              print("CONTESTO", re.sub(r"\s+", " ", h[max(0, m.start() - 200):m.start() + 300]))
           try:
               cr = scraper.parse_pbp(h); print("PARSE OK", len(cr["eventi"]))
           except Exception as e:
