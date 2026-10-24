@@ -12,6 +12,42 @@ permissions:
   contents: read
 
 jobs:
+  cronaca_live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Cronaca della partita in corso
+        run: |
+          pip install -q requests beautifulsoup4 lxml
+          python - <<'EOF'
+          import re, sys
+          sys.path.insert(0, ".")
+          from basket import scraper
+          from basket.client import RateLimitedClient
+          url = scraper.pbp_url("ita3_b_442", "ita3_b", "x2627")
+          r = RateLimitedClient(min_interval=0, retries=2).get(url)
+          h = r.text
+          print("URL", url, "HTTP", r.status_code, "byte", len(h))
+          for k in ("sticky-table", "play-by-play-content", "<table", "data-period", "Minuto"):
+              print(k, h.count(k))
+          from bs4 import BeautifulSoup
+          soup = BeautifulSoup(h, "lxml")
+          for t in soup.select("table")[:4]:
+              print("TABELLA", t.get("class"), [th.get_text(strip=True) for th in t.select("thead th")], len(t.select("tbody tr")))
+              for tr in t.select("tbody tr")[:3]:
+                  print("  RIGA", str(tr)[:400])
+          i = h.find("play-by-play")
+          print("INTORNO", re.sub(r"\s+", " ", h[max(0, i - 300):i + 2500]))
+          try:
+              cr = scraper.parse_pbp(h); print("PARSE OK", len(cr["eventi"]))
+          except Exception as e:
+              print("PARSE ERRORE", type(e).__name__, e)
+          EOF
+
   verifica:
     runs-on: ubuntu-latest
     timeout-minutes: 10
