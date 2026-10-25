@@ -203,6 +203,20 @@ with barra:
         if n_incomplete:
             meta += (f' · {n_incomplete} box score incompleti{tip("incompleto")}')
         topbar(meta)
+        # solo per l'amministratore: partite giocate da più di 12 ore che non sono ancora nei dati
+        # (l'aggiornamento automatico gira due volte al giorno: se compaiono, qualcosa si è fermato)
+        if utente.get("ruolo") == "admin" and not utente.get("demo"):
+            try:
+                mancanti = ctx.conn.execute(
+                    "SELECT COUNT(*) FROM calendario WHERE stagione = ? AND ora IS NOT NULL "
+                    "AND datetime(data || ' ' || ora) < datetime('now', '-12 hours') "
+                    "AND partita_id NOT IN (SELECT partita_id FROM partite)", (stagione,)).fetchone()[0]
+            except Exception:                                  # noqa: BLE001 (database senza calendario)
+                mancanti = 0
+            if mancanti:
+                st.warning(f"{mancanti} partite giocate da più di 12 ore non sono ancora nei dati: "
+                           "l'aggiornamento automatico potrebbe essersi fermato (GitHub, Actions › "
+                           "Aggiornamento dati). Se sono partite rinviate, ignora l'avviso.")
     if not utente.get("demo"):
         b1, b2 = c2.columns(2)
         if utente.get("fonte") == "database" and b1.button("Password", key="cambia_pw",
