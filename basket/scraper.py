@@ -110,6 +110,8 @@ def parse_boxscore(html: str) -> dict:
     for side, css in (("casa", "match-team--home"), ("ospite", "match-team--away")):
         box = soup.select_one(f".{css}")
         if box is None:
+            if "non sono ancora disponibili" in soup.get_text(" "):
+                raise NonDisponibile("box score non ancora pubblicato dalla lega")
             raise ParseError(f"intestazione squadra {side} non trovata")
         name = box.select_one(".team-name").get_text(strip=True)
         logo = box.select_one(".team-logo img")
