@@ -1,12 +1,17 @@
 name: Aggiornamento dati
 
 on:
-  # Ogni giorno alle 05:00 UTC (07:00 ora legale italiana, 06:00 ora solare): si gioca anche
-  # il sabato, il mercoledì e in altri giorni (anticipi, turni infrasettimanali), così risultati
-  # e calendario (orari spostati) sono aggiornati il mattino dopo e la diretta parte all'ora giusta.
+  # Due volte al giorno, tutti i giorni (si gioca anche il sabato, il mercoledì e in altri
+  # giorni: anticipi, turni infrasettimanali):
+  # - 22:17 UTC (23:17 ora solare, 00:17 ora legale): dopo le partite della sera, comprese
+  #   quelle delle 20:45, così i risultati ci sono la sera stessa;
+  # - 04:23 UTC (05:23 ora solare, 06:23 ora legale): rete di sicurezza per cronache pubblicate
+  #   tardi e per il calendario (orari spostati), così la diretta parte all'ora giusta.
+  # Minuti non tondi: GitHub ritarda di più le esecuzioni programmate allo scoccare dell'ora.
   # Il report agli abbonati resta settimanale (lunedì).
   schedule:
-    - cron: "0 5 * * *"
+    - cron: "17 22 * * *"
+    - cron: "23 4 * * *"
   # Avvio manuale dall'app/sito GitHub: Actions > Aggiornamento dati > Run workflow
   workflow_dispatch:
     inputs:
@@ -50,7 +55,14 @@ jobs:
       - name: Installa dipendenze
         run: pip install -r requirements-update.txt
 
+      # Solo i test dell'importazione bloccano l'aggiornamento: se il sito della lega cambia
+      # struttura non si salvano dati sbagliati. Gli altri test non devono fermare i risultati.
       - name: Test del parser
+        run: python -m pytest -q tests/test_scraper.py tests/test_scraper_db.py tests/test_pbp.py
+
+      - name: Altri test
+        id: altri_test
+        continue-on-error: true
         run: python -m pytest -q tests
 
       - name: Scarica le partite nuove
@@ -132,9 +144,15 @@ jobs:
           git push origin "HEAD:${GITHUB_REF_NAME}"
 
       # Le partite scaricate correttamente sono già salvate; il workflow risulta
-      # comunque fallito (e GitHub invia una notifica) se qualche partita non è stata importata.
+      # comunque fallito (e GitHub invia una notifica) se qualche partita non è stata importata
+      # o se un test non legato all'importazione non passa.
       - name: Esito aggiornamento
-        if: steps.update.outcome == 'failure'
+        if: steps.update.outcome == 'failure' || steps.altri_test.outcome == 'failure'
         run: |
-          echo "::error::Alcune partite non sono state importate: vedi il log del passo 'Scarica le partite nuove'"
+          if [ "${{ steps.update.outcome }}" = "failure" ]; then
+            echo "::error::Alcune partite non sono state importate: vedi il log del passo 'Scarica le partite nuove'"
+          fi
+          if [ "${{ steps.altri_test.outcome }}" = "failure" ]; then
+            echo "::error::Dati aggiornati, ma alcuni test della piattaforma non passano: vedi il passo 'Altri test'"
+          fi
           exit 1
