@@ -51,6 +51,9 @@ def test_strumenti_disponibili():
 def test_cronaca_per_il_componente(tmp_path, monkeypatch):
     from types import SimpleNamespace
 
+    import pytest
+    pytest.importorskip("streamlit")           # l'aggiornamento dati gira senza la dashboard
+
     from basket import config, db, update
     from basket.contesto import Contesto
     from dashboard import telestrator_ui as TU
