@@ -14,7 +14,7 @@ import requests
 from . import config, db
 from . import pbp as P
 from .client import RateLimitedClient
-from .scraper import (ParseError, boxscore_url, fetch_boxscore, fetch_pbp, fetch_player,
+from .scraper import (NonDisponibile, ParseError, boxscore_url, fetch_boxscore, fetch_pbp, fetch_player,
                       fetch_schedule)
 
 log = logging.getLogger("basket.update")
@@ -101,6 +101,10 @@ def update_league(conn, client, league: str, season: str, giornate: set[int] | N
                 if with_pbp:
                     import_pbp(conn, client, pid, g["gameid"], league, season,
                                g["squadra_casa_id"], g["squadra_ospite_id"], box)
+            except NonDisponibile as exc:
+                # partita finita ma dati non ancora pubblicati: la riprende il prossimo aggiornamento
+                log.warning("%s: %s, riprovo al prossimo aggiornamento", pid, exc)
+                continue
             except (ParseError, ValueError) as exc:
                 log.error("%s: %s", pid, exc)
                 stats["errori"].append(f"{pid}: {exc}")
