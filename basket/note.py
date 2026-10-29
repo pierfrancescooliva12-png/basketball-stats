@@ -49,6 +49,10 @@ SCHEMA = [
     """CREATE TABLE IF NOT EXISTS video_dati (
         club TEXT NOT NULL, chiave TEXT NOT NULL, dati TEXT NOT NULL, aggiornato_il TEXT NOT NULL,
         PRIMARY KEY (club, chiave))""",
+    # demo guidata: pagine già viste da ogni utente (solo il nome della pagina)
+    """CREATE TABLE IF NOT EXISTS guida_vista (
+        utente TEXT NOT NULL, pagina TEXT NOT NULL, vista_il TEXT NOT NULL,
+        PRIMARY KEY (utente, pagina))""",
     # utenti dei club gestiti dall'Amministrazione (solo l'hash della password)
     """CREATE TABLE IF NOT EXISTS utenti (
         username TEXT PRIMARY KEY, password_hash TEXT NOT NULL, club TEXT, ruolo TEXT NOT NULL,
@@ -237,6 +241,21 @@ class Archivio:
             r = c.execute(text("SELECT dati FROM video_dati WHERE club = :c AND chiave = :k"),
                           {"c": club, "k": chiave}).fetchone()
         return json.loads(r[0]) if r else None
+
+    # ------------------------------------------------------------ demo guidata
+    def guida_viste(self, utente: str) -> list[str]:
+        with self.engine.connect() as c:
+            rows = c.execute(text("SELECT pagina FROM guida_vista WHERE utente = :u"), {"u": utente}).fetchall()
+        return [r[0] for r in rows]
+
+    def segna_guida(self, utente: str, pagina: str):
+        with self.engine.begin() as c:
+            c.execute(text("DELETE FROM guida_vista WHERE utente = :u AND pagina = :p"), {"u": utente, "p": pagina})
+            c.execute(text("INSERT INTO guida_vista VALUES (:u, :p, :t)"), {"u": utente, "p": pagina, "t": _now()})
+
+    def azzera_guida(self, utente: str):
+        with self.engine.begin() as c:
+            c.execute(text("DELETE FROM guida_vista WHERE utente = :u"), {"u": utente})
 
     # ------------------------------------------------------------ utenti
     def users(self, anche_disattivi: bool = False) -> dict:
