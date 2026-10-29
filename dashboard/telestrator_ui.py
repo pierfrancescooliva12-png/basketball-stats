@@ -1,12 +1,14 @@
 """Lavagna sul video (telestrator): si apre un video dal dispositivo, lo si ferma e si disegna sul
 fotogramma, come nelle trasmissioni NBA.
 
-Il video non passa mai dal server: il componente lo apre nel browser (URL locale del file). Disegni,
-momenti e azioni marcate vivono solo nella pagina aperta e spariscono quando la si chiude. Alla
-piattaforma tornano soltanto, e solo su richiesta esplicita, gli inizi dei quarti nel video e i
-giochi creati dalle posizioni toccate sul fotogramma.
+Il video non passa mai dal server: il componente lo apre nel browser (URL locale del file) e legge il
+cronometro della grafica sul dispositivo. Disegni e momenti vivono solo nella pagina aperta. Alla
+piattaforma tornano soltanto: le segnalazioni dello staff (etichetta, minuto del video e tempo di gioco)
+con la sincronizzazione di quel video, salvate con la partita; le etichette del club; i giochi creati
+dalle posizioni toccate sul fotogramma.
 """
 
+import json
 from html import escape
 from pathlib import Path
 
@@ -30,6 +32,37 @@ TESTI = {"tiro2_fatto": "Canestro da 2", "tiro2_sbagliato": "Tiro da 2 sbagliato
          "rimb_off": "Rimbalzo offensivo", "rimb_dif": "Rimbalzo difensivo",
          "assist": "Assist", "fallo": "Fallo", "fallo_tecnico": "Fallo tecnico",
          "stoppata": "Stoppata", "timeout": "Timeout"}
+
+
+# tasti delle segnalazioni proposti a un club che non ha ancora scelto i suoi
+ETICHETTE = ["Pick and roll centrale", "Pick and roll laterale", "Hand-off", "Post basso", "Isolamento",
+             "Transizione", "Rimessa", "Difesa a zona"]
+MAX_DATI = 400_000            # byte per partita: segnalazioni e sincronizzazione di qualche video
+
+
+def etichette_club(a: App) -> list[str]:
+    salvate = a.archivio.video_dati(a.club, "etichette")
+    return salvate if isinstance(salvate, list) else list(ETICHETTE)
+
+
+def pulisci_etichette(valori) -> list[str]:
+    """Nomi dei tasti: testo breve, senza doppioni, al massimo 30."""
+    out = []
+    for v in valori if isinstance(valori, list) else []:
+        v = str(v).strip()[:30]
+        if v and v not in out:
+            out.append(v)
+    return out[:30]
+
+
+def salva_memoria(a: App, pid: str, memoria) -> bool:
+    """Segnalazioni e sincronizzazione della partita, così come le manda il componente."""
+    if not isinstance(memoria, dict) or not isinstance(memoria.get("segnalazioni", []), list):
+        return False
+    if len(json.dumps(memoria)) > MAX_DATI:
+        return False
+    a.archivio.set_video_dati(a.club, f"partita:{pid}", memoria)
+    return True
 
 
 def _partite(a: App, sid: int) -> pd.DataFrame:
@@ -87,13 +120,12 @@ def _squadre(a: App, sid: int | None, partita: pd.Series | None) -> list[dict]:
 
 
 def render(a: App):
-    note_html("Apri un video della partita o dell'allenamento: fermalo e disegna sul fotogramma (tagli, passaggi, "
-              "blocchi, cerchi sotto i giocatori, riflettore, aree, testo). Ogni fermo-immagine disegnato diventa "
-              "un momento della sessione. Sotto il video: marca le azioni con un tocco e rivedile in sequenza, "
-              "salta alle azioni della cronaca (con la grafica del tempo nel video la sincronizzazione è automatica, "
-              "letta sul dispositivo), ingrandisci il fotogramma, trasforma le posizioni dei giocatori "
-              "in un gioco della lavagna. Il video non viene caricato su ASSIST: disegni, momenti e azioni "
-              "marcate spariscono chiudendo la pagina.")
+    note_html("Apri il video della partita e scegli la partita qui sotto. Con «Sincronizza con il cronometro» "
+              "ASSIST legge il tempo nella grafica del video e collega ogni azione della cronaca al suo momento: "
+              "un tocco e rivedi l'azione intera. Mentre guardi, segnala le situazioni che vuoi ritrovare (pick and "
+              "roll centrale, laterale, uno schema con il nome che decidi tu): le rivedi poi una dopo l'altra. "
+              "Puoi fermare il video e disegnare sul fotogramma. Il video non viene caricato su ASSIST: con la "
+              "partita si salvano solo le segnalazioni e la sincronizzazione.")
     sid = a.mia_squadra
     pid, nome, partita = None, "", None
     if sid:
@@ -108,9 +140,9 @@ def render(a: App):
                 partita = pg[pg["partita_id"] == pid].iloc[0]
                 nome = etichette[pid]
     ev, fine = cronaca(a, pid) if pid else ([], {})
+    memoria = a.archivio.video_dati(a.club, f"partita:{pid}") if pid else None
     valore = _lavagna_video(squadre=_squadre(a, sid, partita), partita_id=pid, partita_nome=escape(nome),
-                            eventi=ev, fine=fine,
-                            inizi=a.archivio.video_sync(a.club, pid) if pid else {},
+                            eventi=ev, fine=fine, memoria=memoria or {}, etichette=etichette_club(a),
                             esito=st.session_state.get("telestrator_esito"), key="telestrator", default=None)
     if isinstance(valore, dict) and valore.get("t") != st.session_state.get("telestrator_ultimo"):
         st.session_state["telestrator_ultimo"] = valore.get("t")
@@ -121,9 +153,10 @@ def render(a: App):
                 "t": valore["t"], "testo": "Gioco creato ✓ Lo trovi nella " +
                 ("Lavagna dei vostri giochi." if mia else "lavagna dell'avversaria, nel suo scouting.")}
             st.rerun()
-        elif valore.get("azione") == "sync" and valore.get("partita_id") == pid and pid:
-            inizi = {int(k): float(v) for k, v in (valore.get("inizi") or {}).items() if v is not None}
-            a.archivio.set_video_sync(a.club, pid, inizi)
-            st.rerun()
+        # il componente tiene già tutto in memoria: si salva senza ricaricare la pagina
+        elif valore.get("azione") == "video" and valore.get("partita_id") == pid and pid:
+            salva_memoria(a, pid, valore.get("memoria"))
+        elif valore.get("azione") == "etichette":
+            a.archivio.set_video_dati(a.club, "etichette", pulisci_etichette(valore.get("etichette")))
     st.caption("Consiglio: sul telefono gira lo schermo in orizzontale; su computer usa lo schermo intero e la "
-               "tastiera (spazio, frecce, Z, numeri 1–9 per marcare le azioni).")
+               "tastiera (spazio, frecce, Z, numeri 1–9 per le segnalazioni).")

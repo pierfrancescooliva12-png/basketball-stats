@@ -1,5 +1,6 @@
-"""Lavagna sul video: il video resta sul dispositivo; alla piattaforma tornano solo, su richiesta,
-gli inizi dei quarti e i giochi creati dalle posizioni sul fotogramma."""
+"""Lavagna sul video: il video resta sul dispositivo; alla piattaforma tornano solo le segnalazioni dello
+staff con la sincronizzazione (tempi, mai il video), le etichette del club e i giochi creati dalle posizioni
+sul fotogramma."""
 
 import re
 from pathlib import Path
@@ -14,12 +15,14 @@ def test_il_video_non_lascia_il_dispositivo():
     for vietato in ("fetch(", "XMLHttpRequest", "sendBeacon", "localStorage", "indexedDB", "FormData",
                     "toDataURL", "toBlob"):
         assert vietato not in s, vietato
-    # un solo punto da cui un valore torna a Streamlit, e solo per inizi dei quarti e giochi
+    # un solo punto da cui un valore torna a Streamlit: segnalazioni e sincronizzazione, etichette, giochi
     assert s.count("streamlit:setComponentValue") == 1
     assert re.search(r"function invia\(valore\) \{\s*if \(IN_APP\) window\.parent\.postMessage\("
                      r"\{ isStreamlitMessage: true, type: \"streamlit:setComponentValue\"", s)
     azioni = re.findall(r"invia\(\{ azione: \"(\w+)\"", s)
-    assert sorted(azioni) == ["gioco", "sync"], azioni
+    assert sorted(azioni) == ["etichette", "gioco", "video"], azioni
+    # dei fotogrammi si legge solo il cronometro: nessuna immagine esce dal lettore
+    assert "drawImage(video" in s and "getImageData" in s
 
 
 def test_lettura_della_grafica_sul_dispositivo():
@@ -40,11 +43,14 @@ def test_strumenti_disponibili():
               "testo", "gomma", "mano"):
         assert f'data-t="{t}"' in s, t
     for id_ in ("annulla", "ripeti", "pulisci", "indietro1", "avanti1", "schermo", "velocita",
-                "zoomPiu", "zoomMeno", "zoomRiporta", "tasti-tag", "seq-tag", "lista-tag",
-                "lista-cronaca", "qui", "seq-cronaca", "tara", "posiziona", "crea-gioco",
-                "ocr-zona", "ocr-avvia", "ocr-ferma", "ocr-da", "c-da"):
+                "zoomPiu", "zoomMeno", "zoomRiporta", "tasti-tag", "nuovo-tag", "modifica-tag", "lista",
+                "qui", "seq", "sincronizza", "ferma-sync", "palla-a-due", "da", "tara", "posiziona",
+                "crea-gioco"):
         assert f'id="{id_}"' in s, id_
-    for p in ("azioni", "cronaca", "gioco"):
+    # pochi comandi: niente riquadro da disegnare a mano attorno al cronometro, una sola lista
+    for vecchio in ("ocr-zona", "ocr-avvia", "c-da", "p-azioni", "lista-cronaca"):
+        assert f'id="{vecchio}"' not in s, vecchio
+    for p in ("cronaca", "gioco"):
         assert f'data-p="{p}"' in s, p
 
 
@@ -110,3 +116,96 @@ def test_video_dal_solo_salto_a_due():
     v2 = T.stime_video(ev, {1: 60, 2: 60 + 2 * fine[1] + T.PAUSA_QUARTI})
     assert v2[0] == 60 + 1.6 * 1.25 * 100           # rapporto limitato a 1,6
     assert T.stime_video(ev, {}) == {}
+
+
+def _funzione(s: str, nome: str) -> str:
+    """Testo di una funzione JavaScript del componente (dalla firma alla graffa che la chiude)."""
+    i = s.index(f"function {nome}(")
+    j = s.index("{", i)
+    livello = 0
+    for k in range(j, len(s)):
+        livello += {"{": 1, "}": -1}.get(s[k], 0)
+        if livello == 0:
+            return s[i:k + 1]
+    raise AssertionError(nome)
+
+
+def _node(codice: str):
+    import json
+    import shutil
+    import subprocess
+
+    import pytest
+    if not shutil.which("node"):
+        pytest.skip("node non disponibile")
+    out = subprocess.run(["node", "-e", codice], capture_output=True, text=True, timeout=30, check=True)
+    return json.loads(out.stdout)
+
+
+def test_lettura_del_tempo_e_periodi():
+    s = HTML.read_text()
+    js = "\n".join(_funzione(s, n) for n in ("leggiTesto", "assegnaPeriodi"))
+    r = _node("const durataQuarto = (p) => p <= 4 ? 600 : 300;\n" + js + """
+      const testi = ["08:27", "8:27", "45.3", ":08:27.", "0827", "20:45", "12:61", ""].map(leggiTesto);
+      // video da metà del 1° quarto: il cronometro scende, a 10:00 riparte il 2°; una lettura sbagliata
+      const campioni = [[0, 300], [30, 280], [60, 255], [90, 400], [120, 230], [150, 60], [180, 0], [210, 600],
+                        [240, 590], [270, 560], [300, null], [330, 530]];
+      console.log(JSON.stringify({ testi, periodi: assegnaPeriodi(campioni, 1) }));""")
+    assert r["testi"] == [507, 507, 45.3, 507, None, None, None, None]
+    assert [x[0] for x in r["periodi"]["1"]] == [300, 320, 345, 370, 540, 600]
+    assert r["periodi"]["2"] == [[0, 210], [10, 240], [40, 270], [70, 330]]
+
+
+def test_cronometro_fermo_nel_secondo_dell_azione():
+    s = HTML.read_text()
+    js = "\n".join(_funzione(s, n) for n in ("intervallo", "gruppo", "fermaCronometro", "stimaGrafica"))
+    r = _node("""const durataQuarto = (p) => p <= 4 ? 600 : 300; const reale = (e) => e.m;
+      const cronaca = { eventi: [
+        { n: 1, p: 1, s: 100, m: 140, tipo: "tiro2_fatto" },
+        { n: 2, p: 1, s: 200, m: 300, tipo: "fallo" }, { n: 3, p: 1, s: 200, m: 312, tipo: "tl_fatto" },
+        { n: 4, p: 1, s: 200, m: 330, tipo: "tl_sbagliato" }, { n: 5, p: 1, s: 200, m: 348, tipo: "rimb_dif" },
+        { n: 6, p: 1, s: 300, m: 500, tipo: "tiro3_sbagliato" }, { n: 7, p: 1, s: 400, m: 700, tipo: "tiro2_fatto" }] };
+      // il cronometro passa da 100 a 101 senza fermarsi; si ferma a 200 dal video 1000 al 1060;
+      // a 300 si ferma 20 secondi senza che l'abbia fermato l'azione (palla fuori non scritta)
+      const letture = { 1: [[99, 498.6], [100, 499.6], [101, 500.6], [199, 999], [200, 1000], [200, 1059.8],
+                            [201, 1060.8], [299, 1199], [300, 1200], [300, 1219.5], [301, 1220.5]] };
+      """ + js + """
+      const st = (n) => Math.round(stimaGrafica(cronaca.eventi.find((e) => e.n === n)).t * 10) / 10;
+      console.log(JSON.stringify([1, 2, 3, 4, 5, 6].map(st)));""")
+    canestro, fallo, libero1, libero2, rimbalzo, tiro = r
+    assert abs(canestro - 500.1) < 0.6                      # a metà del secondo
+    assert abs(fallo - 1000.5) < 0.6                        # appena prima della fermata
+    assert fallo < libero1 < libero2 < rimbalzo             # i liberi dentro la fermata, in ordine
+    assert abs(rimbalzo - 1059.8) < 1.5                     # il rimbalzo alla ripresa del gioco
+    assert abs(tiro - 1219.5) < 1.5                         # nessuna azione l'ha fermato: alla ripresa
+
+
+def test_archivio_della_lavagna_sul_video(tmp_path):
+    from basket.note import Archivio
+    a = Archivio(f"sqlite:///{tmp_path / 'n.sqlite'}")
+    assert a.video_dati("club", "etichette") is None
+    a.set_video_dati("club", "etichette", ["Pick and roll centrale", "Horns 45"])
+    memoria = {"segnalazioni": [{"id": "a1", "et": "Horns 45", "t": 1500.2, "fp": "gara.mp4|123", "p": 2, "gs": 168}],
+               "video": {"gara.mp4|123": {"letture": {"1": [[0, 50], [30, 90]]}, "inizi": {"1": 49.7}}}}
+    a.set_video_dati("club", "partita:p1", memoria)
+    a.set_video_dati("club", "partita:p1", memoria)          # salvare di nuovo sostituisce
+    assert a.video_dati("club", "etichette") == ["Pick and roll centrale", "Horns 45"]
+    assert a.video_dati("club", "partita:p1") == memoria
+    assert a.video_dati("altro", "partita:p1") is None       # un club non vede i dati di un altro
+
+
+def test_dati_dal_componente():
+    import pytest
+    pytest.importorskip("streamlit")
+    from types import SimpleNamespace
+
+    from dashboard import telestrator_ui as TU
+    assert TU.pulisci_etichette([" Horns 45 ", "Horns 45", "", "x" * 50, 3]) == ["Horns 45", "x" * 30, "3"]
+    assert TU.pulisci_etichette("non una lista") == []
+
+    salvati = {}
+    a = SimpleNamespace(club="club", archivio=SimpleNamespace(set_video_dati=lambda c, k, d: salvati.update({k: d})))
+    assert TU.salva_memoria(a, "p1", {"segnalazioni": [], "video": {}})
+    assert not TU.salva_memoria(a, "p2", {"segnalazioni": "no"})
+    assert not TU.salva_memoria(a, "p3", {"segnalazioni": [], "video": {"x": "y" * TU.MAX_DATI}})
+    assert list(salvati) == ["partita:p1"]

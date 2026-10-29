@@ -44,6 +44,11 @@ SCHEMA = [
     """CREATE TABLE IF NOT EXISTS video_sync (
         club TEXT NOT NULL, partita_id TEXT NOT NULL, inizi TEXT NOT NULL,
         PRIMARY KEY (club, partita_id))""",
+    # lavagna sul video: etichette delle segnalazioni del club ("etichette") e, per ogni partita
+    # ("partita:<id>"), segnalazioni dello staff e sincronizzazione dei video (mai il video)
+    """CREATE TABLE IF NOT EXISTS video_dati (
+        club TEXT NOT NULL, chiave TEXT NOT NULL, dati TEXT NOT NULL, aggiornato_il TEXT NOT NULL,
+        PRIMARY KEY (club, chiave))""",
     # utenti dei club gestiti dall'Amministrazione (solo l'hash della password)
     """CREATE TABLE IF NOT EXISTS utenti (
         username TEXT PRIMARY KEY, password_hash TEXT NOT NULL, club TEXT, ruolo TEXT NOT NULL,
@@ -219,6 +224,19 @@ class Archivio:
             r = c.execute(text("SELECT inizi FROM video_sync WHERE club = :c AND partita_id = :p"),
                           {"c": club, "p": partita_id}).fetchone()
         return {int(k): v for k, v in json.loads(r[0]).items()} if r else {}
+
+    def set_video_dati(self, club: str, chiave: str, dati):
+        """Dati della lavagna sul video (JSON): chiave "etichette" o "partita:<id>"."""
+        with self.engine.begin() as c:
+            c.execute(text("DELETE FROM video_dati WHERE club = :c AND chiave = :k"), {"c": club, "k": chiave})
+            c.execute(text("INSERT INTO video_dati VALUES (:c, :k, :d, :t)"),
+                      {"c": club, "k": chiave, "d": json.dumps(dati), "t": _now()})
+
+    def video_dati(self, club: str, chiave: str):
+        with self.engine.connect() as c:
+            r = c.execute(text("SELECT dati FROM video_dati WHERE club = :c AND chiave = :k"),
+                          {"c": club, "k": chiave}).fetchone()
+        return json.loads(r[0]) if r else None
 
     # ------------------------------------------------------------ utenti
     def users(self, anche_disattivi: bool = False) -> dict:
