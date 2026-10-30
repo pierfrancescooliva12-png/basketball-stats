@@ -49,7 +49,7 @@ button, input, select { font: inherit; color: inherit; }
 .palco .tasti-vel { position: absolute; right: 12px; top: 12px; display: flex; gap: 4px; }
 /* schermo intero: video, comandi e strumenti insieme; il video prende lo spazio che resta */
 body.grande { background: #141413; }
-body.grande .app { height: 100vh; grid-template-rows: minmax(0, 1fr) auto auto auto; padding: 8px; gap: 6px; }
+body.grande .app { height: 100vh; grid-template-rows: minmax(0, 1fr) auto auto auto auto; padding: 8px; gap: 6px; }
 body.grande #apri, body.grande #piede, body.grande #aiuto { display: none !important; }
 body.grande #lavoro { min-height: 0; display: flex; }
 body.grande .palco { max-height: none; aspect-ratio: auto !important; width: 100%; height: 100%; border-radius: 10px; }
@@ -58,7 +58,7 @@ body.grande .tempo, body.grande .momenti .tit { color: #c9c6bb; }
 body.grande .btn.primario, body.grande #play { background: #faf9f5; color: #141413; border-color: #faf9f5; }
 /* schermi bassi (telefono in orizzontale): comandi su una riga scorrevole, solo icone */
 @media (max-height: 560px) {
-  body.grande .app { padding: 4px 6px; gap: 4px; grid-template-rows: minmax(0, 1fr) auto auto; }
+  body.grande .app { padding: 4px 6px; gap: 4px; grid-template-rows: minmax(0, 1fr) auto auto auto; }
   body.grande .momenti, body.grande .sep, body.grande .stato { display: none !important; }
   body.grande .barra, body.grande .strumenti { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
     -webkit-overflow-scrolling: touch; }
@@ -104,7 +104,7 @@ body.grande .btn.primario, body.grande #play { background: #faf9f5; color: #1414
 .privacy::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #2f9e6b; flex: none; }
 @media (max-width: 640px) { .btn .lab { display: none; } .tempo { min-width: 0; } }
 .palco video { transform-origin: 0 0; }
-/* pannelli: azioni marcate, cronaca della partita, gioco dal video */
+/* pannelli: azioni della partita (cronaca e segnalazioni), gioco dal video */
 .schede { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--bordo); border-radius: 999px;
   background: var(--carta); width: fit-content; max-width: 100%; overflow-x: auto; }
 .schede button { border: 0; background: transparent; border-radius: 999px; height: 36px; padding: 0 14px;
@@ -134,6 +134,25 @@ body.grande .btn.primario, body.grande #play { background: #faf9f5; color: #1414
 .passi span.fatto { background: #e5f3ec; color: #1f6b47; }
 .passi span.ora { background: #fbeee4; color: var(--testo); font-weight: 600; }
 body.grande .schede, body.grande .pannello { display: none !important; }
+/* tasti delle segnalazioni: si toccano mentre il video scorre, anche a schermo intero */
+.segna { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.segna .tit { font-weight: 600; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--tenue); }
+#tasti-tag, #tasti-schemi { display: contents; }
+.segna .a-capo { flex-basis: 100%; height: 0; }
+.segna .tit { min-width: 58px; }
+.tag.schema { background: #eef3fb; border-color: #c9d8ee; }
+.tag.via { border-color: #d2551f; color: #b34a06; }
+.voce.segn b { color: #b34a06; }
+.voce.segn b.sch { color: #2a5fa8; }
+.palco .attesa { position: absolute; inset: 0; display: grid; place-items: center; padding: 20px; text-align: center;
+  background: rgba(20,20,19,.72); color: #faf9f5; font-weight: 600; z-index: 2; }
+body.grande .segna { color: #c9c6bb; }
+@media (max-height: 560px) {
+  body.grande .segna { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  body.grande .segna .tit, body.grande #nuovo-tag, body.grande #nuovo-schema, body.grande #modifica-tag,
+  body.grande #vuoto-schemi, body.grande .segna .a-capo { display: none; }
+  body.grande .segna .tag { flex: none; height: 34px; padding: 0 10px; font-size: .85rem; }
+}
 </style>
 </head>
 <body>
@@ -142,7 +161,8 @@ body.grande .schede, body.grande .pannello { display: none !important; }
     <b>Apri un video dal dispositivo</b>
     <span class="btn primario">Scegli il video…</span>
     <small>Il video non viene caricato su ASSIST: resta sul tuo dispositivo e si vede solo qui. Disegni e momenti
-      valgono per questa sessione e spariscono quando chiudi la pagina. Su computer puoi anche trascinarlo qui.</small>
+      valgono per questa sessione; con la partita scelta, le segnalazioni (nome e momento, non il video) si salvano
+      con la partita. Su computer puoi anche trascinarlo qui.</small>
   </label>
   <input type="file" id="file" accept="video/*" hidden>
 
@@ -151,6 +171,7 @@ body.grande .schede, body.grande .pannello { display: none !important; }
       <video id="video" playsinline preload="auto"></video>
       <canvas id="tela"></canvas>
       <div class="stato" id="stato">In pausa · disegna sul fotogramma</div>
+      <div class="attesa" id="attesa" hidden></div>
     </div>
   </div>
 
@@ -170,6 +191,18 @@ body.grande .schede, body.grande .pannello { display: none !important; }
     <button class="btn piccolo" id="zoomRiporta" title="Immagine intera">1:1</button>
     <button class="btn piccolo" id="zoomPiu" title="Ingrandisci (anche con due dita o con la rotella)">＋</button>
     <button class="btn piccolo" id="schermo" title="Schermo intero">⤢ <span class="lab">Schermo intero</span></button>
+  </div>
+
+  <div class="segna" id="segna" hidden>
+    <span class="tit">Azione</span>
+    <span id="tasti-tag"></span>
+    <button class="btn piccolo" id="nuovo-tag" title="Nuovo tipo di azione">＋ Azione</button>
+    <span class="a-capo"></span>
+    <span class="tit">Schema</span>
+    <span id="tasti-schemi"></span>
+    <span class="nota" id="vuoto-schemi">Aggiungi i vostri schemi con il loro nome: si segnano insieme al tipo di azione.</span>
+    <button class="btn piccolo" id="nuovo-schema" title="Nuovo schema, con il nome che usa lo staff">＋ Schema</button>
+    <button class="btn piccolo" id="modifica-tag" aria-pressed="false" title="Togli i tasti che non usi">Modifica</button>
   </div>
 
   <div class="strumenti" id="strumenti" hidden>
@@ -214,60 +247,32 @@ body.grande .schede, body.grande .pannello { display: none !important; }
   <div class="momenti" id="momenti" hidden></div>
 
   <div class="schede" id="schede" role="tablist" hidden>
-    <button data-p="azioni" aria-pressed="true">Azioni marcate</button>
-    <button data-p="cronaca" aria-pressed="false">Cronaca della partita</button>
+    <button data-p="cronaca" aria-pressed="true">Azioni della partita</button>
     <button data-p="gioco" aria-pressed="false">Crea un gioco</button>
   </div>
 
-  <div class="pannello" id="p-azioni" hidden>
-    <div class="riga" id="tasti-tag"></div>
-    <div class="riga">
-      <input type="text" id="nuovo-tag" placeholder="Nuova etichetta, es. Horns" maxlength="24" style="flex:1 1 160px">
-      <button class="btn piccolo" id="aggiungi-tag">+ Etichetta</button>
-      <label>Prima <select id="prima"><option value="4">4 s</option><option value="8" selected>8 s</option><option value="12">12 s</option></select></label>
-      <label>Dopo <select id="dopo"><option value="2">2 s</option><option value="3" selected>3 s</option><option value="5">5 s</option></select></label>
-    </div>
-    <div class="riga">
-      <label>Mostra <select id="filtro-tag"><option value="">Tutte</option></select></label>
-      <span style="flex:1"></span>
-      <button class="btn piccolo primario" id="seq-tag">▶ In sequenza</button>
-    </div>
-    <div class="lista" id="lista-tag"></div>
-    <p class="nota">Tocca un'etichetta mentre il video scorre per marcare l'azione (sulla tastiera i numeri 1–9). Restano
-      solo in questa sessione: «In sequenza» le rivede una dopo l'altra, con i secondi prima e dopo.</p>
-  </div>
-
   <div class="pannello" id="p-cronaca" hidden>
-    <div class="vuoto" id="cronaca-vuota">Scegli la partita sopra la lavagna: qui compare la cronaca (canestri, tiri,
-      palle perse, falli…) e un tocco porta il video all'azione.</div>
-    <div id="cronaca-piena" hidden>
-      <div class="riga" id="auto">
-        <span class="nota" style="color:var(--testo);font-weight:600">Dalla grafica del video</span>
-        <button class="btn piccolo" id="ocr-zona" title="Ferma il video su un fotogramma con la grafica e riquadra il cronometro">1 · Riquadra il cronometro</button>
-        <label>Il video parte dal <select id="ocr-da"><option value="1">1° quarto</option><option value="2">2° quarto</option>
-          <option value="3">3° quarto</option><option value="4">4° quarto</option></select></label>
-        <button class="btn piccolo primario" id="ocr-avvia" disabled>2 · Sincronizza in automatico</button>
-        <button class="btn piccolo" id="ocr-ferma" hidden>Ferma</button>
-        <span class="nota" id="ocr-stato">Se il video ha la grafica con il tempo, ASSIST la legge e allinea ogni azione al secondo. La lettura avviene sul dispositivo.</span>
-      </div>
-      <div class="riga" id="sync"></div>
-      <div class="riga">
-        <label>Azioni <select id="f-tipo"></select></label>
-        <label>Squadra <select id="f-squadra"></select></label>
-        <label>Giocatore <select id="f-giocatore"></select></label>
-        <label>Quarto <select id="f-quarto"></select></label>
-        <label>Clip <select id="c-da"><option value="azione" selected>dall'inizio dell'azione</option>
-          <option value="4">da 4 s prima</option><option value="8">da 8 s prima</option></select></label>
-        <span style="flex:1"></span>
-        <button class="btn piccolo" id="qui" title="Il video è sull'azione selezionata: usala per sincronizzare">📍 L'azione è qui</button>
-        <button class="btn piccolo primario" id="seq-cronaca">▶ In sequenza</button>
-      </div>
-      <div class="lista" id="lista-cronaca"></div>
-      <p class="nota" id="nota-sync">Per arrivare alle azioni basta segnare il salto a due: porta il video alla palla
-        a due e tocca «Salto a due qui». Il minuto di ogni azione tiene conto dei tempi morti scritti in cronaca (timeout,
-        falli, liberi, cambi) e degli intervalli. Se un'azione non coincide, porta il video al momento giusto e tocca
-        «📍 L'azione è qui»: le successive si ricalcolano sul ritmo reale di questa partita.</p>
+    <div class="riga" id="sync" hidden>
+      <span class="nota" id="sync-stato" style="flex:1 1 320px"></span>
+      <label id="da-box" hidden>Il primo quarto nel video è il <select id="da"><option value="1">1°</option>
+        <option value="2">2°</option><option value="3">3°</option><option value="4">4°</option></select></label>
+      <button class="btn piccolo primario" id="sincronizza">Sincronizza con il cronometro</button>
+      <button class="btn piccolo" id="ferma-sync" hidden>Ferma</button>
+      <button class="btn piccolo" id="palla-a-due" title="Video senza grafica: porta il video alla palla a due e tocca">Palla a due qui</button>
     </div>
+    <div class="riga">
+      <label>Mostra <select id="f-tipo"></select></label>
+      <label>Squadra <select id="f-squadra"></select></label>
+      <label>Giocatore <select id="f-giocatore"></select></label>
+      <label>Quarto <select id="f-quarto"></select></label>
+      <span style="flex:1"></span>
+      <button class="btn piccolo" id="qui" hidden title="Il video è sul momento giusto dell'azione scelta: usalo per correggere">📍 L'azione è qui</button>
+      <button class="btn piccolo primario" id="seq">▶ In sequenza</button>
+    </div>
+    <div class="lista" id="lista"></div>
+    <p class="nota" id="nota-cronaca">Tocca un'azione: il video parte da quando la squadra ha preso palla e si ferma
+      3 secondi dopo. «In sequenza» rivede una dopo l'altra le azioni dell'elenco, per esempio tutti i pick and roll
+      centrali segnalati o le palle perse di un giocatore.</p>
   </div>
 
   <div class="pannello" id="p-gioco" hidden>
@@ -290,7 +295,7 @@ body.grande .schede, body.grande .pannello { display: none !important; }
       lavagna con le posizioni, da completare con i movimenti. Del video non resta niente.</p>
   </div>
   <div class="barra" id="piede" hidden>
-    <span class="privacy">Video solo sul tuo dispositivo · niente viene salvato</span>
+    <span class="privacy">Video solo sul tuo dispositivo · si salvano solo le segnalazioni e la sincronizzazione</span>
     <span style="flex:1"></span>
     <button class="btn piccolo" id="cambia">Apri un altro video</button>
     <button class="btn piccolo" id="chiudi">Chiudi il video</button>
@@ -315,15 +320,10 @@ let rifare = [];             // forme annullate (per "ripeti")
 let vista = { s: 1, tx: 0, ty: 0 };   // zoom e spostamento dell'immagine
 const dita = new Map();               // tocchi attivi: con due dita si ingrandisce
 let pizzico = null, trascina = null;
-let modo = null;                      // null, "taratura" (4 angoli dell'area), "giocatori", "orologio"
-let zonaOrologio = null, riquadro = null;   // riquadro del cronometro sulla grafica (coordinate del video 0-1)
-let letture = {};                        // {periodo: [[secondi di gioco, secondi del video], ...]} lette dalla grafica
+let modo = null;                      // null, "taratura" (4 angoli dell'area), "giocatori"
 let tocchiArea = [], H = null, Hinv = null, mostraRighe = false, posti = [], senzaDifesa = false;
-let etichette = ["Pick and roll", "Transizione", "Palla persa", "Tiro aperto", "Rimbalzo", "Buona difesa",
-                 "Errore difensivo", "Fallo"];
-let azioni = [];                      // azioni marcate: [{id, t, etichetta}]
 let coda = null;                      // sequenza in riproduzione: {clip: [{a, b, lab}], i}
-let cronaca = { partita: null, eventi: [], squadre: [], inizi: {}, fine: {} }, ancore = {}, scelto = null;
+let cronaca = { partita: undefined, eventi: [], squadre: [], inizi: {}, fine: {} }, ancore = {}, scelto = null;
 
 // ------------------------------------------------------------------ Streamlit: solo l'altezza
 const IN_APP = window.parent !== window;
@@ -354,12 +354,16 @@ function apri(file) {
   if (!file || !file.type.startsWith("video/")) { alert("Scegli un file video."); return; }
   if (url) URL.revokeObjectURL(url);
   url = URL.createObjectURL(file);          // il file resta sul dispositivo: nessun caricamento
-  momenti = []; corrente = null; rifare = []; azioni = []; coda = null; ancore = {}; posti = [];
-  fermaOcr(); letture = {}; zonaOrologio = null; riquadro = null; aggiornaOcr();
+  momenti = []; corrente = null; rifare = []; coda = null; posti = [];
+  if (scan) scan.stop = true;
+  impronta = `${file.name}|${file.size}`;
+  // segnalazioni di un altro video senza partita: non hanno più un riferimento
+  if (!cronaca.partita) segnalazioni = [];
+  ripristinaVideo();
   vista = { s: 1, tx: 0, ty: 0 };
   video.src = url; video.load();
-  for (const id of ["lavoro", "barra", "strumenti", "momenti", "piede", "aiuto", "schede"]) $(id).hidden = false;
-  $("apri").hidden = true; mostraPannello(pannello); aggiornaAzioni(); aggiornaCronaca();
+  for (const id of ["lavoro", "barra", "segna", "strumenti", "momenti", "piede", "aiuto", "schede"]) $(id).hidden = false;
+  $("apri").hidden = true; mostraPannello(pannello); aggiornaTag(); preparaFiltri(); aggiornaLista();
   aggiornaMomenti(); setTimeout(dimensiona, 50);
 }
 $("file").addEventListener("change", (e) => { apri(e.target.files[0]); e.target.value = ""; });
@@ -371,10 +375,12 @@ $("cambia").addEventListener("click", () => $("file").click());
 $("chiudi").addEventListener("click", () => {
   video.pause(); video.removeAttribute("src"); video.load();
   if (url) URL.revokeObjectURL(url);
-  url = null; momenti = []; corrente = null; azioni = []; coda = null; posti = [];
-  fermaOcr(); letture = {}; zonaOrologio = null;
-  for (const id of ["lavoro", "barra", "strumenti", "momenti", "piede", "aiuto", "schede",
-                    "p-azioni", "p-cronaca", "p-gioco"]) $(id).hidden = true;
+  url = null; momenti = []; corrente = null; coda = null; posti = [];
+  if (scan) scan.stop = true;
+  impronta = null; azzeraSync();
+  if (!cronaca.partita) segnalazioni = [];
+  for (const id of ["lavoro", "barra", "segna", "strumenti", "momenti", "piede", "aiuto", "schede",
+                    "p-cronaca", "p-gioco"]) $(id).hidden = true;
   $("apri").hidden = false; disegna();
 });
 
@@ -501,13 +507,6 @@ function disegna() {
   for (const f of (corrente ? corrente.forme : [])) forma(f, r);
   if (bozza) forma(bozza, r);
   if (mostraRighe && Hinv) righeCampo(r);
-  const zr = riquadro ? [riquadro.a, riquadro.b] : modo === "orologio" && zonaOrologio ?
-    [[zonaOrologio[0], zonaOrologio[1]], [zonaOrologio[2], zonaOrologio[3]]] : null;
-  if (zr) {
-    const [x0, y0] = sulPalco(zr[0], r), [x1, y1] = sulPalco(zr[1], r);
-    g.save(); g.setLineDash([6, 4]); g.lineWidth = 2; g.strokeStyle = "#ffd43b";
-    g.strokeRect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0)); g.restore();
-  }
   g.save();
   g.font = `700 12px ${getComputedStyle(document.body).fontFamily}`; g.textAlign = "center"; g.textBaseline = "middle";
   tocchiArea.forEach((p, i) => {
@@ -583,7 +582,6 @@ tela.addEventListener("pointerdown", (ev) => {
   if (strumento === "mano" && !modo) { trascina = { x: ev.clientX, y: ev.clientY, tx: vista.tx, ty: vista.ty }; return; }
   if (!video.paused) video.pause();             // si disegna sempre su un fotogramma fermo
   const p = normalizza(ev);
-  if (modo === "orologio") { riquadro = { a: p, b: p }; disegna(); return; }
   if (modo) { toccoGioco(p); return; }
   if (strumento === "gomma") { cancellaVicino(p); return; }
   if (strumento === "testo") {
@@ -608,7 +606,6 @@ tela.addEventListener("pointermove", (ev) => {
     vista.tx = trascina.tx + ev.clientX - trascina.x; vista.ty = trascina.ty + ev.clientY - trascina.y;
     applicaVista(); return;
   }
-  if (riquadro) { riquadro.b = normalizza(ev); disegna(); return; }
   if (!bozza) return;
   const p = normalizza(ev);
   if (["penna", "percorso", "area"].includes(bozza.tipo)) {
@@ -630,7 +627,6 @@ function rilascia(ev) {
   dita.delete(ev.pointerId);
   if (dita.size < 2) pizzico = null;
   trascina = null;
-  if (riquadro) { chiudiRiquadro(); return; }
   fine();
 }
 tela.addEventListener("pointerup", rilascia);
@@ -738,6 +734,11 @@ video.addEventListener("seeked", () => {
   aggiornaTempo();
 });
 video.addEventListener("ended", () => { $("play").innerHTML = "▶ <span class='lab'>Riproduci</span>"; });
+video.addEventListener("error", () => {
+  if (!url) return;
+  $("stato").hidden = false;
+  $("stato").textContent = "Questo browser non riesce a leggere il video: prova con un file MP4 (H.264) o con un altro browser.";
+});
 
 // schermo intero di tutta la lavagna (video + comandi). Dove il browser non lo permette (iPhone)
 // il riquadro della lavagna si allarga a tutta la pagina.
@@ -793,15 +794,14 @@ altoSchermo();
 try { window.parent.addEventListener("resize", altoSchermo); } catch (e) { window.addEventListener("resize", altoSchermo); }
 
 // ------------------------------------------------------------------ pannelli
-let pannello = "azioni";
+let pannello = "cronaca";
 function mostraPannello(k) {
   pannello = k;
   document.querySelectorAll("[data-p]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.p === k ? "true" : "false"));
-  for (const p of ["azioni", "cronaca", "gioco"]) $("p-" + p).hidden = !url || p !== k;
+  for (const p of ["cronaca", "gioco"]) $("p-" + p).hidden = !url || p !== k;
   altezza();
 }
 document.querySelectorAll("[data-p]").forEach((b) => b.addEventListener("click", () => mostraPannello(b.dataset.p)));
-const secondi = (id) => Number($(id).value);
 
 // ------------------------------------------------------------------ sequenze di clip
 function unisci(clip) {          // clip che si sovrappongono diventano una sola
@@ -825,56 +825,116 @@ function vaiClip() {
   $("stato").textContent = `${coda.i + 1} di ${coda.clip.length} · ${c.lab}`; $("stato").hidden = false;
 }
 
-// ------------------------------------------------------------------ azioni marcate
-function marca(etichetta) {
-  if (!url) return;
-  azioni.push({ id: Date.now() + Math.random(), t: video.currentTime, etichetta });
-  azioni.sort((a, b) => a.t - b.t);
-  $("stato").textContent = `Marcata: ${etichetta} · ${orario(video.currentTime)}`; $("stato").hidden = false;
-  if (!video.paused) setTimeout(() => { if (!video.paused && !coda) $("stato").hidden = true; }, 1200);
-  aggiornaAzioni();
+// ------------------------------------------------------------------ segnalazioni dello staff
+// Situazioni di gioco segnalate durante la visione, su due livelli che non si escludono: il tipo di azione
+// (pick and roll centrale, transizione…) e lo schema con il nome scelto dal club (Horns 45…). Un tasto di
+// azione e uno di schema toccati a pochi secondi l'uno dall'altro formano la stessa situazione. Le etichette
+// sono del club; con la partita scelta le segnalazioni si salvano con la partita (tipo, schema, minuto del
+// video e tempo di gioco): del video non si salva niente. Dal tempo di gioco, in La mia squadra, la cronaca
+// dice come è finita ogni situazione.
+const PRIMA_SEGN = 8, DOPO_SEGN = 5, UNISCI = 8;
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+let etichette = { azioni: [], schemi: [] }, etichetteRicevute = false, modifica = false;
+let segnalazioni = [];        // [{id, azione, schema, t, fp, p, gs}]
+let ultima = null;            // l'ultima situazione segnalata: un tasto dell'altro livello si aggiunge a lei
+let impronta = null;          // nome e dimensione del file: la sincronizzazione vale per quel video
+let memoria = { segnalazioni: [], video: {} };
+const LIVELLI = { azione: "azioni", schema: "schemi" };
+const nomeSegn = (s) => [s.azione, s.schema].filter(Boolean).join(" · ");
+// segnalazioni salvate prima dei due livelli: l'etichetta è il tipo di azione
+const normale = (s) => s && s.et && !s.azione && !s.schema ? { ...s, azione: s.et } : s;
+const tasti = () => etichette.azioni.map((n) => ["azione", n]).concat(etichette.schemi.map((n) => ["schema", n]));
+function avviso(testo) {
+  $("stato").textContent = testo; $("stato").hidden = false;
+  clearTimeout(avviso.t);
+  avviso.t = setTimeout(() => { if (!video.paused && !coda) $("stato").hidden = true; }, 1600);
 }
-function filtrate() {
-  const f = $("filtro-tag").value;
-  return azioni.filter((x) => !f || x.etichetta === f);
-}
-function aggiornaAzioni() {
-  const tasti = $("tasti-tag"); tasti.innerHTML = "";
-  etichette.forEach((e, i) => {
-    const n = azioni.filter((x) => x.etichetta === e).length;
-    const b = document.createElement("button"); b.className = "tag";
-    b.innerHTML = `${i < 9 ? `<i>${i + 1}</i> ` : ""}${e}${n ? `<i>${n}</i>` : ""}`;
-    b.title = "Marca l'azione in questo momento";
-    b.addEventListener("click", () => marca(e));
-    tasti.appendChild(b);
-  });
-  const sel = $("filtro-tag"), prima = sel.value;
-  sel.innerHTML = `<option value="">Tutte (${azioni.length})</option>` +
-    etichette.filter((e) => azioni.some((x) => x.etichetta === e))
-      .map((e) => `<option value="${e}">${e} (${azioni.filter((x) => x.etichetta === e).length})</option>`).join("");
-  sel.value = [...sel.options].some((o) => o.value === prima) ? prima : "";
-  const lista = $("lista-tag"); lista.innerHTML = "";
-  const voci = filtrate();
-  if (!voci.length) { lista.innerHTML = '<div class="vuoto">Nessuna azione marcata.</div>'; altezza(); return; }
-  for (const x of voci) {
-    const r = document.createElement("div"); r.className = "voce";
-    r.innerHTML = `<span class="quando">${orario(x.t)}</span><span>${x.etichetta}</span>`;
-    const del = document.createElement("button"); del.className = "x"; del.textContent = "×"; del.title = "Togli";
-    del.addEventListener("click", (e) => { e.stopPropagation(); azioni = azioni.filter((y) => y !== x); aggiornaAzioni(); });
-    r.appendChild(del);
-    r.addEventListener("click", () => riproduci([{ a: x.t - secondi("prima"), b: x.t + secondi("dopo"), lab: x.etichetta }]));
-    lista.appendChild(r);
+async function segnala(livello, nome) {
+  if (!url || scan || occupato.attivo) return;     // mentre ASSIST sposta il video per leggere il cronometro
+  const t = video.currentTime;
+  if (ultima && !ultima[livello] && ultima.fp === impronta && Math.abs(t - ultima.t) <= UNISCI &&
+      segnalazioni.includes(ultima)) {
+    ultima[livello] = nome;                        // stessa situazione: tipo di azione e schema insieme
+    avviso(`★ ${nomeSegn(ultima)} · ${orario(ultima.t, false)}`);
+    aggiornaTag(); aggiornaLista(); salvaPresto();
+    return;
   }
-  altezza();
+  const s = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), azione: null, schema: null,
+              t, fp: impronta, p: null, gs: null };
+  s[livello] = nome;
+  segnalazioni.push(s); ultima = s;
+  avviso(`★ ${nome} · ${orario(t, false)}`);
+  aggiornaTag(); aggiornaLista();
+  const tg = await tempoDiGioco(t);
+  if (tg) { s.p = tg.p; s.gs = tg.gs; aggiornaLista(); }
+  salvaPresto();
 }
-$("filtro-tag").addEventListener("change", aggiornaAzioni);
-$("aggiungi-tag").addEventListener("click", () => {
-  const v = $("nuovo-tag").value.trim();
-  if (v && !etichette.includes(v)) { etichette.push(v); $("nuovo-tag").value = ""; aggiornaAzioni(); }
-});
-$("nuovo-tag").addEventListener("keydown", (e) => { if (e.key === "Enter") $("aggiungi-tag").click(); e.stopPropagation(); });
-$("seq-tag").addEventListener("click", () => riproduci(filtrate().map((x) => ({
-  a: x.t - secondi("prima"), b: x.t + secondi("dopo"), lab: x.etichetta }))));
+function aggiornaTag() {
+  let k = 0;
+  for (const [livello, id] of [["azione", "tasti-tag"], ["schema", "tasti-schemi"]]) {
+    const box = $(id); box.innerHTML = "";
+    for (const e of etichette[LIVELLI[livello]]) {
+      const n = segnalazioni.filter((x) => x[livello] === e).length, i = k++;
+      const b = document.createElement("button"); b.className = "tag" + (livello === "schema" ? " schema" : "") + (modifica ? " via" : "");
+      b.innerHTML = `${i < 9 ? `<i>${i + 1}</i> ` : ""}${esc(e)}${n ? `<i>${n}</i>` : ""}${modifica ? " <b>✕</b>" : ""}`;
+      b.title = modifica ? "Togli questo tasto (le azioni già segnalate restano)" :
+        livello === "azione" ? "Segnala questo tipo di azione in questo momento del video" :
+        "Segnala questo schema: insieme al tipo di azione toccato da poco, o da solo";
+      b.addEventListener("click", () => modifica ? togliEtichetta(livello, e) : segnala(livello, e));
+      box.appendChild(b);
+    }
+  }
+  $("vuoto-schemi").hidden = etichette.schemi.length > 0;
+  $("modifica-tag").setAttribute("aria-pressed", modifica ? "true" : "false");
+  $("modifica-tag").textContent = modifica ? "Fatto" : "Modifica";
+}
+function salvaEtichette() { invia({ azione: "etichette", etichette, t: Date.now() }); }
+function togliEtichetta(livello, e) {
+  if (!confirm(`Togliere «${e}» dai tasti? Le azioni già segnalate restano nell'elenco.`)) return;
+  const l = LIVELLI[livello];
+  etichette = { ...etichette, [l]: etichette[l].filter((x) => x !== e) };
+  salvaEtichette(); aggiornaTag(); preparaFiltri();
+}
+function nuovaEtichetta(livello) {
+  const v = (prompt(livello === "azione" ? "Nuovo tipo di azione (per esempio «Pick and roll Spain»)" :
+                    "Nome dello schema (per esempio «Horns 45»)") || "").trim().slice(0, 30);
+  if (!v) return;
+  const l = LIVELLI[livello];
+  if (!etichette[l].includes(v)) { etichette = { ...etichette, [l]: etichette[l].concat([v]) }; salvaEtichette(); }
+  modifica = false; aggiornaTag(); preparaFiltri();
+}
+$("nuovo-tag").addEventListener("click", () => nuovaEtichetta("azione"));
+$("nuovo-schema").addEventListener("click", () => nuovaEtichetta("schema"));
+$("modifica-tag").addEventListener("click", () => { modifica = !modifica; aggiornaTag(); });
+// salvataggio: segnalazioni e sincronizzazione di questo video, insieme alla partita
+let timerSalva = null;
+function statoVideo() {
+  return { zona: grafica, letture, campioni, da: Number($("da").value) || 1, inizi: cronaca.inizi, ancore, quando: Date.now() };
+}
+function salvaPresto() {
+  if (!IN_APP || !cronaca.partita) return;
+  clearTimeout(timerSalva);
+  timerSalva = setTimeout(() => {
+    const vv = { ...(memoria.video || {}) };
+    if (impronta && (grafica || Object.keys(cronaca.inizi).length || Object.keys(ancore).length)) vv[impronta] = statoVideo();
+    const tenuti = Object.entries(vv).sort((a, b) => (b[1].quando || 0) - (a[1].quando || 0)).slice(0, 3);
+    memoria = { segnalazioni, video: Object.fromEntries(tenuti) };
+    invia({ azione: "video", partita_id: cronaca.partita, memoria, t: Date.now() });
+  }, 1200);
+}
+function azzeraSync() {
+  grafica = null; letture = {}; campioni = null; ancore = {}; cronaca.inizi = {}; scelto = null; $("da").value = "1";
+}
+function ripristinaVideo() {
+  azzeraSync();
+  const m = impronta && (memoria.video || {})[impronta];
+  if (!m) return;
+  grafica = m.zona || null; campioni = m.campioni || null;
+  for (const [p, L] of Object.entries(m.letture || {})) letture[Number(p)] = L;
+  for (const [p, v] of Object.entries(m.inizi || {})) if (v != null) cronaca.inizi[Number(p)] = Number(v);
+  for (const [p, L] of Object.entries(m.ancore || {})) ancore[Number(p)] = L;
+  $("da").value = String(m.da || 1);
+}
 
 // ------------------------------------------------------------------ cronaca della partita
 // clip di un'azione della cronaca: non solo il gesto, ma l'azione che l'ha preparato. Si parte da quando
@@ -905,16 +965,16 @@ function inizioAzione(e, v) {
   return t == null || t >= v ? null : t;
 }
 function clipAzione(e, v) {
-  const lab = `${e.g ? e.g + " · " : ""}${e.testo}`, da = $("c-da").value;
-  let a = v - (da === "azione" ? 4 : Number(da));
-  if (da === "azione") {
-    const t = inizioAzione(e, v);
-    if (t != null) a = Math.min(a, Math.max(v - 30, t - 1));
-  }
+  const lab = `${e.g ? e.g + " · " : ""}${e.testo}`;
+  // i liberi cadono dentro una fermata: il momento esatto è incerto di qualche secondo
+  if (e.tipo.startsWith("tl_")) return { a: Math.max(0, v - 10), b: v + 6, lab };
+  let a = v - 4;
+  const t = inizioAzione(e, v);
+  if (t != null) a = Math.min(a, Math.max(v - 30, t - 1));
   return { a: Math.max(0, a), b: v + 3, lab };
 }
 const GRUPPI = {
-  "": "Tutte", canestri: "Canestri", tre: "Tiri da 3", sbagliati: "Tiri sbagliati", liberi: "Tiri liberi",
+  canestri: "Canestri", tre: "Tiri da 3", sbagliati: "Tiri sbagliati", liberi: "Tiri liberi",
   perse: "Palle perse", recuperi: "Palle recuperate", rimb_off: "Rimbalzi offensivi", rimb_dif: "Rimbalzi difensivi",
   falli: "Falli", stoppate: "Stoppate", assist: "Assist", timeout: "Timeout",
 };
@@ -926,28 +986,49 @@ const IN_GRUPPO = {
   assist: (t) => t === "assist", timeout: (t) => t === "timeout",
 };
 const nomeQuarto = (p) => p <= 4 ? `${p}° quarto` : `${p - 4}° suppl.`;
+const breveQuarto = (p) => p <= 4 ? `${p}°` : `S${p - 4}`;
 const durataQuarto = (p) => p <= 4 ? 600 : 300;
+const cronometro = (p, gs) => { const r = Math.max(0, Math.round(durataQuarto(p) - gs));
+  return `${String(Math.floor(r / 60)).padStart(2, "0")}:${String(r % 60).padStart(2, "0")}`; };
 function riceviDati(a) {
   if (Array.isArray(a.squadre)) cronaca.squadre = a.squadre;
+  if (a.etichette && !etichetteRicevute) {
+    const e = Array.isArray(a.etichette) ? { azioni: a.etichette, schemi: [] } : a.etichette;
+    etichette = { azioni: (e.azioni || []).slice(), schemi: (e.schemi || []).slice() };
+    etichetteRicevute = true; aggiornaTag();
+  }
   const pid = a.partita_id || null;
   if (pid !== cronaca.partita) {
-    cronaca.partita = pid; cronaca.eventi = Array.isArray(a.eventi) ? a.eventi : []; ancore = {}; scelto = null;
-    cronaca.inizi = {}; cronaca.fine = {};
+    const daSola = cronaca.partita === null;       // segnalazioni fatte prima di scegliere la partita
+    cronaca.partita = pid; cronaca.eventi = Array.isArray(a.eventi) ? a.eventi : [];
+    cronaca.fine = {};
     for (const [k, v] of Object.entries(a.fine || {})) if (v != null) cronaca.fine[Number(k)] = Number(v);
-    for (const [k, v] of Object.entries(a.inizi || {})) if (v != null) cronaca.inizi[Number(k)] = Number(v);
     cronaca.nome = a.partita_nome || "";
-    preparaFiltri();
+    memoria = a.memoria && typeof a.memoria === "object" ? a.memoria : { segnalazioni: [], video: {} };
+    const salvate = (Array.isArray(memoria.segnalazioni) ? memoria.segnalazioni : []).map(normale);
+    ultima = null;
+    segnalazioni = daSola && pid ? salvate.concat(segnalazioni.filter((s) => !salvate.some((x) => x.id === s.id))) : salvate;
+    ripristinaVideo();
+    preparaFiltri(); aggiornaTag();
+    if (daSola && pid && segnalazioni.length > salvate.length) salvaPresto();
   }
-  aggiornaCronaca(); aggiornaDiChi();
+  aggiornaLista(); aggiornaDiChi();
   if (a.esito && a.esito.t !== window.__esito) { window.__esito = a.esito.t; $("nota-gioco").textContent = a.esito.testo; }
 }
 function preparaFiltri() {
-  const ev = cronaca.eventi;
-  $("f-tipo").innerHTML = Object.entries(GRUPPI).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+  const ev = cronaca.eventi, sel = $("f-tipo"), prima = sel.value;
+  const usate = (l, k) => etichette[l].concat([...new Set(segnalazioni.map((s) => s[k]).filter(Boolean))]
+    .filter((e) => !etichette[l].includes(e)));
+  sel.innerHTML = '<option value="">Tutto</option><option value="*">★ Segnalazioni dello staff</option>' +
+    usate("azioni", "azione").map((e) => `<option value="★a:${esc(e)}">★ Azione · ${esc(e)}</option>`).join("") +
+    usate("schemi", "schema").map((e) => `<option value="★s:${esc(e)}">★ Schema · ${esc(e)}</option>`).join("") +
+    (ev.length ? '<option disabled>──────────</option>' + Object.entries(GRUPPI).map(([k, v]) => `<option value="${k}">${v}</option>`).join("") : "");
+  sel.value = [...sel.options].some((o) => o.value === prima) ? prima : "";
   const sq = [...new Set(ev.map((e) => e.sq).filter(Boolean))];
   $("f-squadra").innerHTML = '<option value="">Entrambe</option>' + sq.map((x) => `<option>${x}</option>`).join("");
-  const qs = [...new Set(ev.map((e) => e.p))].sort((x, y) => x - y);
+  const qs = [...new Set(ev.map((e) => e.p).concat(segnalazioni.map((s) => s.p).filter((p) => p != null)))].sort((x, y) => x - y);
   $("f-quarto").innerHTML = '<option value="">Tutti</option>' + qs.map((p) => `<option value="${p}">${nomeQuarto(p)}</option>`).join("");
+  for (const id of ["f-squadra", "f-giocatore"]) $(id).closest("label").hidden = !ev.length;
   preparaGiocatori();
 }
 function preparaGiocatori() {
@@ -957,18 +1038,18 @@ function preparaGiocatori() {
 }
 for (const id of ["f-tipo", "f-squadra", "f-giocatore", "f-quarto"]) $(id).addEventListener("change", () => {
   if (id === "f-squadra") preparaGiocatori();
-  aggiornaCronaca();
+  aggiornaLista();
 });
-// minuto del video di un'azione. Ogni evento ha i secondi reali stimati dall'inizio del quarto (m): il
-// cronometro più le pause tipiche di timeout, falli, liberi e cambi. Basta segnare il salto a due: gli
-// altri quarti seguono dalla durata stimata più l'intervallo. Le correzioni ("l'azione è qui") sono punti
-// noti: tra due si interpola, oltre l'ultimo si usa il ritmo misurato su quella partita.
+// minuto del video di un'azione. Con la grafica: dal cronometro letto nel video (tra due letture si cerca
+// il secondo esatto). Senza grafica: ogni evento ha i secondi reali stimati dall'inizio del quarto (m), cioè
+// il cronometro più le pause tipiche di timeout, falli, liberi e cambi; basta la palla a due, e le
+// correzioni ("l'azione è qui") sono punti noti: tra due si interpola, oltre l'ultimo si usa il ritmo misurato.
 function pendenza(pts) {
   if (pts.length >= 2) {
     const a = pts[pts.length - 2], b = pts[pts.length - 1], tratto = Math.max(1, b[0] - a[0]);
-    // il ritmo misurato conta in proporzione al tratto che lo sostiene: una correzione a pochi secondi
-    // dall'inizio sposta le azioni successive, ma non le dilata per tutto il quarto
-    const peso = Math.min(1, tratto / 400);
+    // il ritmo misurato conta in proporzione al tratto che lo sostiene, e al più per metà: una correzione
+    // sposta le azioni successive, ma non le dilata per tutto il quarto
+    const peso = 0.5 * Math.min(1, tratto / 400);
     return 1 + peso * (Math.min(1.6, Math.max(0.7, (b[1] - a[1]) / tratto)) - 1);
   }
   return 1;
@@ -984,21 +1065,25 @@ function valuta(pts, m) {
   return u[1] + (m - u[0]) * pendenza(pts);
 }
 const fineReale = (p) => cronaca.fine[p] != null ? cronaca.fine[p] : 1.25 * durataQuarto(p) + 500;
+const pausaDopo = (p) => p === 2 ? 900 : 120;   // intervallo lungo dopo il 2° quarto
 function inizioStimato(p, prof = 0) {
   if (cronaca.inizi[p] != null) return cronaca.inizi[p];
   if (p <= 1 || prof > 8) return null;
+  // fine del periodo prima dal cronometro letto, se c'è
+  const iv = intervallo(p - 1, durataQuarto(p - 1) - 0.5);
+  if (iv) return (iv.lo + iv.hi) / 2 + pausaDopo(p - 1);
   const pts = puntiPeriodo(p - 1, prof + 1);
   if (!pts.length) return null;
-  return valuta(pts, fineReale(p - 1)) + (p - 1 === 2 ? 900 : 120);   // intervallo lungo dopo il 2° quarto
+  return valuta(pts, fineReale(p - 1)) + pausaDopo(p - 1);
 }
 function puntiPeriodo(p, prof = 0) {
   const pts = (ancore[p] || []).slice();
   const i0 = inizioStimato(p, prof);
   if (i0 != null && !pts.some((x) => x[0] === 0)) pts.push([0, i0]);
-  // inizio del quarto dopo segnato dallo staff: fissa anche la fine reale di questo
+  // inizio del quarto dopo noto: fissa anche la fine reale di questo
   const dopo = cronaca.inizi[p + 1], fine = fineReale(p);
   if (dopo != null && i0 != null && !pts.some((x) => x[0] >= fine)) {
-    const t = dopo - (p === 2 ? 900 : 120);
+    const t = dopo - pausaDopo(p);
     if (t > i0) pts.push([fine, Math.min(i0 + 1.6 * fine, Math.max(i0 + 0.7 * fine, t))]);
   }
   return pts.sort((x, y) => x[0] - y[0]);
@@ -1010,272 +1095,565 @@ function stima(e) {
   const v = valuta(puntiPeriodo(e.p), reale(e));
   return v == null ? null : Math.max(0, v);
 }
-function eventiFiltrati() {
+// secondi reali dall'inizio del periodo per un secondo di gioco qualsiasi (per le segnalazioni)
+function mDaGs(p, gs) {
+  const ev = cronaca.eventi.filter((x) => x.p === p);
+  let prima = null, dopo = null;
+  for (const x of ev) {
+    if (x.s <= gs && (!prima || reale(x) > reale(prima))) prima = x;
+    if (x.s > gs && (!dopo || reale(x) < reale(dopo))) dopo = x;
+  }
+  if (dopo) return Math.max(prima ? reale(prima) : 0, reale(dopo) - 1.25 * (dopo.s - gs));
+  return prima ? reale(prima) + 1.25 * (gs - prima.s) : 1.25 * gs;
+}
+function gsDaM(p, m) {
+  const ev = cronaca.eventi.filter((x) => x.p === p).sort((a, b) => reale(a) - reale(b));
+  let prima = null, dopo = null;
+  for (const x of ev) { if (reale(x) <= m) prima = x; else { dopo = x; break; } }
+  const g = prima ? prima.s + Math.max(0, m - reale(prima)) / 1.25 : m / 1.25;
+  return Math.min(dopo ? dopo.s : durataQuarto(p), g);
+}
+const periodi = () => [...new Set(cronaca.eventi.map((e) => e.p))].sort((x, y) => x - y);
+function inizioNoto(p) {
+  if (letture[p] && letture[p].length) return Math.min(letture[p][0][1], cronaca.inizi[p] != null ? cronaca.inizi[p] : Infinity);
+  return inizioStimato(p);
+}
+function periodoA(t) {
+  let p0 = null;
+  for (const p of periodi()) { const a = inizioNoto(p); if (a != null && a <= t + 1) p0 = p; }
+  return p0;
+}
+function gsStimato(p, t) {
+  const L = letture[p];
+  if (L && L.length) {
+    let a = null, b = null;
+    for (const x of L) { if (x[1] <= t) a = x; else if (!b) b = x; }
+    if (a) return Math.min(durataQuarto(p), a[0] + Math.min(t - a[1], b ? b[0] - a[0] : Infinity));
+    return Math.max(0, b[0] - (b[1] - t));
+  }
+  const pts = puntiPeriodo(p);
+  if (!pts.length) return null;
+  let lo = 0, hi = fineReale(p);
+  for (let k = 0; k < 40; k++) { const m = (lo + hi) / 2; if (valuta(pts, m) < t) lo = m; else hi = m; }
+  return gsDaM(p, (lo + hi) / 2);
+}
+async function tempoDiGioco(t) {
+  const p = periodoA(t);
+  if (p == null) return null;
+  if (grafica && lettore && !scan && Math.abs(video.currentTime - t) < 1.5) {
+    // il fotogramma che si vede, senza spostare il video (solo se è ancora quello della segnalazione)
+    const r = await inCoda(() => Math.abs(video.currentTime - t) < 1.5 ? leggiOra() : null);
+    if (r != null && r <= durataQuarto(p) + 0.5) return { p, gs: Math.round((durataQuarto(p) - r) * 10) / 10 };
+  }
+  const gs = gsStimato(p, t);
+  return gs == null ? null : { p, gs: Math.round(gs * 10) / 10 };
+}
+// segnalazioni fatte su questo video prima della sincronizzazione: ora hanno anche il tempo di gioco
+function completaSegnalazioni() {
+  for (const s of segnalazioni) {
+    if (s.fp !== impronta || s.p != null) continue;
+    const p = periodoA(s.t), gs = p == null ? null : gsStimato(p, s.t);
+    if (gs != null) { s.p = p; s.gs = Math.round(gs * 10) / 10; }
+  }
+}
+function stimaSegn(s) {
+  if (s.fp && s.fp === impronta) return s.t;
+  if (s.p == null || s.gs == null) return null;
+  return stima({ p: s.p, s: s.gs, m: mDaGs(s.p, s.gs) });
+}
+// voci dell'elenco: azioni della cronaca e segnalazioni dello staff, in ordine di gioco
+function voci() {
   const t = $("f-tipo").value, sq = $("f-squadra").value, gi = $("f-giocatore").value, q = $("f-quarto").value;
-  return cronaca.eventi.filter((e) => (!t || IN_GRUPPO[t](e.tipo)) && (!sq || e.sq === sq) && (!gi || e.g === gi) &&
-                                      (!q || String(e.p) === q));
-}
-function aggiornaSync() {
-  const box = $("sync"); box.innerHTML = "";
-  const qs = [...new Set(cronaca.eventi.map((e) => e.p))].sort((x, y) => x - y);
-  for (const p of qs) {
-    const b = document.createElement("button"); b.className = "btn piccolo";
-    const fatto = cronaca.inizi[p] != null;
-    b.innerHTML = fatto ? `${p === 1 ? "Salto a due" : nomeQuarto(p)} ✓ ${orario(cronaca.inizi[p], false)}` :
-      p === 1 ? "Salto a due qui" : `Inizio ${nomeQuarto(p)} qui${inizioStimato(p) != null ? " (facoltativo)" : ""}`;
-    b.title = p === 1 ? "Porta il video al salto a due e tocca: gli altri quarti si calcolano da soli" :
-      "Facoltativo: se l'inizio stimato non coincide, porta il video al primo possesso del quarto e tocca";
-    if (fatto) b.style.borderColor = "#2f9e6b";
-    b.addEventListener("click", () => { cronaca.inizi[p] = video.currentTime; aggiornaCronaca(); });
-    box.appendChild(b);
+  const out = [];
+  const soloSegn = t === "*" || t.startsWith("★");
+  if (!soloSegn) for (const e of cronaca.eventi) {
+    if ((t && !IN_GRUPPO[t](e.tipo)) || (sq && e.sq !== sq) || (gi && e.g !== gi) || (q && String(e.p) !== q)) continue;
+    out.push({ e, k: [e.p, e.s, reale(e)] });
   }
-  if (IN_APP && cronaca.partita) {
-    const r = document.createElement("button"); r.className = "btn piccolo";
-    r.textContent = "Ricorda gli inizi per questa partita";
-    r.title = "Salva solo i minuti di inizio dei quarti (non il video), per la prossima volta";
-    r.addEventListener("click", () => {
-      invia({ azione: "sync", partita_id: cronaca.partita, inizi: cronaca.inizi, t: Date.now() });
-      r.textContent = "Inizi ricordati ✓";
-    });
-    box.appendChild(r);
+  if (!sq && !gi && (!t || soloSegn)) for (const s of segnalazioni) {
+    if (t.startsWith("★a:") && s.azione !== t.slice(3)) continue;
+    if (t.startsWith("★s:") && s.schema !== t.slice(3)) continue;
+    if (q && String(s.p) !== q) continue;
+    out.push({ s, k: s.p != null ? [s.p, s.gs, mDaGs(s.p, s.gs)] : [99, s.t, 0] });
   }
+  return out.sort((a, b) => a.k[0] - b.k[0] || a.k[1] - b.k[1] || a.k[2] - b.k[2]);
 }
-function aggiornaCronaca() {
+function aggiornaLista() {
   const c = cronaca.eventi.length > 0;
-  $("cronaca-vuota").hidden = c; $("cronaca-piena").hidden = !c;
-  if (!c) { altezza(); return; }
+  $("sync").hidden = !c;
   aggiornaSync();
-  const lista = $("lista-cronaca"); lista.innerHTML = "";
-  const voci = eventiFiltrati();
-  if (!voci.length) lista.innerHTML = '<div class="vuoto">Nessuna azione con questi filtri.</div>';
-  for (const e of voci.slice(0, 400)) {
-    const t = stima(e), r = document.createElement("div");
-    r.className = "voce" + (t == null ? " spenta" : "");
-    r.setAttribute("aria-current", scelto === e ? "true" : "false");
-    r.innerHTML = `<span class="quando">${e.p <= 4 ? e.p + "°" : "S" + (e.p - 4)} ${e.cron}</span>` +
-      `<span>${e.g ? `<b>${e.g}</b> · ` : ""}${e.testo}${e.sq ? ` · ${e.sq}` : ""}` +
-      `${e.pt ? ` <span class="quando">${e.pt}</span>` : ""}</span>` +
-      `<span class="quando">${t == null ? "—" : orario(t, false)}</span>`;
-    r.addEventListener("click", async () => {
-      scelto = e;
-      if (letture[e.p]) {
-        await affina(e);
-        const pr = eventoInizio(e);
-        if (pr) await affina(pr);
-      }
-      const v = stima(e);
-      if (v == null) {
-        $("nota-sync").textContent = "Prima segna il salto a due: porta il video alla palla a due e tocca «Salto a due qui».";
-        aggiornaCronaca(); return;
-      }
-      aggiornaCronaca();
-      riproduci([clipAzione(e, v)]);
-    });
+  const lista = $("lista"); lista.innerHTML = "";
+  const vv = voci();
+  if (!vv.length) {
+    lista.innerHTML = `<div class="vuoto">${c ? "Nessuna azione con questi filtri." :
+      segnalazioni.length ? "Nessuna segnalazione con questi filtri." :
+      "Tocca un tasto sotto il video mentre guardi la partita: la situazione si segna in quel momento e la ritrovi qui."}</div>`;
+  }
+  for (const x of vv.slice(0, 500)) {
+    const r = document.createElement("div");
+    if (x.e) {
+      const e = x.e, t = stima(e);
+      r.className = "voce" + (t == null ? " spenta" : "");
+      r.setAttribute("aria-current", scelto === e ? "true" : "false");
+      r.innerHTML = `<span class="quando">${breveQuarto(e.p)} ${e.cron}</span>` +
+        `<span>${e.g ? `<b>${e.g}</b> · ` : ""}${e.testo}${e.sq ? ` · ${e.sq}` : ""}` +
+        `${e.pt ? ` <span class="quando">${e.pt}</span>` : ""}</span>` +
+        `<span class="quando">${t == null ? "—" : orario(t, false)}</span>`;
+      r.addEventListener("click", () => vaiAzione(e));
+    } else {
+      const s = x.s, t = stimaSegn(s);
+      r.className = "voce segn" + (t == null ? " spenta" : "");
+      r.innerHTML = `<span class="quando">${s.p != null ? `${breveQuarto(s.p)} ${cronometro(s.p, s.gs)}` : "★"}</span>` +
+        `<span><b>★ ${esc(s.azione || "")}</b>${s.azione && s.schema ? " · " : ""}${s.schema ? `<b class="sch">${esc(s.schema)}</b>` : ""}</span>` +
+        `<span class="quando">${t == null ? "—" : orario(t, false)}</span>`;
+      const del = document.createElement("button"); del.className = "x"; del.textContent = "×"; del.title = "Togli la segnalazione";
+      del.addEventListener("click", (ev) => { ev.stopPropagation(); segnalazioni = segnalazioni.filter((y) => y !== s);
+        aggiornaTag(); aggiornaLista(); salvaPresto(); });
+      r.appendChild(del);
+      r.addEventListener("click", () => {
+        if (t == null) { nota("Questa segnalazione è stata fatta su un altro video: sincronizza questo video per ritrovarla."); return; }
+        scelto = null; aggiornaLista(); riproduci([{ a: t - PRIMA_SEGN, b: t + DOPO_SEGN, lab: "★ " + nomeSegn(s) }]);
+      });
+    }
     lista.appendChild(r);
   }
+  $("qui").hidden = !scelto;
   altezza();
 }
-$("qui").addEventListener("click", () => {
-  if (!scelto) { $("nota-sync").textContent = "Scegli prima un'azione dall'elenco, poi porta il video al momento giusto."; return; }
-  const p = scelto.p;
-  ancore[p] = (ancore[p] || []).filter((x) => x[0] !== reale(scelto));
-  ancore[p].push([reale(scelto), video.currentTime]);
-  $("nota-sync").textContent = `Sincronizzato: ${scelto.testo} del ${nomeQuarto(p)} al minuto ${orario(video.currentTime, false)} del video. Le azioni vicine si sono allineate.`;
-  aggiornaCronaca();
-});
-$("seq-cronaca").addEventListener("click", async () => {
-  const voci = eventiFiltrati().filter((e) => letture[e.p]).slice(0, 60);
-  for (let i = 0; i < voci.length; i++) {
-    $("nota-sync").textContent = `Allineo le azioni sulla grafica: ${i + 1} di ${voci.length}…`;
-    await affina(voci[i]);
+const nota = (t) => { $("nota-cronaca").textContent = t; };
+async function vaiAzione(e) {
+  if (scan || occupato.attivo) return;
+  scelto = e; aggiornaLista();
+  if (grafica && letture[e.p]) {
+    await occupato("Allineo l'azione sul cronometro…", async () => {
+      await affina(e);
+      const pr = eventoInizio(e);
+      if (pr) await affina(pr);
+    });
+    salvaPresto();
   }
-  const clip = eventiFiltrati().map((e) => [e, stima(e)]).filter(([, v]) => v != null)
-    .map(([e, v]) => clipAzione(e, v));
-  if (!clip.length) { $("nota-sync").textContent = "Segna prima il salto a due: poi le azioni si possono rivedere in sequenza."; return; }
-  riproduci(clip);
+  const v = stima(e);
+  if (v == null) {
+    nota("Prima sincronizza il video: «Sincronizza con il cronometro» o, se non c'è la grafica, «Palla a due qui».");
+    return;
+  }
+  aggiornaLista();
+  riproduci([clipAzione(e, v)]);
+}
+// correzione a mano: il video è sul momento dell'azione scelta
+$("qui").addEventListener("click", () => {
+  if (!scelto) return;
+  const e = scelto, p = e.p, t = video.currentTime;
+  if (letture[p]) {          // con la grafica: la lettura nuova vince su quelle che non tornano più
+    const L = letture[p].filter((x) => !((x[1] < t && x[0] > e.s + 0.5) || (x[1] > t && x[0] < e.s - 0.5)));
+    L.push([e.s, t]); L.sort((a, b) => a[1] - b[1]); letture[p] = L;
+  } else {
+    ancore[p] = (ancore[p] || []).filter((x) => x[0] !== reale(e));
+    ancore[p].push([reale(e), t]);
+  }
+  completaSegnalazioni();
+  nota(`Corretto: ${e.testo} del ${nomeQuarto(p)} al minuto ${orario(t, false)} del video. Le azioni vicine si sono allineate.`);
+  aggiornaLista(); salvaPresto();
 });
+$("seq").addEventListener("click", async () => {
+  if (scan || occupato.attivo) return;
+  const vv = voci().slice(0, 80);
+  const daAffinare = vv.filter((x) => x.e && grafica && letture[x.e.p]);
+  if (daAffinare.length) {
+    await occupato("Allineo le azioni sul cronometro…", async () => {
+      for (let i = 0; i < daAffinare.length; i++) {
+        $("attesa").textContent = `Allineo le azioni sul cronometro: ${i + 1} di ${daAffinare.length}…`;
+        await affina(daAffinare[i].e);
+        const pr = eventoInizio(daAffinare[i].e);
+        if (pr) await affina(pr);
+      }
+    });
+    salvaPresto();
+  }
+  const clip = [];
+  for (const x of vv) {
+    if (x.e) { const v = stima(x.e); if (v != null) clip.push(clipAzione(x.e, v)); }
+    else { const v = stimaSegn(x.s); if (v != null) clip.push({ a: Math.max(0, v - PRIMA_SEGN), b: v + DOPO_SEGN, lab: "★ " + nomeSegn(x.s) }); }
+  }
+  if (!clip.length) { nota("Niente da rivedere: sincronizza prima il video con la partita."); return; }
+  aggiornaLista(); riproduci(clip);
+});
+$("palla-a-due").addEventListener("click", () => {
+  if (!url) return;
+  azzeraSync(); cronaca.inizi[1] = video.currentTime; completaSegnalazioni();
+  nota(`Palla a due al minuto ${orario(video.currentTime, false)} del video. Gli altri quarti sono stimati dai tempi morti della cronaca: se un'azione non coincide, portati sul momento giusto e tocca «📍 L'azione è qui».`);
+  aggiornaLista(); salvaPresto();
+});
+function aggiornaSync() {
+  const ps = periodi(), lett = ps.filter((p) => letture[p] && letture[p].length);
+  const st = $("sync-stato");
+  $("sincronizza").hidden = !!scan; $("ferma-sync").hidden = !scan; $("palla-a-due").hidden = !!scan || !!grafica;
+  if (scan) return;
+  $("sincronizza").textContent = grafica ? "Sincronizza di nuovo" : "Sincronizza con il cronometro";
+  $("sincronizza").classList.toggle("primario", !grafica);
+  $("da-box").hidden = !grafica || !campioni || lett.length >= ps.length;
+  if (grafica && lett.length) {
+    st.innerHTML = `<b>Sincronizzato dal cronometro</b> · ${lett.map((p) => nomeQuarto(p)).join(", ")}. Tocca un'azione: il video va al secondo giusto.`;
+  } else if (cronaca.inizi[1] != null || Object.keys(ancore).length) {
+    st.innerHTML = `<b>Sincronizzato a mano</b> · palla a due ${cronaca.inizi[1] != null ? orario(cronaca.inizi[1], false) : "—"}. I minuti sono stimati: correggi con «📍 L'azione è qui».`;
+  } else {
+    st.textContent = "Per collegare il video alla cronaca: se il video ha la grafica con il tempo, tocca «Sincronizza con il cronometro» (uno o due minuti, una volta sola per video). Altrimenti porta il video alla palla a due e tocca «Palla a due qui».";
+  }
+}
 
-// ------------------------------------------------------------------ sincronizzazione dalla grafica del video
-// Il cronometro in sovrimpressione si legge con un OCR che gira nel browser (Tesseract, file serviti
-// dalla piattaforma): fotogrammi e letture restano sul dispositivo. Si scorre il video a passi regolari,
-// poi per ogni azione si stringe l'intervallo fino al secondo con una ricerca binaria.
-const PASSO_OCR = 12;
-let ocr = null, scansione = null, catena = Promise.resolve();
+// ------------------------------------------------------------------ lettura del cronometro dalla grafica
+// Il cronometro in sovrimpressione si cerca da solo: componenti dell'immagine a forma di cifra, allineate,
+// con i due punti in mezzo ("08:27", "8:27"; nell'ultimo minuto anche "45.3"). Solo quelle cifre, ripulite,
+// vanno all'OCR (Tesseract, servito dalla piattaforma e in funzione nel browser): fotogrammi e letture
+// restano sul dispositivo. Si legge il video che si vede, per funzionare anche su iPad e iPhone.
+let grafica = null;          // {x0, y0, x1, y1, h, chiaro}: riquadro del cronometro in frazioni del fotogramma
+let letture = {};            // {periodo: [[secondi di gioco, secondi del video], ...]}
+let campioni = null;         // letture della scansione, prima di dividerle nei periodi
+let lettore = null, scan = null, catena = Promise.resolve();
+const PASSO = 30;
 const inCoda = (fn) => { const p = catena.then(fn); catena = p.catch(() => {}); return p; };
 function caricaScript(src) {
   return new Promise((ok, ko) => {
     const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = ko; document.head.appendChild(s);
   });
 }
-async function preparaOcr() {
-  if (ocr) return ocr;
+async function preparaLettore() {
+  if (lettore) return lettore;
   const base = new URL("ocr/", location.href).href;
   if (!window.Tesseract) await caricaScript(base + "tesseract.min.js");
   const worker = await Tesseract.createWorker("eng", 1, { workerPath: base + "worker.min.js", corePath: base,
                                                           langPath: base.slice(0, -1), gzip: true });
   await worker.setParameters({ tessedit_char_whitelist: "0123456789:.", tessedit_pageseg_mode: "7" });
-  const v = document.createElement("video");
-  v.muted = true; v.playsInline = true; v.preload = "auto";
-  v.style.cssText = "position:absolute;left:-9999px;width:2px;height:2px;opacity:0";
-  document.body.appendChild(v); v.src = url;
-  await new Promise((ok) => v.addEventListener("loadeddata", ok, { once: true }));
-  try { await v.play(); v.pause(); } catch (e) { /* alcuni browser non lo chiedono */ }
   const tela2 = document.createElement("canvas");
-  ocr = { worker, v, tela2, g2: tela2.getContext("2d", { willReadFrequently: true }) };
-  return ocr;
+  lettore = { worker, tela2, g2: tela2.getContext("2d", { willReadFrequently: true }) };
+  return lettore;
 }
-function fermaOcr() {
-  if (scansione) scansione.stop = true;
-  if (ocr) { ocr.worker.terminate(); ocr.v.removeAttribute("src"); ocr.v.load(); ocr.v.remove(); ocr = null; }
-  catena = Promise.resolve();
+async function occupato(testo, fn) {
+  occupato.attivo = true; $("attesa").textContent = testo; $("attesa").hidden = false;
+  video.pause(); coda = null;
+  try { return await fn(); } finally { occupato.attivo = false; $("attesa").hidden = true; }
 }
 function cerca(v, t) {
   return new Promise((ok) => {
     const fatto = () => { v.removeEventListener("seeked", fatto); clearTimeout(tm); ok(); };
-    const tm = setTimeout(fatto, 4000);
+    const tm = setTimeout(fatto, 3000);
     v.addEventListener("seeked", fatto); v.currentTime = Math.max(0, Math.min(t, (v.duration || t) - 0.05));
   });
 }
-// testo letto -> secondi che mancano alla fine del periodo ("08:27", "45.3", "0827")
-let pulito = false, fiducia = 0;         // l'ultima lettura conteneva solo il cronometro; sicurezza dell'OCR
+function grigio(d, W, H) {
+  const g = new Uint8Array(W * H);
+  for (let i = 0, j = 0; j < g.length; i += 4, j++) g[j] = (77 * d[i] + 150 * d[i + 1] + 29 * d[i + 2]) >> 8;
+  return g;
+}
+// soglia locale: testo chiaro (o scuro) rispetto alla media dei dintorni
+function soglia(g, W, H, r, C, chiaro) {
+  const I = new Float64Array((W + 1) * (H + 1)), b = new Uint8Array(W * H);
+  for (let y = 0; y < H; y++) {
+    let s = 0;
+    for (let x = 0; x < W; x++) { s += g[y * W + x]; I[(y + 1) * (W + 1) + x + 1] = I[y * (W + 1) + x + 1] + s; }
+  }
+  for (let y = 0; y < H; y++) {
+    const y0 = Math.max(0, y - r), y1 = Math.min(H, y + r + 1);
+    for (let x = 0; x < W; x++) {
+      const x0 = Math.max(0, x - r), x1 = Math.min(W, x + r + 1);
+      const m = (I[y1 * (W + 1) + x1] - I[y0 * (W + 1) + x1] - I[y1 * (W + 1) + x0] + I[y0 * (W + 1) + x0]) / ((x1 - x0) * (y1 - y0));
+      const v = g[y * W + x];
+      b[y * W + x] = chiaro ? (v > m + C ? 1 : 0) : (v < m - C ? 1 : 0);
+    }
+  }
+  return b;
+}
+function componenti(b, W, H) {
+  const lab = new Int32Array(W * H).fill(-1), out = [], pila = new Int32Array(W * H);
+  for (let i = 0; i < b.length; i++) {
+    if (!b[i] || lab[i] >= 0) continue;
+    const id = out.length; let n = 0, sp = 0, x0 = W, y0 = H, x1 = 0, y1 = 0;
+    pila[sp++] = i; lab[i] = id;
+    while (sp) {
+      const j = pila[--sp], x = j % W, y = (j - x) / W; n++;
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+      if (x > 0 && b[j - 1] && lab[j - 1] < 0) { lab[j - 1] = id; pila[sp++] = j - 1; }
+      if (x < W - 1 && b[j + 1] && lab[j + 1] < 0) { lab[j + 1] = id; pila[sp++] = j + 1; }
+      if (y > 0 && b[j - W] && lab[j - W] < 0) { lab[j - W] = id; pila[sp++] = j - W; }
+      if (y < H - 1 && b[j + W] && lab[j + W] < 0) { lab[j + W] = id; pila[sp++] = j + W; }
+    }
+    out.push({ id, n, x0, y0, x1, y1, w: x1 - x0 + 1, h: y1 - y0 + 1 });
+  }
+  return { lab, cc: out };
+}
+// candidati a cronometro in un'immagine grigia: {box, h, chiaro, ids, lab, W}
+function cercaOrologi(g, W, H, opz = {}) {
+  const trovati = [];
+  for (const chiaro of [true, false]) {
+    const b = soglia(g, W, H, Math.max(6, Math.round((opz.hmin || H / 40) * (opz.hmin ? 1.2 : 1))), 18, chiaro);
+    const { lab, cc } = componenti(b, W, H);
+    const hmin = opz.hmin || Math.max(6, H * 0.012), hmax = opz.hmax || H * 0.14;
+    // cifre: una componente alta come il testo; a bassa risoluzione due cifre vicine si toccano e
+    // diventano una sola componente larga il doppio, che si divide a metà
+    const cifre = [];
+    for (const c of cc) {
+      if (c.h < hmin || c.h > hmax || c.n < 0.12 * c.w * c.h) continue;
+      const r = c.w / c.h;
+      if (r >= 0.15 && r <= 1.0) cifre.push(c);
+      else if (r > 1.0 && r <= 2.1) {
+        const m = Math.round(c.w / 2);
+        cifre.push({ ...c, x1: c.x0 + m - 1, w: m }, { ...c, x0: c.x0 + m, w: c.w - m });
+      }
+    }
+    cifre.sort((a, b) => a.x0 - b.x0);
+    const punti = cc.filter((c) => c.w <= 0.5 * hmax && c.h <= 0.5 * hmax && c.w / c.h > 0.4 && c.w / c.h < 2.5 &&
+                                   c.n >= 0.4 * c.w * c.h);
+    const tra = (xa, xb, a, cond) => punti.find((p) => p.x0 >= xa - 1 && p.x1 <= xb + 1 && p.h <= 0.35 * a.h && cond(p));
+    for (let i = 0; i < cifre.length; i++) {
+      const a = cifre[i], fila = [a];
+      for (let j = i + 1; j < cifre.length && fila.length < 4; j++) {
+        const c = cifre[j], u = fila[fila.length - 1];
+        if (c.x0 - u.x1 > 1.3 * a.h) break;
+        if (c.x0 <= u.x1 - 0.3 * c.w && c.id !== u.id) continue;
+        if (Math.abs(c.h - a.h) > 0.18 * a.h || Math.abs(c.y0 - a.y0) > 0.18 * a.h || Math.abs(c.y1 - a.y1) > 0.18 * a.h) continue;
+        fila.push(c);
+      }
+      let parti = null;
+      for (const n of [4, 3]) {                     // "08:27" e "8:27": i due punti tra minuti e secondi
+        if (parti || fila.length < n) continue;
+        const f = fila.slice(0, n), xa = f[n - 3].x1, xb = f[n - 2].x0;
+        if (xb - xa < 0.12 * a.h) continue;
+        const su = tra(xa, xb, a, (p) => p.y0 >= a.y0 - 0.1 * a.h && p.y1 <= a.y0 + 0.6 * a.h);
+        const giu = tra(xa, xb, a, (p) => p !== su && p.y0 >= a.y0 + 0.4 * a.h && p.y1 <= a.y1 + 0.1 * a.h);
+        if (su && giu) parti = [...f, su, giu];
+      }
+      for (const n of opz.decimi ? [3, 2] : []) {   // "45.3" e "8.4": il punto in basso prima dei decimi
+        if (parti || fila.length < n) continue;
+        const f = fila.slice(0, n), xa = f[n - 2].x1, xb = f[n - 1].x0;
+        if (xb - xa < 0.08 * a.h) continue;
+        const pt = tra(xa, xb, a, (p) => p.y0 >= a.y0 + 0.6 * a.h && p.y1 <= a.y1 + 0.15 * a.h);
+        if (pt) parti = [...f, pt];
+      }
+      if (!parti) continue;
+      const box = { x0: Math.min(...parti.map((p) => p.x0)), y0: Math.min(...parti.map((p) => p.y0)),
+                    x1: Math.max(...parti.map((p) => p.x1)), y1: Math.max(...parti.map((p) => p.y1)) };
+      trovati.push({ chiaro, box, h: a.h, ids: new Set(parti.map((p) => p.id)), lab, W });
+    }
+  }
+  // un riquadro dentro un altro ("3:08" dentro "03:08"): si tiene il più grande
+  return trovati.filter((t) => !trovati.some((u) => u !== t && u.box.x0 <= t.box.x0 && u.box.x1 >= t.box.x1 &&
+    u.box.y0 <= t.box.y0 + 1 && u.box.y1 >= t.box.y1 - 1 && (u.box.x1 - u.box.x0 > t.box.x1 - t.box.x0)));
+}
+// immagine pulita per l'OCR: il grigio del riquadro ingrandito (cifre alte ~48 px), soglia di Otsu, testo
+// nero su bianco; tutto ciò che non tocca le cifre trovate diventa bianco
+function ritaglioPulito(t, g) {
+  const { box, ids, lab, W } = t, H = lab.length / W, pad = 12, k = 48 / t.h, m = Math.max(1, Math.round(t.h * 0.08));
+  const bx0 = Math.max(0, box.x0 - m), by0 = Math.max(0, box.y0 - m), bx1 = Math.min(W - 1, box.x1 + m), by1 = Math.min(H - 1, box.y1 + m);
+  const w = bx1 - bx0 + 1, h = by1 - by0 + 1;
+  const s = document.createElement("canvas"); s.width = w; s.height = h;
+  const sg = s.getContext("2d"), im = sg.createImageData(w, h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const v = g[(by0 + y) * W + bx0 + x], i = (y * w + x) * 4;
+    im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = 255;
+  }
+  sg.putImageData(im, 0, 0);
+  const c = document.createElement("canvas"); c.width = Math.round(w * k) + 2 * pad; c.height = Math.round(h * k) + 2 * pad;
+  const cg = c.getContext("2d", { willReadFrequently: true });
+  cg.imageSmoothingEnabled = true; cg.imageSmoothingQuality = "high";
+  cg.drawImage(s, pad, pad, c.width - 2 * pad, c.height - 2 * pad);
+  const d = cg.getImageData(0, 0, c.width, c.height), p = d.data, ist = new Array(256).fill(0);
+  const dentro = new Uint8Array(c.width * c.height);
+  for (let Y = pad; Y < c.height - pad; Y++) for (let X = pad; X < c.width - pad; X++) {
+    const x = Math.floor((X - pad) / k) + bx0, y = Math.floor((Y - pad) / k) + by0;
+    let vicino = false;
+    for (let dy = -m; dy <= m && !vicino; dy++) for (let dx = -m; dx <= m; dx++) {
+      const xx = x + dx, yy = y + dy;
+      if (xx >= 0 && yy >= 0 && xx < W && yy < H && ids.has(lab[yy * W + xx])) { vicino = true; break; }
+    }
+    if (vicino) { dentro[Y * c.width + X] = 1; ist[p[(Y * c.width + X) * 4]]++; }
+  }
+  let tot = 0, somma = 0;
+  for (let i = 0; i < 256; i++) { tot += ist[i]; somma += i * ist[i]; }
+  let sB = 0, wB = 0, sg2 = 128, meglio = -1;
+  for (let i = 0; i < 256; i++) {
+    wB += ist[i]; if (!wB || wB === tot) continue; sB += i * ist[i];
+    const v2 = wB * (tot - wB) * (sB / wB - (somma - sB) / (tot - wB)) ** 2;
+    if (v2 > meglio) { meglio = v2; sg2 = i; }
+  }
+  for (let j = 0; j < dentro.length; j++) {
+    const v = p[j * 4], testo = dentro[j] && (t.chiaro ? v > sg2 : v <= sg2);
+    p[j * 4] = p[j * 4 + 1] = p[j * 4 + 2] = testo ? 0 : 255; p[j * 4 + 3] = 255;
+  }
+  cg.putImageData(d, 0, 0);
+  return c;
+}
+// testo letto -> secondi che mancano alla fine del periodo ("08:27", "8:27", "45.3")
 function leggiTesto(t) {
-  t = (t || "").replace(/\s/g, "").replace(/,/g, ".").replace(/^[.:]+|[.:]+$/g, "");   // segni dei bordi della grafica
-  pulito = /^(\d{1,2}:\d{2}|\d{1,2}\.\d|\d{3,4})$/.test(t);
-  let m = t.match(/(\d{1,2}):(\d{2})/);
+  t = (t || "").replace(/\s/g, "").replace(/,/g, ".").replace(/^[.:]+|[.:]+$/g, "");
+  let m = t.match(/^(\d{1,2}):(\d{2})$/);
   if (m && +m[2] < 60 && +m[1] <= 12) return +m[1] * 60 + +m[2];
   m = t.match(/^(\d{1,2})\.(\d)$/);
   if (m && +m[1] < 60) return +m[1] + +m[2] / 10;
-  m = t.match(/^(\d{1,2})(\d{2})$/);
-  if (m && +m[2] < 60 && +m[1] <= 12) return +m[1] * 60 + +m[2];
   return null;
 }
-let ritaglio = null;                     // posizione dell'ultimo ritaglio nel video (per le parole trovate)
-async function leggiFotogramma(v, opzioni) {
-  const { worker, tela2, g2 } = ocr, z = zonaOrologio, W = v.videoWidth, H = v.videoHeight;
-  const sx = Math.max(0, z[0] * W), sy = Math.max(0, z[1] * H);
-  const sw = Math.min(W - sx, (z[2] - z[0]) * W), sh = Math.min(H - sy, (z[3] - z[1]) * H);
-  if (sw < 4 || sh < 4) return null;
-  const k = Math.max(1, Math.min(6, 80 / sh)), pad = 12;
-  ritaglio = { sx, sy, k, pad, W, H };
-  tela2.width = Math.round(sw * k) + 2 * pad; tela2.height = Math.round(sh * k) + 2 * pad;
-  g2.drawImage(v, sx, sy, sw, sh, pad, pad, tela2.width - 2 * pad, tela2.height - 2 * pad);
-  // bianco e nero con soglia di Otsu, testo scuro su fondo chiaro
-  const d = g2.getImageData(0, 0, tela2.width, tela2.height), px = d.data, ist = new Array(256).fill(0), lum = [];
-  for (let y = 0; y < tela2.height; y++) for (let x = 0; x < tela2.width; x++) {
-    const i = (y * tela2.width + x) * 4, dentro = x >= pad && y >= pad && x < tela2.width - pad && y < tela2.height - pad;
-    const l = dentro ? Math.round(0.3 * px[i] + 0.59 * px[i + 1] + 0.11 * px[i + 2]) : -1;
-    lum.push(l); if (l >= 0) ist[l]++;
-  }
-  let tot = 0, somma = 0; for (let i = 0; i < 256; i++) { tot += ist[i]; somma += i * ist[i]; }
-  let sB = 0, wB = 0, soglia = 128, meglio = -1;
-  for (let i = 0; i < 256; i++) {
-    wB += ist[i]; if (!wB || wB === tot) continue;
-    sB += i * ist[i];
-    const mB = sB / wB, mF = (somma - sB) / (tot - wB), v2 = wB * (tot - wB) * (mB - mF) ** 2;
-    if (v2 > meglio) { meglio = v2; soglia = i; }
-  }
-  const chiari = lum.filter((l) => l > soglia).length, dentro = lum.filter((l) => l >= 0).length;
-  const testoChiaro = chiari < dentro / 2;                 // poche cifre chiare su fondo scuro
-  lum.forEach((l, j) => {
-    const nero = l >= 0 && (testoChiaro ? l > soglia : l <= soglia);
-    px[j * 4] = px[j * 4 + 1] = px[j * 4 + 2] = nero ? 0 : 255; px[j * 4 + 3] = 255;
-  });
-  g2.putImageData(d, 0, 0);
-  if (opzioni) return (await worker.recognize(tela2, {}, opzioni)).data;
-  const { data } = await worker.recognize(tela2);
-  fiducia = data.confidence || 0;
-  return leggiTesto(data.text);
+// parte del fotogramma che si vede, in grigio (frazioni del fotogramma; al massimo maxPx pixel)
+function grigioDi(x0, y0, x1, y1, maxPx) {
+  const W0 = video.videoWidth, H0 = video.videoHeight;
+  const sx = Math.max(0, Math.floor(x0 * W0)), sy = Math.max(0, Math.floor(y0 * H0));
+  const sw = Math.min(W0, Math.ceil(x1 * W0)) - sx, sh = Math.min(H0, Math.ceil(y1 * H0)) - sy;
+  if (sw < 8 || sh < 8) return null;
+  const k = Math.min(1, Math.sqrt(maxPx / (sw * sh))), W = Math.round(sw * k), H = Math.round(sh * k);
+  const { tela2, g2 } = lettore;
+  tela2.width = W; tela2.height = H;
+  g2.drawImage(video, sx, sy, sw, sh, 0, 0, W, H);
+  return { g: grigio(g2.getImageData(0, 0, W, H).data, W, H), W, H, sx, sy, k, W0, H0 };
 }
-const leggiA = (t) => inCoda(async () => { await cerca(ocr.v, t); return leggiFotogramma(ocr.v); });
-function chiudiRiquadro() {
-  const [a, b] = [riquadro.a, riquadro.b]; riquadro = null;
-  const z = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])]
-    .map((x) => Math.min(1, Math.max(0, x)));
-  if (z[2] - z[0] < 0.01 || z[3] - z[1] < 0.01) { $("ocr-stato").textContent = "Riquadro troppo piccolo: trascina dall'angolo in alto a sinistra a quello in basso a destra del cronometro."; disegna(); return; }
-  zonaOrologio = z; disegna();
-  provaLettura();
+async function leggiCandidato(fr, c) {
+  const { data } = await lettore.worker.recognize(ritaglioPulito(c, fr.g));
+  const testo = (data.text || "").trim();
+  return { r: (data.confidence || 0) >= 50 ? leggiTesto(testo) : null, testo };
 }
-// il riquadro fatto con il dito spesso prende anche quarto, 24 secondi o punteggio: si cerca dentro
-// la fascia che contiene solo il cronometro e si usa quella per tutta la lettura
-async function stringiZona(t) {
-  return inCoda(async () => {
-    const z = zonaOrologio, dur = ocr.v.duration || video.duration || 0;
-    const t2 = t + 1.5 < dur ? t + 1.5 : Math.max(0, t - 1.5);
-    // conferma su un secondo fotogramma: tempo fermo o sceso di quanto è passato
-    const conferma = async (c, r) => {
-      zonaOrologio = c; await cerca(ocr.v, t2);
-      const r2 = await leggiFotogramma(ocr.v);
-      return r2 != null && pulito && r2 <= r + 0.6 && r2 >= r - Math.abs(t2 - t) - 1.2;
-    };
-    await cerca(ocr.v, t);
-    const r0 = await leggiFotogramma(ocr.v);
-    if (r0 != null && pulito && fiducia >= 60 && await conferma(z, r0)) return r0;
-    // il riquadro prende anche altro: si cercano le parole a forma di cronometro e ci si stringe lì sopra
-    await ocr.worker.setParameters({ tessedit_pageseg_mode: "11" });
-    const posti = [];
-    try {
-      for (const tt of [t, t + 1, t + 2, t - 1, t + 3]) {
-        if (tt < 0 || tt > dur) continue;
-        zonaOrologio = z; await cerca(ocr.v, tt);
-        const dati = await leggiFotogramma(ocr.v, { blocks: true }), rt = ritaglio;
-        for (const bl of dati.blocks || []) for (const pa of bl.paragraphs || []) for (const li of pa.lines || []) for (const w of li.words || []) {
-          if (!/^\d{1,2}[:.]\d{1,2}$/.test((w.text || "").trim())) continue;
-          const bb = w.bbox, mx = (bb.x1 - bb.x0) * 0.15, my = (bb.y1 - bb.y0) * 0.25;
-          const nx = (x) => ((x - rt.pad) / rt.k + rt.sx) / rt.W, ny = (y) => ((y - rt.pad) / rt.k + rt.sy) / rt.H;
-          posti.push([nx(bb.x0 - mx), ny(bb.y0 - my), nx(bb.x1 + mx), ny(bb.y1 + my)]);
-        }
-        if (posti.length) break;
-      }
-    } finally {
-      await ocr.worker.setParameters({ tessedit_pageseg_mode: "7" });
-    }
-    for (const c of posti) {
-      zonaOrologio = c; await cerca(ocr.v, t);
-      const r = await leggiFotogramma(ocr.v);
-      if (r != null && pulito && await conferma(c, r)) { zonaOrologio = c; return r; }
-    }
-    zonaOrologio = z;
-    return null;
-  });
-}
-async function provaLettura() {
-  $("ocr-stato").textContent = "Cerco il cronometro nel riquadro…"; $("ocr-avvia").disabled = true;
-  try {
-    await preparaOcr();
-    const r = await stringiZona(video.currentTime);
-    modo = "orologio"; disegna();
-    if (r == null) { $("ocr-stato").textContent = "Non riesco a leggere il cronometro: riquadra solo le cifre del tempo (senza punteggio) su un fotogramma con la grafica."; return; }
-    $("ocr-stato").textContent = `Letto: ${orologio(r)} (riquadro giallo). Se è giusto, avvia la sincronizzazione.`;
-    $("ocr-avvia").disabled = false; aggiornaOcr();
-    setTimeout(() => { if (modo === "orologio") { modo = null; aggiornaOcr(); disegna(); } }, 2500);
-  } catch (err) {
-    $("ocr-stato").textContent = "Lettura automatica non disponibile su questo dispositivo: usa il salto a due.";
+// tutti i cronometri leggibili nel fotogramma
+async function trovaQui() {
+  if (!video.videoWidth) return [];
+  const fr = grigioDi(0, 0, 1, 1, 2.2e6), out = [];
+  if (!fr) return out;
+  for (const c of cercaOrologi(fr.g, fr.W, fr.H).slice(0, 8)) {
+    const { r, testo } = await leggiCandidato(fr, c);
+    if (r == null || r > 600.5 || !testo.includes(":")) continue;
+    const X = (x) => (fr.sx + x / fr.k) / fr.W0, Y = (y) => (fr.sy + y / fr.k) / fr.H0;
+    out.push({ x0: X(c.box.x0), y0: Y(c.box.y0), x1: X(c.box.x1 + 1), y1: Y(c.box.y1 + 1), h: c.h / fr.k / fr.H0, chiaro: c.chiaro, r });
   }
-}
-const orologio = (r) => r >= 60 ? `${String(Math.floor(r / 60)).padStart(2, "0")}:${String(Math.floor(r % 60)).padStart(2, "0")}` : r.toFixed(1);
-// periodi dalla sequenza delle letture: il cronometro scende; quando torna pieno inizia un nuovo periodo
-function assegnaPeriodi(campioni, da) {
-  let p = da, pulito = [];
-  for (const [t, r] of campioni) {
-    if (r == null) continue;
-    const u = pulito[pulito.length - 1];
-    if (u && u.p === p && r > u.r + 20 && r >= durataQuarto(p + 1) - 100 && u.r <= 150) p += 1;
-    if (r > durataQuarto(p) + 0.5) continue;
-    pulito.push({ t, r, p });
-  }
-  // dentro un periodo il tempo che manca non può salire: via le letture isolate sbagliate
-  for (let giro = 0; giro < 4; giro++) {
-    pulito = pulito.filter((x, i) => {
-      const prima = pulito[i - 1], dopo = pulito[i + 1];
-      if (prima && prima.p === x.p && x.r > prima.r + 1.5) return false;
-      if (dopo && dopo.p === x.p && x.r < dopo.r - 1.5) return false;
-      return true;
-    });
-  }
-  const out = {};
-  for (const x of pulito) (out[x.p] = out[x.p] || []).push([durataQuarto(x.p) - x.r, x.t]);
   return out;
 }
+// il cronometro nel fotogramma che si vede, nella posizione già trovata
+async function leggiOra() {
+  const z = grafica;
+  if (!z || !video.videoWidth) return null;
+  const ar = video.videoHeight / video.videoWidth, mx = 2.5 * z.h * ar, my = 1.2 * z.h;
+  const fr = grigioDi(z.x0 - mx, z.y0 - my, z.x1 + mx, z.y1 + my, 4e5);
+  if (!fr) return null;
+  const hp = z.h * fr.H0 * fr.k;
+  const cx = ((z.x0 + z.x1) / 2 * fr.W0 - fr.sx) * fr.k, cy = ((z.y0 + z.y1) / 2 * fr.H0 - fr.sy) * fr.k;
+  const cand = cercaOrologi(fr.g, fr.W, fr.H, { hmin: 0.72 * hp, hmax: 1.35 * hp, decimi: true })
+    .map((c) => ({ c, d: Math.hypot((c.box.x0 + c.box.x1) / 2 - cx, (c.box.y0 + c.box.y1) / 2 - cy) }))
+    .filter((x) => x.d < 2.2 * hp).sort((a, b) => a.d - b.d);
+  for (const { c } of cand.slice(0, 2)) {
+    const { r } = await leggiCandidato(fr, c);
+    if (r != null) return r;
+  }
+  return null;
+}
+const leggiA = (t) => inCoda(async () => { await cerca(video, t); return leggiOra(); });
+// cerca la grafica: nel fotogramma attuale, poi in altri punti del video. Un cronometro vero si conferma
+// due secondi dopo (stesso tempo o qualche secondo in meno) e cambia nel resto della partita.
+async function cercaGrafica(dur, stato) {
+  const qui = video.currentTime;
+  for (const f of [null, 0.5, 0.25, 0.75, 0.1, 0.4, 0.6, 0.9, 0.2, 0.8]) {
+    if (scan && scan.stop) return null;
+    const t = f == null ? qui : f * dur;
+    const trovati = await inCoda(async () => { await cerca(video, t); return trovaQui(); });
+    for (const c of trovati) {
+      grafica = c;
+      const r2 = await leggiA(Math.min(dur - 0.1, t + 2));
+      if (r2 == null || r2 > c.r + 0.6 || r2 < c.r - 3.5) continue;
+      let cambia = null;
+      for (const f2 of [0.3, 0.55, 0.8, 0.15]) {
+        const r3 = await leggiA((t + f2 * dur) % dur);
+        if (r3 != null) { cambia = Math.abs(r3 - c.r) > 0.5; if (cambia) break; }
+      }
+      if (cambia !== false) return c;
+    }
+    stato("Cerco la grafica con il tempo…");
+  }
+  grafica = null;
+  return null;
+}
+// periodi dalla sequenza delle letture: il cronometro scende; quando torna pieno inizia un nuovo periodo
+function assegnaPeriodi(cc, da) {
+  let p = da;
+  const buone = [];
+  for (const [t, r] of cc) {
+    if (r == null) continue;
+    const u = buone[buone.length - 1];
+    if (u && u.p === p && r > u.r + 20 && r >= durataQuarto(p + 1) - 100 && u.r <= 150) p += 1;
+    if (r > durataQuarto(p) + 0.5) continue;
+    buone.push({ t, r, p });
+  }
+  // dentro un periodo il tempo che manca non può salire: si tiene la sequenza più lunga che scende, così
+  // le letture isolate sbagliate restano fuori senza portarsi via quelle buone vicine
+  const out = {};
+  for (const q of new Set(buone.map((x) => x.p))) {
+    const L = buone.filter((x) => x.p === q), lung = L.map(() => 1), da = L.map(() => -1);
+    for (let i = 0; i < L.length; i++) for (let j = 0; j < i; j++) {
+      if (L[i].r <= L[j].r + 1.5 && lung[j] + 1 > lung[i]) { lung[i] = lung[j] + 1; da[i] = j; }
+    }
+    const tenute = [];
+    for (let k = lung.indexOf(Math.max(...lung)); k >= 0; k = da[k]) tenute.unshift(L[k]);
+    out[q] = tenute.map((x) => [durataQuarto(q) - x.r, x.t]);
+  }
+  return out;
+}
+async function applicaCampioni(stato) {
+  letture = assegnaPeriodi(campioni, Number($("da").value) || 1);
+  cronaca.inizi = {}; ancore = {};
+  const ps = Object.keys(letture).map(Number).sort((a, b) => a - b);
+  if (!ps.length) { grafica = null; stato("Ho trovato la grafica ma non riesco a seguire il cronometro: porta il video alla palla a due e tocca «Palla a due qui»."); return; }
+  // inizio di ogni periodo: l'istante in cui il cronometro parte dal tempo pieno
+  for (const p of ps) {
+    if (letture[p][0][0] > PASSO + 5) continue;      // il video non contiene l'inizio di questo periodo
+    stato(`Cerco l'inizio del ${nomeQuarto(p)}…`);
+    await affinaS(p, 0.5);
+    const iv = intervallo(p, 0.5);
+    if (iv) cronaca.inizi[p] = Math.max(0, (iv.lo + iv.hi) / 2 - 0.5);
+  }
+  completaSegnalazioni();
+  stato(`Sincronizzato dal cronometro: ${ps.map((p) => nomeQuarto(p)).join(", ")}.`);
+}
+async function sincronizza() {
+  if (!url || scan || occupato.attivo) return;
+  if (!isFinite(video.duration) || !video.duration) { nota("Il video non è ancora pronto: riprova tra un attimo."); return; }
+  scan = { stop: false };
+  const prima = video.currentTime, dur = video.duration;
+  video.pause(); coda = null;
+  const stato = (t) => { $("sync-stato").textContent = t; $("attesa").textContent = t; };
+  $("attesa").hidden = false; aggiornaSync();
+  let fatto = false;
+  try {
+    stato("Preparo la lettura del cronometro…");
+    await preparaLettore();
+    stato("Cerco la grafica con il tempo…");
+    const g = await cercaGrafica(dur, stato);
+    if (!g) {
+      if (!scan.stop) stato("Non trovo il cronometro nella grafica di questo video. Se il video non ha la grafica con il tempo, porta il video alla palla a due e tocca «Palla a due qui».");
+      return;
+    }
+    grafica = g;
+    const cc = [], t0 = performance.now();
+    for (let t = 1; t < dur && !scan.stop; t += PASSO) {
+      let tt = t, r = await leggiA(t);
+      if (r == null && t + 6 < dur) { tt = t + 6; r = await leggiA(tt); }   // replay o pubblicità: poco dopo
+      cc.push([tt, r]);
+      const f = t / dur, sec = (performance.now() - t0) / 1000;
+      stato(`Leggo il cronometro: ${Math.round(100 * f)}%` + (f > 0.06 ? ` · circa ${Math.max(1, Math.ceil(sec * (1 - f) / f))} s` : ""));
+    }
+    if (scan.stop) { stato("Sincronizzazione interrotta."); grafica = null; return; }
+    campioni = cc;
+    await applicaCampioni(stato);
+    fatto = !!grafica;
+  } catch (err) {
+    grafica = null;
+    stato("Lettura del cronometro non riuscita su questo dispositivo: porta il video alla palla a due e tocca «Palla a due qui».");
+  } finally {
+    const msg = $("sync-stato").textContent;
+    scan = null; $("attesa").hidden = true;
+    await cerca(video, prima);
+    aggiornaLista(); if (!fatto) $("sync-stato").textContent = msg;
+    salvaPresto();
+  }
+}
+$("sincronizza").addEventListener("click", sincronizza);
+$("ferma-sync").addEventListener("click", () => { if (scan) scan.stop = true; });
+$("da").addEventListener("change", async () => {
+  if (!campioni || scan || occupato.attivo) return;
+  await occupato("Ricalcolo i quarti…", () => applicaCampioni((t) => { $("attesa").textContent = t; }));
+  aggiornaLista(); salvaPresto();
+});
 function inserisci(p, gs, t) {
   const L = letture[p] || (letture[p] = []);
   L.push([gs, t]); L.sort((a, b) => a[1] - b[1]);
@@ -1290,37 +1668,59 @@ function intervallo(p, s) {
   const a = L[j - 1], b = L[j];
   return { lo: Math.min(b[1], a[1] + (s - a[0])), hi: Math.max(a[1], b[1] - (b[0] - s)), a: a[1], b: b[1] };
 }
-// azioni allo stesso secondo di gioco (fallo, liberi, rimbalzo): il cronometro resta fermo tra la prima
-// e la ripresa del gioco; il modello dà le pause relative, la grafica la durata vera della fermata
+// azioni dello stesso secondo di gioco (fallo e liberi, tiro e rimbalzo…): i secondi reali del modello dicono
+// l'ordine e le pause relative, la grafica quando il cronometro si è fermato e quando è ripartito
 function gruppo(e) {
   const stessi = cronaca.eventi.filter((x) => x.p === e.p && x.s === e.s).sort((a, b) => reale(a) - reale(b));
+  if (!stessi.length) return { stessi, m0: reale(e), fineModello: null };
   const dopo = cronaca.eventi.filter((x) => x.p === e.p && x.s > e.s).sort((a, b) => a.s - b.s || reale(a) - reale(b))[0];
   const m0 = reale(stessi[0]);
-  // fine della fermata secondo il modello: dove il cronometro riparte prima dell'azione seguente
   const fineModello = dopo ? reale(dopo) - 1.25 * (dopo.s - e.s) - m0 : null;
   return { stessi, m0, fineModello };
+}
+// azioni dopo cui il cronometro si ferma: falli, timeout, liberi, palle perse senza recupero (fuori, infrazioni)
+// e, negli ultimi due minuti dell'ultimo quarto e dei supplementari, i canestri
+function fermaCronometro(e) {
+  const t = e.tipo || "";
+  if (t.startsWith("fallo") || t === "timeout" || t.startsWith("tl_")) return true;
+  if (t === "persa") return !cronaca.eventi.some((x) => x.p === e.p && x.s === e.s && x.tipo === "recupero");
+  return (t === "tiro2_fatto" || t === "tiro3_fatto") && e.p >= 4 && e.s >= durataQuarto(e.p) - 120;
 }
 function stimaGrafica(e) {
   const iv = intervallo(e.p, e.s);
   if (!iv) return null;
-  const inizio = (iv.lo + iv.hi) / 2, { stessi, m0, fineModello } = gruppo(e), off = reale(e) - m0;
-  if (stessi.length < 2 || off <= 0) return { t: inizio, incerto: iv.hi - iv.lo };
-  const ivf = intervallo(e.p, e.s + 0.6), ripresa = ivf ? (ivf.lo + ivf.hi) / 2 - 0.5 : null;
-  if (ripresa != null && fineModello > 1 && ripresa - inizio > 2) {
-    const k = Math.min(3, Math.max(0.3, (ripresa - inizio) / fineModello));
-    return { t: Math.min(ripresa, inizio + off * k), incerto: iv.hi - iv.lo };
+  // la grafica mostra il secondo dell'azione da A (arriva) a B (passa al secondo dopo)
+  const A = (iv.lo + iv.hi) / 2, ivB = intervallo(e.p, e.s + 1), B = ivB ? (ivB.lo + ivB.hi) / 2 : null;
+  const { stessi, m0, fineModello } = gruppo(e);
+  if (B == null || B - A <= 1.6) {                 // il cronometro è passato senza fermarsi
+    return { t: B == null ? A + 0.5 : (A + B) / 2, incerto: iv.hi - iv.lo };
   }
-  return { t: inizio + off, incerto: iv.hi - iv.lo };
+  // il cronometro si è fermato in quel secondo. Se l'ha fermato una delle azioni, quelle fino a lei sono
+  // avvenute appena prima della fermata e i liberi dentro la fermata, con le pause del modello riscalate
+  // sulla sua durata vera; le altre (il rimbalzo dell'ultimo libero, la rimessa persa) alla ripresa del
+  // gioco. Se nessuna azione lo ferma, sono tutte avvenute alla ripresa.
+  const ferma = stessi.findIndex(fermaCronometro), i = Math.max(0, stessi.indexOf(e));
+  const ripresa = B - 0.5;
+  if (ferma === -1) return { t: ripresa, incerto: iv.hi - iv.lo };
+  const stop = A + 0.5;
+  if (i <= ferma) return { t: stop, incerto: iv.hi - iv.lo };
+  // a palla viva (rimbalzo, palla persa o recuperata, tiro) dopo la fermata: alla ripresa; timeout, falli e
+  // assist cadono dentro la fermata, appena dopo il fischio
+  if (/^(rimb_|persa|recupero|stoppata|tiro)/.test(e.tipo)) return { t: ripresa, incerto: iv.hi - iv.lo };
+  if (!e.tipo.startsWith("tl_")) return { t: stop, incerto: iv.hi - iv.lo };
+  const off = reale(e) - reale(stessi[ferma]);
+  const tot = fineModello != null ? fineModello - (reale(stessi[ferma]) - m0) : null;
+  const k = tot > 1 ? Math.min(3, Math.max(0.3, (ripresa - stop) / tot)) : 1;
+  return { t: Math.min(ripresa, stop + off * k), incerto: iv.hi - iv.lo };
 }
 async function affina(e) {
   await affinaS(e.p, e.s);
-  if (cronaca.eventi.filter((x) => x.p === e.p && x.s === e.s).length > 1) await affinaS(e.p, e.s + 0.6);
+  await affinaS(e.p, e.s + 1);
 }
 async function affinaS(p, sec) {
-  if (!ocr || !zonaOrologio) return;
-  const e = { p, s: sec };
+  if (!lettore || !grafica) return;
   for (let k = 0; k < 8; k++) {
-    const iv = intervallo(e.p, e.s);
+    const iv = intervallo(p, sec);
     if (!iv || iv.a == null || iv.b == null || iv.b - iv.a <= 1.2) return;
     // grafica assente (replay, pubblicità): si provano punti vicini dentro l'intervallo
     const meta = (iv.a + iv.b) / 2, largo = (iv.b - iv.a) / 2;
@@ -1328,58 +1728,14 @@ async function affinaS(p, sec) {
     for (const d of [0, 2, -3, 5, -6, 8]) {
       if (Math.abs(d) >= largo) continue;
       const r = await leggiA(meta + d);
-      if (r != null && r <= durataQuarto(e.p) + 0.5) { inserisci(e.p, durataQuarto(e.p) - r, meta + d); letta = true; break; }
+      if (r != null && r <= durataQuarto(p) + 0.5) { inserisci(p, durataQuarto(p) - r, meta + d); letta = true; break; }
     }
     if (!letta) return;
     // la nuova lettura deve rispettare l'ordine, altrimenti si scarta
-    const L = letture[e.p];
-    letture[e.p] = L.filter((x, i) => !(i > 0 && x[0] < L[i - 1][0] - 1.5) && !(i < L.length - 1 && x[0] > L[i + 1][0] + 1.5));
+    const L = letture[p];
+    letture[p] = L.filter((x, i) => !(i > 0 && x[0] < L[i - 1][0] - 1.5) && !(i < L.length - 1 && x[0] > L[i + 1][0] + 1.5));
   }
 }
-async function scansiona() {
-  if (!zonaOrologio) return;
-  const stato = (t) => { $("ocr-stato").textContent = t; };
-  scansione = { stop: false }; aggiornaOcr();
-  try {
-    await preparaOcr();
-    const dur = ocr.v.duration || video.duration, campioni = [], t0 = performance.now();
-    for (let t = 0; t < dur && !scansione.stop; t += PASSO_OCR) {
-      campioni.push([t, await leggiA(t)]);
-      const fatto = t / dur, pass = (performance.now() - t0) / 1000;
-      stato(`Leggo la grafica: ${Math.round(100 * fatto)}%` + (fatto > 0.05 ? ` · circa ${Math.ceil(pass * (1 - fatto) / fatto)} s alla fine` : ""));
-    }
-    if (scansione.stop) { stato("Sincronizzazione interrotta."); return; }
-    letture = assegnaPeriodi(campioni, Number($("ocr-da").value));
-    const periodi = Object.keys(letture).map(Number);
-    if (!periodi.length) { stato("Non ho trovato il cronometro nel video: controlla il riquadro o usa il salto a due."); return; }
-    // inizio di ogni periodo: l'istante in cui il cronometro parte da 10:00
-    for (const p of periodi) {
-      if (letture[p][0][0] > PASSO_OCR + 3) continue;   // il video non contiene l'inizio di questo periodo
-      await affinaS(p, 0.5);
-      const iv = intervallo(p, 0.5);
-      if (iv) cronaca.inizi[p] = Math.max(0, (iv.lo + iv.hi) / 2 - 0.5);
-    }
-    const n = periodi.reduce((k, p) => k + letture[p].length, 0);
-    stato(`Sincronizzato dalla grafica: ${n} letture, ${periodi.length} periodi. Tocca un'azione: il video si allinea al secondo.`);
-  } catch (err) {
-    stato("Lettura automatica non riuscita su questo dispositivo: usa il salto a due.");
-  } finally {
-    scansione = null; aggiornaOcr(); aggiornaCronaca();
-  }
-}
-function aggiornaOcr() {
-  const attiva = !!scansione;
-  $("ocr-zona").disabled = attiva; $("ocr-avvia").disabled = attiva || !zonaOrologio; $("ocr-ferma").hidden = !attiva;
-  $("ocr-zona").classList.toggle("primario", modo === "orologio");
-}
-$("ocr-zona").addEventListener("click", () => {
-  if (!url) return;
-  video.pause(); modo = modo === "orologio" ? null : "orologio";
-  $("ocr-stato").textContent = modo ? "Trascina un rettangolo attorno alle cifre del cronometro della grafica." : "";
-  aggiornaOcr(); disegna();
-});
-$("ocr-avvia").addEventListener("click", () => { modo = null; aggiornaOcr(); disegna(); scansiona(); });
-$("ocr-ferma").addEventListener("click", () => { if (scansione) scansione.stop = true; });
 
 // ------------------------------------------------------------------ dal video alla lavagna dei giochi
 const PUNTI_AREA = ["angolo dell'area sul fondo, lato lontano", "angolo dell'area sul fondo, lato vicino",
@@ -1522,7 +1878,7 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === "ArrowLeft") { e.preventDefault(); vai(e.shiftKey ? -5 : -FOTOGRAMMA); }
   else if (e.key === "ArrowRight") { e.preventDefault(); vai(e.shiftKey ? 5 : FOTOGRAMMA); }
   else if (e.key.toLowerCase() === "z") { e.preventDefault(); annulla(); }
-  else if (/^[1-9]$/.test(e.key) && etichette[Number(e.key) - 1]) { e.preventDefault(); marca(etichette[Number(e.key) - 1]); }
+  else if (/^[1-9]$/.test(e.key) && tasti()[Number(e.key) - 1]) { e.preventDefault(); segnala(...tasti()[Number(e.key) - 1]); }
   else if (e.key === "Escape" && ripiego) { esciRipiego(); grande(false); }
 });
 // alla chiusura della pagina il video e i disegni spariscono

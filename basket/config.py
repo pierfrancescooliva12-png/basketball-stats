@@ -10,6 +10,9 @@ DB_PATH = Path(os.environ.get("LNP_DB", ROOT / "data" / "lnp.sqlite"))
 # così il repository non cresce a ogni aggiornamento settimanale
 CRONACA_DIR = Path(os.environ.get("LNP_CRONACA", ROOT / "data" / "cronaca"))
 REPORTS_DIR = ROOT / "reports"
+# Report già inviati agli abbonati (solo impronte, nessun indirizzo email): lo stesso report
+# sulla stessa partita non parte due volte, anche se l'aggiornamento gira più volte
+INVII_PATH = Path(os.environ.get("LNP_INVII", ROOT / "data" / "invii_report.json"))
 
 BRAND = "ASSIST"
 BRAND_TAGLINE = "Analisi Statistica e Scouting Integrato per Staff Tecnici"

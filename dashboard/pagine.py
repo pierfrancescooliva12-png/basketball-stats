@@ -355,7 +355,7 @@ def p_lavagna():
 
 
 def p_video():
-    titolo_pagina("Lavagna sul video", "ferma il video e disegna sul fotogramma: niente viene caricato o salvato")
+    titolo_pagina("Lavagna sul video", "la cronaca e le vostre segnalazioni sul video della partita, che resta sul dispositivo")
     from . import telestrator_ui
     telestrator_ui.render(APP)
 
@@ -387,13 +387,29 @@ def p_admin():
     admin_ui.render(APP)
 
 
+def p_guida():
+    from . import guida
+    guida.pagina(APP)
+
+
+def _con_guida(fn, chiave):
+    """La pagina e, in coda, la sua demo guidata (che illumina le parti quando sono disegnate)."""
+    def pagina():
+        fn()
+        from . import guida
+        guida.tour(APP, chiave)
+    pagina.__name__ = fn.__name__      # st.Page riconosce la pagina dal nome della funzione
+    return pagina
+
+
 def mappa(admin: bool = False, club: bool = False) -> dict:
     def P(fn, titolo, url, chiave, default=False, icona=None):
-        pg = st.Page(fn, title=titolo, url_path=url, default=default, icon=icona)
+        pg = st.Page(_con_guida(fn, chiave), title=titolo, url_path=url, default=default, icon=icona)
         PAGINE[chiave] = pg
         return pg
     pagine = {
-        "": [P(home, "Home", "home", "home", default=True, icona=":material/home:")],
+        "": [P(home, "Home", "home", "home", default=True, icona=":material/home:"),
+             P(p_guida, "Guida", "guida", "guida", icona=":material/help:")],
         "Avversaria": [P(p_scouting, "Scouting", "scouting", "scouting"),
                        P(p_lavagna_avv, "Lavagna dell'avversaria", "lavagna-avversaria",
                          "lavagna_avv"),
