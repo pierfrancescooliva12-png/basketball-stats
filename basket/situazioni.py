@@ -97,3 +97,18 @@ def riepilogo(sit: pd.DataFrame, per: list[str], attacco: str) -> pd.DataFrame:
     out["punti_per_situazione"] = out["punti"] / out["situazioni"]
     out["perc_tiro"] = (100 * out["canestri"] / out["tiri"].where(out["tiri"] > 0)).round(1)
     return out.sort_values(["situazioni", "punti_per_situazione"], ascending=False)[cols]
+
+
+def memorie_club(archivio, club: str) -> dict:
+    """{partita_id: dati della lavagna sul video} salvati dal club."""
+    return {k.split(":", 1)[1]: v for k, v in archivio.video_dati_tutti(club, "partita:").items()}
+
+
+def righe_report(sit: pd.DataFrame, attacco: str = "noi") -> list[list[str]]:
+    """Righe per i report PDF: livello, nome, situazioni, punti ogni 100, canestri/tiri, palle perse."""
+    righe = []
+    for livello, per in (("Azione", ["azione"]), ("Schema", ["schema"])):
+        for r in riepilogo(sit, per, attacco).itertuples():
+            righe.append([livello, str(getattr(r, per[0])), str(int(r.situazioni)),
+                          f"{100 * r.punti_per_situazione:.0f}", f"{int(r.canestri)}/{int(r.tiri)}", str(int(r.perse))])
+    return righe

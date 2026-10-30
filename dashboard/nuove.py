@@ -33,9 +33,21 @@ def _team(df: pd.DataFrame, sid) -> pd.DataFrame:
 
 @st.cache_data(show_spinner="Preparo il PDF…", max_entries=12)
 def _pdf(_ctx, mtime: float, stagione: str, sid: int, mia: int | None = None,
-         giochi_json: str = "[]", note_json: str = "[]") -> bytes:
+         giochi_json: str = "[]", note_json: str = "[]", situazioni_json: str = "[]") -> bytes:
     import json
-    return build_pdf(_ctx, sid, mia, json.loads(giochi_json), json.loads(note_json))
+    return build_pdf(_ctx, sid, mia, json.loads(giochi_json), json.loads(note_json),
+                     situazioni=json.loads(situazioni_json))
+
+
+def situazioni_json(a: App, sid) -> str:
+    """Situazioni del loro attacco segnalate sul video, per il PDF di scouting (stringa, per la cache)."""
+    import json
+    from basket import situazioni as SI
+    try:
+        sit = SI.situazioni(SI.memorie_club(a.archivio, a.club), a.ctx.ev, sid)
+        return json.dumps(SI.righe_report(sit, "noi") if not sit.empty else [])
+    except Exception:
+        return "[]"
 
 
 @st.cache_data(show_spinner="Preparo il file Word…", max_entries=8)

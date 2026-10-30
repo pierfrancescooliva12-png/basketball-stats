@@ -48,6 +48,9 @@ TOUR: dict[str, list[tuple[list[str], str, str]]] = {
          "campo o fuori."),
         (["sez:Giochi dell'avversaria"], "I loro giochi sulla lavagna",
          "Apri la lavagna e disegna i giochi dell'avversaria: finiscono nel PDF di scouting, fase per fase."),
+        (["sez:Situazioni segnalate sul video"], "Le loro situazioni sul video",
+         "I tipi di azione e gli schemi che lo staff ha segnato guardando le loro partite: quanto rendono. La "
+         "tabella entra anche nel report PDF."),
         (["btn:Prepara il report PDF"], "Il report per la riunione tecnica",
          "PDF pronto da stampare, oppure Word da completare con le note dello staff."),
         (["sez:Note dello staff"], "Note dello staff",
@@ -227,6 +230,9 @@ GUIDA: list[tuple[str, str, list[str]]] = [
       "«Quintetti più usati», «+/- e On-Off», «Finali punto a punto» e «Chi serve chi» sono ricostruiti dalla cronaca "
       "di ogni partita: le partite con dati incompleti sono escluse.",
       "«Giochi dell'avversaria»: apri la lavagna, disegna i loro giochi e salvali. Finiscono nel PDF di scouting.",
+      "«Situazioni segnalate sul video»: se lo staff ha guardato e segnato le loro partite nella Lavagna sul video, "
+      "qui vedi quanto rendono i loro tipi di azione e schemi (e cosa concede la loro difesa). La tabella del loro "
+      "attacco entra nel report PDF e nell'email prima della partita.",
       "«Prepara il report PDF» per la stampa; «Prepara il report in Word» per completarlo con le note dello staff.",
       "«Note dello staff»: appunti privati del vostro club, visibili solo al vostro staff."]),
     ("Anteprima e scenari",

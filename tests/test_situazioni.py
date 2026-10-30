@@ -71,3 +71,13 @@ def test_archivio_di_tutte_le_partite(tmp_path):
     a.set_video_dati("altro", "partita:p3", {"segnalazioni": [3]})
     assert a.video_dati_tutti("club", "partita:") == {"partita:p1": {"segnalazioni": [1]},
                                                      "partita:p2": {"segnalazioni": [2]}}
+
+
+def test_righe_per_il_report():
+    mem = {"p1": {"segnalazioni": [{"azione": "Pick and roll centrale", "schema": "Horns 45", "p": 1, "gs": 18},
+                                   {"azione": "Pick and roll centrale", "p": 1, "gs": 37}]}}
+    sit = SI.situazioni(mem, EV, NOI)
+    assert SI.righe_report(sit, "noi") == [["Azione", "Pick and roll centrale", "1", "300", "1/2", "0"],
+                                           ["Schema", "Horns 45", "1", "300", "1/2", "0"]]
+    # la palla persa a 0:37 è di LORO: per loro è un'azione in attacco
+    assert SI.righe_report(sit, "loro") == [["Azione", "Pick and roll centrale", "1", "0", "0/0", "1"]]

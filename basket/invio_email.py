@@ -48,6 +48,21 @@ def giochi_avversaria(sub: dict, avv_id: int) -> list[dict]:
         return []
 
 
+def situazioni_avversaria(sub: dict, ctx, avv_id: int) -> list[list[str]]:
+    """Situazioni del loro attacco segnalate dallo staff sul video, se l'archivio è raggiungibile."""
+    url = os.environ.get("ARCHIVIO_URL", "").strip()
+    if not url or not sub.get("club"):
+        return []
+    try:
+        from . import situazioni as SI
+        from .note import Archivio
+        sit = SI.situazioni(SI.memorie_club(Archivio(url), sub["club"]), ctx.ev, avv_id)
+        return SI.righe_report(sit, "noi") if not sit.empty else []
+    except Exception as e:                       # l'email parte comunque, senza le situazioni
+        log.warning("Situazioni non disponibili per %s: %s", sub.get("club"), e)
+        return []
+
+
 def abbonati() -> list[dict]:
     raw = os.environ.get("ABBONATI", "").strip()
     if not raw:
@@ -100,7 +115,8 @@ def prepare(ctx, sub: dict) -> tuple[str, str, list[tuple[bytes, str]], str] | N
     if avv_id not in set(ctx.bs["squadra_id"]):
         log.info("%s: l'avversaria %s non ha ancora partite giocate", mia, avv)
         return None
-    allegati = [(build_pdf(ctx, avv_id, mia_id, giochi_avversaria(sub, avv_id)),
+    allegati = [(build_pdf(ctx, avv_id, mia_id, giochi_avversaria(sub, avv_id),
+                          situazioni=situazioni_avversaria(sub, ctx, avv_id)),
                  f"scouting_{slug(avv)}.pdf")]
     try:
         allegati.append((build_post_partita(ctx, mia_id), f"post_partita_{slug(mia)}.pdf"))
