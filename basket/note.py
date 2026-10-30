@@ -236,6 +236,13 @@ class Archivio:
             c.execute(text("INSERT INTO video_dati VALUES (:c, :k, :d, :t)"),
                       {"c": club, "k": chiave, "d": json.dumps(dati), "t": _now()})
 
+    def video_dati_tutti(self, club: str, prefisso: str) -> dict:
+        """{chiave: dati} delle chiavi del club che iniziano con prefisso (per esempio "partita:")."""
+        with self.engine.connect() as c:
+            rows = c.execute(text("SELECT chiave, dati FROM video_dati WHERE club = :c AND chiave LIKE :k"),
+                             {"c": club, "k": prefisso.replace("%", "") + "%"}).fetchall()
+        return {k: json.loads(d) for k, d in rows}
+
     def video_dati(self, club: str, chiave: str):
         with self.engine.connect() as c:
             r = c.execute(text("SELECT dati FROM video_dati WHERE club = :c AND chiave = :k"),

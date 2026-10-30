@@ -99,6 +99,9 @@ TOUR: dict[str, list[tuple[list[str], str, str]]] = {
          "Palle perse, seconde occasioni, contropiede, liberi sbagliati, falli: quanto vi costano a partita."),
         (["exp:Modifica obiettivi", "sez:Obiettivi Four Factors"], "I vostri obiettivi",
          "Lo staff imposta gli obiettivi sui Four Factors: ogni partita si misura contro di essi."),
+        (["sez:Situazioni segnalate sul video"], "Le situazioni segnalate sul video",
+         "Per ogni tipo di azione e ogni schema segnato nella Lavagna sul video: quanti punti porta, rispetto alla "
+         "vostra media, con voi o gli avversari in attacco."),
         (["sez:Report post-partita"], "Dopo la partita",
          "Scegli la partita: il report post-partita, anche in PDF."),
         (["btn:Prepara il PDF completo"], "Tutta la squadra in un PDF", "Tutte le voci della pagina, più i giochi della lavagna."),
@@ -149,8 +152,8 @@ TOUR: dict[str, list[tuple[list[str], str, str]]] = {
         (["sel:Partita del video"], "La partita del video",
          "Scegli la partita: la sua cronaca si collega al video e le segnalazioni si salvano con lei."),
         (["frame:telestrator_assist>Scegli il video", "frame:telestrator_assist"], "Apri il video",
-         "Il video resta sul dispositivo: non viene caricato. Poi «Sincronizza con il cronometro», i tasti «Segnala» "
-         "e l'elenco delle azioni: tutti i passi sono nella pagina Guida."),
+         "Il video resta sul dispositivo: non viene caricato. Poi «Sincronizza con il cronometro», i tasti «Azione» "
+         "e «Schema» e l'elenco delle azioni: tutti i passi sono nella pagina Guida."),
     ],
     "partite": [
         (["sel:Partita"], "Quale partita", "Box score, statistiche avanzate e andamento di ogni partita giocata."),
@@ -247,6 +250,10 @@ GUIDA: list[tuple[str, str, list[str]]] = [
      "Le priorità di lavoro della vostra squadra e dei singoli.",
      ["«Aree da migliorare»: su cosa concentrarsi, con le vittorie in più che vale raggiungere l'obiettivo.",
       "«Modifica obiettivi»: lo staff imposta gli obiettivi sui Four Factors; ogni partita si misura contro di essi.",
+      "«Situazioni segnalate sul video»: per ogni tipo di azione e ogni schema segnato nella Lavagna sul video, la "
+      "cronaca dice come è finito il possesso (canestro, liberi, tiro sbagliato, palla persa). Si vedono situazioni, "
+      "punti, punti ogni 100 situazioni rispetto alla media e canestri su tiri, con voi o gli avversari in attacco, per "
+      "tipo di azione, per schema o per tutte e due. Contano solo le segnalazioni su un video sincronizzato.",
       "«Report post-partita»: scegli la partita e scarica il PDF.",
       "In «Sviluppo dei giocatori» ogni giocatore ha cosa fa bene, cosa fa male e dove migliorare vale di più, con un "
       "PDF da consegnargli."]),
@@ -285,9 +292,11 @@ GUIDA: list[tuple[str, str, list[str]]] = [
       "preso palla.",
       "Video senza grafica: porta il video alla palla a due e tocca «Palla a due qui». I minuti sono stimati: se "
       "un'azione non coincide, porta il video al momento giusto e tocca «📍 L'azione è qui».",
-      "Mentre guardi, tocca un tasto «Segnala» (pick and roll centrale o laterale, hand-off, post basso…) nel momento "
-      "della situazione; su computer i tasti 1–9. «＋ Nuova» crea un tasto con il nome che volete, per esempio lo "
-      "schema «Horns 45»; «Modifica» toglie quelli che non usate.",
+      "Mentre guardi, tocca i tasti nel momento della situazione: «Azione» per il tipo (pick and roll centrale o "
+      "laterale, hand-off, post basso…) e «Schema» per il gioco, con il nome che usate (all'inizio ci sono i giochi "
+      "della vostra lavagna). Un'azione e uno schema toccati a pochi secondi di distanza sono la stessa situazione; "
+      "si può segnare anche solo uno dei due. Su computer valgono i tasti 1–9.",
+      "«＋ Azione» e «＋ Schema» aggiungono un tasto; «Modifica» toglie quelli che non usate.",
       "«Mostra» filtra l'elenco: una segnalazione, i canestri, le palle perse… con squadra, giocatore e quarto. «▶ In "
       "sequenza» rivede tutto l'elenco filtrato, una clip dopo l'altra.",
       "Con la partita si salvano solo le segnalazioni e la sincronizzazione, mai il video: riaprendo lo stesso file è "

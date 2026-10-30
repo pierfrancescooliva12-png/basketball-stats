@@ -43,7 +43,8 @@ def test_strumenti_disponibili():
               "testo", "gomma", "mano"):
         assert f'data-t="{t}"' in s, t
     for id_ in ("annulla", "ripeti", "pulisci", "indietro1", "avanti1", "schermo", "velocita",
-                "zoomPiu", "zoomMeno", "zoomRiporta", "tasti-tag", "nuovo-tag", "modifica-tag", "lista",
+                "zoomPiu", "zoomMeno", "zoomRiporta", "tasti-tag", "nuovo-tag", "tasti-schemi", "nuovo-schema",
+                "modifica-tag", "lista",
                 "qui", "seq", "sincronizza", "ferma-sync", "palla-a-due", "da", "tara", "posiziona",
                 "crea-gioco"):
         assert f'id="{id_}"' in s, id_
@@ -200,8 +201,12 @@ def test_dati_dal_componente():
     from types import SimpleNamespace
 
     from dashboard import telestrator_ui as TU
-    assert TU.pulisci_etichette([" Horns 45 ", "Horns 45", "", "x" * 50, 3]) == ["Horns 45", "x" * 30, "3"]
-    assert TU.pulisci_etichette("non una lista") == []
+    assert TU.pulisci_etichette({"azioni": [" Pick and roll ", "Pick and roll", "", "x" * 50, 3],
+                                 "schemi": ["Horns 45"]}) == {"azioni": ["Pick and roll", "x" * 30, "3"],
+                                                              "schemi": ["Horns 45"]}
+    # elenco salvato prima dei due livelli: sono tipi di azione
+    assert TU.pulisci_etichette(["Horns 45"]) == {"azioni": ["Horns 45"], "schemi": []}
+    assert TU.pulisci_etichette("non una lista") == {"azioni": [], "schemi": []}
 
     salvati = {}
     a = SimpleNamespace(club="club", archivio=SimpleNamespace(set_video_dati=lambda c, k, d: salvati.update({k: d})))
@@ -209,3 +214,23 @@ def test_dati_dal_componente():
     assert not TU.salva_memoria(a, "p2", {"segnalazioni": "no"})
     assert not TU.salva_memoria(a, "p3", {"segnalazioni": [], "video": {"x": "y" * TU.MAX_DATI}})
     assert list(salvati) == ["partita:p1"]
+
+
+def test_azione_e_schema_nella_stessa_situazione():
+    s = HTML.read_text()
+    js = _funzione(s, "segnala").replace("async function", "function").replace("const tg = await tempoDiGioco(t);", "const tg = null;")
+    r = _node("""let url = 'x', scan = null, impronta = 'f', ultima = null, segnalazioni = [];
+      const occupato = { attivo: false }, UNISCI = 8, video = { currentTime: 0 };
+      const avviso = () => {}, aggiornaTag = () => {}, aggiornaLista = () => {}, salvaPresto = () => {}, orario = String;
+      const nomeSegn = (s) => [s.azione, s.schema].filter(Boolean).join(" · ");
+      """ + js + """
+      video.currentTime = 100; segnala("azione", "Pick and roll centrale");
+      video.currentTime = 104; segnala("schema", "Horns 45");          // stessa situazione
+      video.currentTime = 106; segnala("schema", "Spain");             // schema già dato: situazione nuova
+      video.currentTime = 200; segnala("schema", "Horns 45");          // solo lo schema
+      video.currentTime = 203; segnala("azione", "Post basso");        // si aggiunge allo schema
+      video.currentTime = 300; segnala("azione", "Transizione");
+      video.currentTime = 320; segnala("schema", "Horns 45");          // troppo tardi: situazione nuova
+      console.log(JSON.stringify(segnalazioni.map((x) => [x.t, x.azione, x.schema])));""")
+    assert r == [[100, "Pick and roll centrale", "Horns 45"], [106, None, "Spain"], [200, "Post basso", "Horns 45"],
+                 [300, "Transizione", None], [320, None, "Horns 45"]]

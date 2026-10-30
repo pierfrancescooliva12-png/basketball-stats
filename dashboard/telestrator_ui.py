@@ -34,25 +34,41 @@ TESTI = {"tiro2_fatto": "Canestro da 2", "tiro2_sbagliato": "Tiro da 2 sbagliato
          "stoppata": "Stoppata", "timeout": "Timeout"}
 
 
-# tasti delle segnalazioni proposti a un club che non ha ancora scelto i suoi
-ETICHETTE = ["Pick and roll centrale", "Pick and roll laterale", "Hand-off", "Post basso", "Isolamento",
-             "Transizione", "Rimessa", "Difesa a zona"]
+# tasti delle segnalazioni proposti a un club che non ha ancora scelto i suoi: tipi di azione; gli schemi
+# sono quelli della sua lavagna dei giochi, finché lo staff non sceglie i suoi
+AZIONI = ["Pick and roll centrale", "Pick and roll laterale", "Hand-off", "Post basso", "Isolamento",
+          "Transizione", "Rimessa", "Attacco alla zona"]
 MAX_DATI = 400_000            # byte per partita: segnalazioni e sincronizzazione di qualche video
 
 
-def etichette_club(a: App) -> list[str]:
+def etichette_club(a: App) -> dict:
+    """{"azioni": [...], "schemi": [...]} del club (un elenco salvato prima dei due livelli = tipi di azione)."""
     salvate = a.archivio.video_dati(a.club, "etichette")
-    return salvate if isinstance(salvate, list) else list(ETICHETTE)
+    if isinstance(salvate, dict):
+        return {"azioni": salvate.get("azioni") or [], "schemi": salvate.get("schemi") or []}
+    schemi = []
+    if a.mia_squadra:
+        from . import lavagna_ui
+        schemi = pulisci([g.get("nome") for g in lavagna_ui.giochi(a, a.mia_squadra)])[:12]
+    return {"azioni": salvate if isinstance(salvate, list) else list(AZIONI), "schemi": schemi}
 
 
-def pulisci_etichette(valori) -> list[str]:
+def pulisci(valori) -> list[str]:
     """Nomi dei tasti: testo breve, senza doppioni, al massimo 30."""
     out = []
     for v in valori if isinstance(valori, list) else []:
-        v = str(v).strip()[:30]
+        v = str(v or "").strip()[:30]
         if v and v not in out:
             out.append(v)
     return out[:30]
+
+
+def pulisci_etichette(valori) -> dict:
+    if isinstance(valori, list):
+        valori = {"azioni": valori}
+    if not isinstance(valori, dict):
+        valori = {}
+    return {"azioni": pulisci(valori.get("azioni")), "schemi": pulisci(valori.get("schemi"))}
 
 
 def salva_memoria(a: App, pid: str, memoria) -> bool:

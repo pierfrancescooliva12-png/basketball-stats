@@ -137,15 +137,20 @@ body.grande .schede, body.grande .pannello { display: none !important; }
 /* tasti delle segnalazioni: si toccano mentre il video scorre, anche a schermo intero */
 .segna { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .segna .tit { font-weight: 600; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--tenue); }
-#tasti-tag { display: contents; }
+#tasti-tag, #tasti-schemi { display: contents; }
+.segna .a-capo { flex-basis: 100%; height: 0; }
+.segna .tit { min-width: 58px; }
+.tag.schema { background: #eef3fb; border-color: #c9d8ee; }
 .tag.via { border-color: #d2551f; color: #b34a06; }
 .voce.segn b { color: #b34a06; }
+.voce.segn b.sch { color: #2a5fa8; }
 .palco .attesa { position: absolute; inset: 0; display: grid; place-items: center; padding: 20px; text-align: center;
   background: rgba(20,20,19,.72); color: #faf9f5; font-weight: 600; z-index: 2; }
 body.grande .segna { color: #c9c6bb; }
 @media (max-height: 560px) {
   body.grande .segna { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
-  body.grande .segna .tit, body.grande #nuovo-tag, body.grande #modifica-tag { display: none; }
+  body.grande .segna .tit, body.grande #nuovo-tag, body.grande #nuovo-schema, body.grande #modifica-tag,
+  body.grande #vuoto-schemi, body.grande .segna .a-capo { display: none; }
   body.grande .segna .tag { flex: none; height: 34px; padding: 0 10px; font-size: .85rem; }
 }
 </style>
@@ -189,9 +194,14 @@ body.grande .segna { color: #c9c6bb; }
   </div>
 
   <div class="segna" id="segna" hidden>
-    <span class="tit">Segnala</span>
+    <span class="tit">Azione</span>
     <span id="tasti-tag"></span>
-    <button class="btn piccolo" id="nuovo-tag" title="Nuova segnalazione, per esempio il nome di uno schema">＋ Nuova</button>
+    <button class="btn piccolo" id="nuovo-tag" title="Nuovo tipo di azione">＋ Azione</button>
+    <span class="a-capo"></span>
+    <span class="tit">Schema</span>
+    <span id="tasti-schemi"></span>
+    <span class="nota" id="vuoto-schemi">Aggiungi i vostri schemi con il loro nome: si segnano insieme al tipo di azione.</span>
+    <button class="btn piccolo" id="nuovo-schema" title="Nuovo schema, con il nome che usa lo staff">＋ Schema</button>
     <button class="btn piccolo" id="modifica-tag" aria-pressed="false" title="Togli i tasti che non usi">Modifica</button>
   </div>
 
@@ -816,55 +826,85 @@ function vaiClip() {
 }
 
 // ------------------------------------------------------------------ segnalazioni dello staff
-// Situazioni di gioco segnalate durante la visione: pick and roll centrale, uno schema con il suo nome… Le
-// etichette sono del club. Con la partita scelta le segnalazioni si salvano insieme alla partita (etichetta,
-// minuto del video e tempo di gioco): del video non si salva niente.
-const PRIMA_SEGN = 8, DOPO_SEGN = 5;
+// Situazioni di gioco segnalate durante la visione, su due livelli che non si escludono: il tipo di azione
+// (pick and roll centrale, transizione…) e lo schema con il nome scelto dal club (Horns 45…). Un tasto di
+// azione e uno di schema toccati a pochi secondi l'uno dall'altro formano la stessa situazione. Le etichette
+// sono del club; con la partita scelta le segnalazioni si salvano con la partita (tipo, schema, minuto del
+// video e tempo di gioco): del video non si salva niente. Dal tempo di gioco, in La mia squadra, la cronaca
+// dice come è finita ogni situazione.
+const PRIMA_SEGN = 8, DOPO_SEGN = 5, UNISCI = 8;
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-let etichette = [], etichetteRicevute = false, modifica = false;
-let segnalazioni = [];        // [{id, et, t, fp, p, gs}]
+let etichette = { azioni: [], schemi: [] }, etichetteRicevute = false, modifica = false;
+let segnalazioni = [];        // [{id, azione, schema, t, fp, p, gs}]
+let ultima = null;            // l'ultima situazione segnalata: un tasto dell'altro livello si aggiunge a lei
 let impronta = null;          // nome e dimensione del file: la sincronizzazione vale per quel video
 let memoria = { segnalazioni: [], video: {} };
+const LIVELLI = { azione: "azioni", schema: "schemi" };
+const nomeSegn = (s) => [s.azione, s.schema].filter(Boolean).join(" · ");
+// segnalazioni salvate prima dei due livelli: l'etichetta è il tipo di azione
+const normale = (s) => s && s.et && !s.azione && !s.schema ? { ...s, azione: s.et } : s;
+const tasti = () => etichette.azioni.map((n) => ["azione", n]).concat(etichette.schemi.map((n) => ["schema", n]));
 function avviso(testo) {
   $("stato").textContent = testo; $("stato").hidden = false;
   clearTimeout(avviso.t);
   avviso.t = setTimeout(() => { if (!video.paused && !coda) $("stato").hidden = true; }, 1600);
 }
-async function segnala(et) {
+async function segnala(livello, nome) {
   if (!url || scan || occupato.attivo) return;     // mentre ASSIST sposta il video per leggere il cronometro
   const t = video.currentTime;
-  const s = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), et, t, fp: impronta, p: null, gs: null };
-  segnalazioni.push(s);
-  avviso(`★ ${et} · ${orario(t, false)}`);
+  if (ultima && !ultima[livello] && ultima.fp === impronta && Math.abs(t - ultima.t) <= UNISCI &&
+      segnalazioni.includes(ultima)) {
+    ultima[livello] = nome;                        // stessa situazione: tipo di azione e schema insieme
+    avviso(`★ ${nomeSegn(ultima)} · ${orario(ultima.t, false)}`);
+    aggiornaTag(); aggiornaLista(); salvaPresto();
+    return;
+  }
+  const s = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), azione: null, schema: null,
+              t, fp: impronta, p: null, gs: null };
+  s[livello] = nome;
+  segnalazioni.push(s); ultima = s;
+  avviso(`★ ${nome} · ${orario(t, false)}`);
   aggiornaTag(); aggiornaLista();
   const tg = await tempoDiGioco(t);
   if (tg) { s.p = tg.p; s.gs = tg.gs; aggiornaLista(); }
   salvaPresto();
 }
 function aggiornaTag() {
-  const box = $("tasti-tag"); box.innerHTML = "";
-  etichette.forEach((e, i) => {
-    const n = segnalazioni.filter((x) => x.et === e).length;
-    const b = document.createElement("button"); b.className = "tag" + (modifica ? " via" : "");
-    b.innerHTML = `${i < 9 ? `<i>${i + 1}</i> ` : ""}${esc(e)}${n ? `<i>${n}</i>` : ""}${modifica ? " <b>✕</b>" : ""}`;
-    b.title = modifica ? "Togli questo tasto (le azioni già segnalate restano)" : "Segnala questa situazione in questo momento del video";
-    b.addEventListener("click", () => modifica ? togliEtichetta(e) : segnala(e));
-    box.appendChild(b);
-  });
+  let k = 0;
+  for (const [livello, id] of [["azione", "tasti-tag"], ["schema", "tasti-schemi"]]) {
+    const box = $(id); box.innerHTML = "";
+    for (const e of etichette[LIVELLI[livello]]) {
+      const n = segnalazioni.filter((x) => x[livello] === e).length, i = k++;
+      const b = document.createElement("button"); b.className = "tag" + (livello === "schema" ? " schema" : "") + (modifica ? " via" : "");
+      b.innerHTML = `${i < 9 ? `<i>${i + 1}</i> ` : ""}${esc(e)}${n ? `<i>${n}</i>` : ""}${modifica ? " <b>✕</b>" : ""}`;
+      b.title = modifica ? "Togli questo tasto (le azioni già segnalate restano)" :
+        livello === "azione" ? "Segnala questo tipo di azione in questo momento del video" :
+        "Segnala questo schema: insieme al tipo di azione toccato da poco, o da solo";
+      b.addEventListener("click", () => modifica ? togliEtichetta(livello, e) : segnala(livello, e));
+      box.appendChild(b);
+    }
+  }
+  $("vuoto-schemi").hidden = etichette.schemi.length > 0;
   $("modifica-tag").setAttribute("aria-pressed", modifica ? "true" : "false");
   $("modifica-tag").textContent = modifica ? "Fatto" : "Modifica";
 }
 function salvaEtichette() { invia({ azione: "etichette", etichette, t: Date.now() }); }
-function togliEtichetta(e) {
+function togliEtichetta(livello, e) {
   if (!confirm(`Togliere «${e}» dai tasti? Le azioni già segnalate restano nell'elenco.`)) return;
-  etichette = etichette.filter((x) => x !== e); salvaEtichette(); aggiornaTag(); preparaFiltri();
+  const l = LIVELLI[livello];
+  etichette = { ...etichette, [l]: etichette[l].filter((x) => x !== e) };
+  salvaEtichette(); aggiornaTag(); preparaFiltri();
 }
-$("nuovo-tag").addEventListener("click", () => {
-  const v = (prompt("Nome della segnalazione (per esempio uno schema: «Horns 45»)") || "").trim().slice(0, 30);
+function nuovaEtichetta(livello) {
+  const v = (prompt(livello === "azione" ? "Nuovo tipo di azione (per esempio «Pick and roll Spain»)" :
+                    "Nome dello schema (per esempio «Horns 45»)") || "").trim().slice(0, 30);
   if (!v) return;
-  if (!etichette.includes(v)) { etichette.push(v); salvaEtichette(); }
+  const l = LIVELLI[livello];
+  if (!etichette[l].includes(v)) { etichette = { ...etichette, [l]: etichette[l].concat([v]) }; salvaEtichette(); }
   modifica = false; aggiornaTag(); preparaFiltri();
-});
+}
+$("nuovo-tag").addEventListener("click", () => nuovaEtichetta("azione"));
+$("nuovo-schema").addEventListener("click", () => nuovaEtichetta("schema"));
 $("modifica-tag").addEventListener("click", () => { modifica = !modifica; aggiornaTag(); });
 // salvataggio: segnalazioni e sincronizzazione di questo video, insieme alla partita
 let timerSalva = null;
@@ -952,7 +992,11 @@ const cronometro = (p, gs) => { const r = Math.max(0, Math.round(durataQuarto(p)
   return `${String(Math.floor(r / 60)).padStart(2, "0")}:${String(r % 60).padStart(2, "0")}`; };
 function riceviDati(a) {
   if (Array.isArray(a.squadre)) cronaca.squadre = a.squadre;
-  if (Array.isArray(a.etichette) && !etichetteRicevute) { etichette = a.etichette.slice(); etichetteRicevute = true; aggiornaTag(); }
+  if (a.etichette && !etichetteRicevute) {
+    const e = Array.isArray(a.etichette) ? { azioni: a.etichette, schemi: [] } : a.etichette;
+    etichette = { azioni: (e.azioni || []).slice(), schemi: (e.schemi || []).slice() };
+    etichetteRicevute = true; aggiornaTag();
+  }
   const pid = a.partita_id || null;
   if (pid !== cronaca.partita) {
     const daSola = cronaca.partita === null;       // segnalazioni fatte prima di scegliere la partita
@@ -961,7 +1005,8 @@ function riceviDati(a) {
     for (const [k, v] of Object.entries(a.fine || {})) if (v != null) cronaca.fine[Number(k)] = Number(v);
     cronaca.nome = a.partita_nome || "";
     memoria = a.memoria && typeof a.memoria === "object" ? a.memoria : { segnalazioni: [], video: {} };
-    const salvate = Array.isArray(memoria.segnalazioni) ? memoria.segnalazioni : [];
+    const salvate = (Array.isArray(memoria.segnalazioni) ? memoria.segnalazioni : []).map(normale);
+    ultima = null;
     segnalazioni = daSola && pid ? salvate.concat(segnalazioni.filter((s) => !salvate.some((x) => x.id === s.id))) : salvate;
     ripristinaVideo();
     preparaFiltri(); aggiornaTag();
@@ -972,9 +1017,11 @@ function riceviDati(a) {
 }
 function preparaFiltri() {
   const ev = cronaca.eventi, sel = $("f-tipo"), prima = sel.value;
-  const usate = etichette.concat([...new Set(segnalazioni.map((s) => s.et))].filter((e) => !etichette.includes(e)));
+  const usate = (l, k) => etichette[l].concat([...new Set(segnalazioni.map((s) => s[k]).filter(Boolean))]
+    .filter((e) => !etichette[l].includes(e)));
   sel.innerHTML = '<option value="">Tutto</option><option value="*">★ Segnalazioni dello staff</option>' +
-    usate.map((e) => `<option value="★${esc(e)}">★ ${esc(e)}</option>`).join("") +
+    usate("azioni", "azione").map((e) => `<option value="★a:${esc(e)}">★ Azione · ${esc(e)}</option>`).join("") +
+    usate("schemi", "schema").map((e) => `<option value="★s:${esc(e)}">★ Schema · ${esc(e)}</option>`).join("") +
     (ev.length ? '<option disabled>──────────</option>' + Object.entries(GRUPPI).map(([k, v]) => `<option value="${k}">${v}</option>`).join("") : "");
   sel.value = [...sel.options].some((o) => o.value === prima) ? prima : "";
   const sq = [...new Set(ev.map((e) => e.sq).filter(Boolean))];
@@ -1124,7 +1171,8 @@ function voci() {
     out.push({ e, k: [e.p, e.s, reale(e)] });
   }
   if (!sq && !gi && (!t || soloSegn)) for (const s of segnalazioni) {
-    if (t.startsWith("★") && s.et !== t.slice(1)) continue;
+    if (t.startsWith("★a:") && s.azione !== t.slice(3)) continue;
+    if (t.startsWith("★s:") && s.schema !== t.slice(3)) continue;
     if (q && String(s.p) !== q) continue;
     out.push({ s, k: s.p != null ? [s.p, s.gs, mDaGs(s.p, s.gs)] : [99, s.t, 0] });
   }
@@ -1156,14 +1204,15 @@ function aggiornaLista() {
       const s = x.s, t = stimaSegn(s);
       r.className = "voce segn" + (t == null ? " spenta" : "");
       r.innerHTML = `<span class="quando">${s.p != null ? `${breveQuarto(s.p)} ${cronometro(s.p, s.gs)}` : "★"}</span>` +
-        `<span><b>★ ${esc(s.et)}</b></span><span class="quando">${t == null ? "—" : orario(t, false)}</span>`;
+        `<span><b>★ ${esc(s.azione || "")}</b>${s.azione && s.schema ? " · " : ""}${s.schema ? `<b class="sch">${esc(s.schema)}</b>` : ""}</span>` +
+        `<span class="quando">${t == null ? "—" : orario(t, false)}</span>`;
       const del = document.createElement("button"); del.className = "x"; del.textContent = "×"; del.title = "Togli la segnalazione";
       del.addEventListener("click", (ev) => { ev.stopPropagation(); segnalazioni = segnalazioni.filter((y) => y !== s);
         aggiornaTag(); aggiornaLista(); salvaPresto(); });
       r.appendChild(del);
       r.addEventListener("click", () => {
         if (t == null) { nota("Questa segnalazione è stata fatta su un altro video: sincronizza questo video per ritrovarla."); return; }
-        scelto = null; aggiornaLista(); riproduci([{ a: t - PRIMA_SEGN, b: t + DOPO_SEGN, lab: "★ " + s.et }]);
+        scelto = null; aggiornaLista(); riproduci([{ a: t - PRIMA_SEGN, b: t + DOPO_SEGN, lab: "★ " + nomeSegn(s) }]);
       });
     }
     lista.appendChild(r);
@@ -1224,7 +1273,7 @@ $("seq").addEventListener("click", async () => {
   const clip = [];
   for (const x of vv) {
     if (x.e) { const v = stima(x.e); if (v != null) clip.push(clipAzione(x.e, v)); }
-    else { const v = stimaSegn(x.s); if (v != null) clip.push({ a: Math.max(0, v - PRIMA_SEGN), b: v + DOPO_SEGN, lab: "★ " + x.s.et }); }
+    else { const v = stimaSegn(x.s); if (v != null) clip.push({ a: Math.max(0, v - PRIMA_SEGN), b: v + DOPO_SEGN, lab: "★ " + nomeSegn(x.s) }); }
   }
   if (!clip.length) { nota("Niente da rivedere: sincronizza prima il video con la partita."); return; }
   aggiornaLista(); riproduci(clip);
@@ -1829,7 +1878,7 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === "ArrowLeft") { e.preventDefault(); vai(e.shiftKey ? -5 : -FOTOGRAMMA); }
   else if (e.key === "ArrowRight") { e.preventDefault(); vai(e.shiftKey ? 5 : FOTOGRAMMA); }
   else if (e.key.toLowerCase() === "z") { e.preventDefault(); annulla(); }
-  else if (/^[1-9]$/.test(e.key) && etichette[Number(e.key) - 1]) { e.preventDefault(); segnala(etichette[Number(e.key) - 1]); }
+  else if (/^[1-9]$/.test(e.key) && tasti()[Number(e.key) - 1]) { e.preventDefault(); segnala(...tasti()[Number(e.key) - 1]); }
   else if (e.key === "Escape" && ripiego) { esciRipiego(); grande(false); }
 });
 // alla chiusura della pagina il video e i disegni spariscono
