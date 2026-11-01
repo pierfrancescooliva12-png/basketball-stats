@@ -126,7 +126,7 @@ body.grande .btn.primario, body.grande #play { background: #faf9f5; color: #1414
 .voce:hover { background: var(--carta); }
 .voce[aria-current="true"] { background: #fbeee4; }
 .voce .quando { font-variant-numeric: tabular-nums; color: var(--tenue); font-size: .82rem; }
-.voce .x { border: 0; background: transparent; cursor: pointer; color: var(--tenue); width: 26px; height: 26px; border-radius: 50%; }
+.voce .x { border: 0; background: transparent; cursor: pointer; color: #c0392b; font-size: 1.1rem; width: 26px; height: 26px; border-radius: 50%; }
 .voce.spenta { opacity: .45; }
 .vuoto { color: var(--tenue); font-size: .9rem; padding: 10px; }
 .passi { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -203,6 +203,13 @@ body.grande .segna { color: #c9c6bb; }
     <span class="nota" id="vuoto-schemi">Aggiungi i vostri schemi con il loro nome: si segnano insieme al tipo di azione.</span>
     <button class="btn piccolo" id="nuovo-schema" title="Nuovo schema, con il nome che usa lo staff">＋ Schema</button>
     <button class="btn piccolo" id="modifica-tag" aria-pressed="false" title="Togli i tasti che non usi">Modifica</button>
+    <span class="a-capo"></span>
+    <span class="tit">Clip</span>
+    <button class="btn piccolo" id="inizio-azione" title="L'azione comincia ora: tocca prima di segnalarla (tasto I)">⏮ Inizio azione</button>
+    <button class="btn piccolo" id="fine-azione" title="L'azione finisce ora: vale per l'ultima segnalazione (tasto F)">⏹ Fine azione</button>
+    <button class="btn piccolo" id="togli-azione" title="Togli la segnalazione scelta nell'elenco o l'ultima fatta (tasto Canc)">🗑 Togli</button>
+    <label class="nota">Di base: <select id="c-prima" title="Secondi del video prima del tocco"></select> prima,
+      <select id="c-dopo" title="Secondi del video dopo il tocco"></select> dopo</label>
   </div>
 
   <div class="strumenti" id="strumenti" hidden>
@@ -832,7 +839,15 @@ function vaiClip() {
 // sono del club; con la partita scelta le segnalazioni si salvano con la partita (tipo, schema, minuto del
 // video e tempo di gioco): del video non si salva niente. Dal tempo di gioco, in La mia squadra, la cronaca
 // dice come è finita ogni situazione.
-const PRIMA_SEGN = 8, DOPO_SEGN = 5, UNISCI = 8;
+const UNISCI = 8;
+// durata delle clip delle segnalazioni: di base i secondi prima e dopo il tocco (scelti dallo staff, salvati per il
+// club); per ogni segnalazione si possono segnare l'inizio e la fine veri dell'azione
+let clipBase = { prima: 8, dopo: 12 };
+let inizioPendente = null;    // "Inizio azione" toccato: vale per la prossima segnalazione
+let sceltaS = null;           // segnalazione scelta nell'elenco: inizio e fine si correggono su di lei
+const PRIME = [3, 5, 8, 10, 15, 20], DOPI = [3, 5, 8, 12, 15, 20, 30];
+const clipSegn = (s, t) => ({ a: Math.max(0, t - (s.prima != null ? s.prima : clipBase.prima)),
+                              b: t + (s.dopo != null ? s.dopo : clipBase.dopo), lab: "★ " + nomeSegn(s) });
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 let etichette = { azioni: [], schemi: [] }, etichetteRicevute = false, modifica = false;
 let segnalazioni = [];        // [{id, azione, schema, t, fp, p, gs}]
@@ -862,7 +877,9 @@ async function segnala(livello, nome) {
   const s = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), azione: null, schema: null,
               t, fp: impronta, p: null, gs: null };
   s[livello] = nome;
-  segnalazioni.push(s); ultima = s;
+  if (inizioPendente != null && t - inizioPendente > 0 && t - inizioPendente <= 90) s.prima = Math.round((t - inizioPendente) * 10) / 10;
+  inizioPendente = null; $("inizio-azione").classList.remove("primario");
+  segnalazioni.push(s); ultima = s; if (tolta) fineRimetti();
   avviso(`★ ${nome} · ${orario(t, false)}`);
   aggiornaTag(); aggiornaLista();
   const tg = await tempoDiGioco(t);
@@ -888,7 +905,73 @@ function aggiornaTag() {
   $("modifica-tag").setAttribute("aria-pressed", modifica ? "true" : "false");
   $("modifica-tag").textContent = modifica ? "Fatto" : "Modifica";
 }
-function salvaEtichette() { invia({ azione: "etichette", etichette, t: Date.now() }); }
+function salvaEtichette() { invia({ azione: "etichette", etichette: { ...etichette, clip: clipBase }, t: Date.now() }); }
+function preparaClip() {
+  const opz = (v, l) => l.map((x) => `<option value="${x}"${x === v ? " selected" : ""}>${x} s</option>`).join("");
+  $("c-prima").innerHTML = opz(clipBase.prima, PRIME.includes(clipBase.prima) ? PRIME : PRIME.concat([clipBase.prima]).sort((x, y) => x - y));
+  $("c-dopo").innerHTML = opz(clipBase.dopo, DOPI.includes(clipBase.dopo) ? DOPI : DOPI.concat([clipBase.dopo]).sort((x, y) => x - y));
+}
+for (const id of ["c-prima", "c-dopo"]) $(id).addEventListener("change", () => {
+  clipBase = { prima: Number($("c-prima").value), dopo: Number($("c-dopo").value) };
+  salvaEtichette(); avviso(`Clip delle segnalazioni: ${clipBase.prima} s prima, ${clipBase.dopo} s dopo`);
+});
+preparaClip();
+// inizio e fine dell'azione: sulla segnalazione scelta nell'elenco (correzione) o mentre si guarda
+function bersaglioClip() {
+  const s = sceltaS && segnalazioni.includes(sceltaS) ? sceltaS : ultima && segnalazioni.includes(ultima) ? ultima : null;
+  return s && s.fp === impronta ? s : null;
+}
+$("inizio-azione").addEventListener("click", () => {
+  if (!url) return;
+  const t = video.currentTime, s = sceltaS && segnalazioni.includes(sceltaS) && sceltaS.fp === impronta ? sceltaS : null;
+  if (s) {
+    if (t >= s.t) { avviso("L'inizio deve essere prima del momento segnalato"); return; }
+    s.prima = Math.round((s.t - t) * 10) / 10; avviso(`Inizio: ${s.prima.toLocaleString("it-IT")} s prima · ${nomeSegn(s)}`);
+    aggiornaLista(); salvaPresto(); return;
+  }
+  inizioPendente = t; $("inizio-azione").classList.add("primario");
+  avviso("Inizio segnato: ora tocca il tipo di azione o lo schema");
+});
+$("fine-azione").addEventListener("click", () => {
+  if (!url) return;
+  const s = bersaglioClip(), t = video.currentTime;
+  if (!s) { avviso("Prima segnala l'azione, poi tocca la fine"); return; }
+  if (t <= s.t) { avviso("La fine deve essere dopo il momento segnalato"); return; }
+  s.dopo = Math.round((t - s.t) * 10) / 10; avviso(`Fine: ${s.dopo.toLocaleString("it-IT")} s dopo · ${nomeSegn(s)}`);
+  aggiornaLista(); salvaPresto();
+});
+// togliere una segnalazione fatta per sbaglio: per qualche secondo si può rimettere
+let tolta = null;
+function fineRimetti() {
+  clearTimeout(togliSegn.t); tolta = null;
+  $("togli-azione").textContent = "🗑 Togli"; $("togli-azione").classList.remove("primario");
+}
+function togliScelta() {
+  const s = sceltaS && segnalazioni.includes(sceltaS) ? sceltaS : ultima && segnalazioni.includes(ultima) ? ultima : null;
+  if (!s) { avviso("Nessuna segnalazione da togliere: scegline una nell'elenco"); return; }
+  togliSegn(s);
+}
+function togliSegn(s) {
+  const i = segnalazioni.indexOf(s);
+  if (i < 0) return;
+  segnalazioni.splice(i, 1);
+  if (ultima === s) ultima = null;
+  if (sceltaS === s) sceltaS = null;
+  clearTimeout(togliSegn.t);
+  tolta = { s, i };
+  $("togli-azione").textContent = "↶ Rimetti"; $("togli-azione").classList.add("primario");
+  togliSegn.t = setTimeout(fineRimetti, 8000);
+  avviso(`Tolta «${nomeSegn(s)}» · «↶ Rimetti» per annullare`);
+  aggiornaTag(); aggiornaLista(); salvaPresto();
+}
+$("togli-azione").addEventListener("click", () => {
+  if (tolta) {
+    const { s, i } = tolta;
+    segnalazioni.splice(Math.min(i, segnalazioni.length), 0, s); ultima = s; fineRimetti();
+    avviso(`Rimessa «${nomeSegn(s)}»`); aggiornaTag(); aggiornaLista(); salvaPresto(); return;
+  }
+  togliScelta();
+});
 function togliEtichetta(livello, e) {
   if (!confirm(`Togliere «${e}» dai tasti? Le azioni già segnalate restano nell'elenco.`)) return;
   const l = LIVELLI[livello];
@@ -995,7 +1078,8 @@ function riceviDati(a) {
   if (a.etichette && !etichetteRicevute) {
     const e = Array.isArray(a.etichette) ? { azioni: a.etichette, schemi: [] } : a.etichette;
     etichette = { azioni: (e.azioni || []).slice(), schemi: (e.schemi || []).slice() };
-    etichetteRicevute = true; aggiornaTag();
+    if (e.clip && e.clip.prima > 0 && e.clip.dopo > 0) clipBase = { prima: Number(e.clip.prima), dopo: Number(e.clip.dopo) };
+    etichetteRicevute = true; aggiornaTag(); preparaClip();
   }
   const pid = a.partita_id || null;
   if (pid !== cronaca.partita) {
@@ -1203,27 +1287,29 @@ function aggiornaLista() {
     } else {
       const s = x.s, t = stimaSegn(s);
       r.className = "voce segn" + (t == null ? " spenta" : "");
+      r.setAttribute("aria-current", sceltaS === s ? "true" : "false");
       r.innerHTML = `<span class="quando">${s.p != null ? `${breveQuarto(s.p)} ${cronometro(s.p, s.gs)}` : "★"}</span>` +
         `<span><b>★ ${esc(s.azione || "")}</b>${s.azione && s.schema ? " · " : ""}${s.schema ? `<b class="sch">${esc(s.schema)}</b>` : ""}</span>` +
-        `<span class="quando">${t == null ? "—" : orario(t, false)}</span>`;
+        `<span class="quando">${t == null ? "—" : orario(t, false)}${s.prima != null || s.dopo != null ? " ✂" : ""}</span>`;
       const del = document.createElement("button"); del.className = "x"; del.textContent = "×"; del.title = "Togli la segnalazione";
-      del.addEventListener("click", (ev) => { ev.stopPropagation(); segnalazioni = segnalazioni.filter((y) => y !== s);
-        aggiornaTag(); aggiornaLista(); salvaPresto(); });
+      del.addEventListener("click", (ev) => { ev.stopPropagation(); togliSegn(s); });
       r.appendChild(del);
       r.addEventListener("click", () => {
         if (t == null) { nota("Questa segnalazione è stata fatta su un altro video: sincronizza questo video per ritrovarla."); return; }
-        scelto = null; aggiornaLista(); riproduci([{ a: t - PRIMA_SEGN, b: t + DOPO_SEGN, lab: "★ " + nomeSegn(s) }]);
+        scelto = null; sceltaS = s; aggiornaLista(); riproduci([clipSegn(s, t)]);
+        if (s.fp === impronta) nota("Per correggere la clip: porta il video dove comincia o finisce l'azione e tocca «⏮ Inizio azione» o «⏹ Fine azione».");
       });
     }
     lista.appendChild(r);
   }
   $("qui").hidden = !scelto;
+  if (sceltaS && !segnalazioni.includes(sceltaS)) sceltaS = null;
   altezza();
 }
 const nota = (t) => { $("nota-cronaca").textContent = t; };
 async function vaiAzione(e) {
   if (scan || occupato.attivo) return;
-  scelto = e; aggiornaLista();
+  scelto = e; sceltaS = null; aggiornaLista();
   if (grafica && letture[e.p]) {
     await occupato("Allineo l'azione sul cronometro…", async () => {
       await affina(e);
@@ -1273,7 +1359,7 @@ $("seq").addEventListener("click", async () => {
   const clip = [];
   for (const x of vv) {
     if (x.e) { const v = stima(x.e); if (v != null) clip.push(clipAzione(x.e, v)); }
-    else { const v = stimaSegn(x.s); if (v != null) clip.push({ a: Math.max(0, v - PRIMA_SEGN), b: v + DOPO_SEGN, lab: "★ " + nomeSegn(x.s) }); }
+    else { const v = stimaSegn(x.s); if (v != null) clip.push(clipSegn(x.s, v)); }
   }
   if (!clip.length) { nota("Niente da rivedere: sincronizza prima il video con la partita."); return; }
   aggiornaLista(); riproduci(clip);
@@ -1878,6 +1964,9 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === "ArrowLeft") { e.preventDefault(); vai(e.shiftKey ? -5 : -FOTOGRAMMA); }
   else if (e.key === "ArrowRight") { e.preventDefault(); vai(e.shiftKey ? 5 : FOTOGRAMMA); }
   else if (e.key.toLowerCase() === "z") { e.preventDefault(); annulla(); }
+  else if (e.key.toLowerCase() === "i") { e.preventDefault(); $("inizio-azione").click(); }
+  else if (e.key.toLowerCase() === "f") { e.preventDefault(); $("fine-azione").click(); }
+  else if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); togliScelta(); }
   else if (/^[1-9]$/.test(e.key) && tasti()[Number(e.key) - 1]) { e.preventDefault(); segnala(...tasti()[Number(e.key) - 1]); }
   else if (e.key === "Escape" && ripiego) { esciRipiego(); grande(false); }
 });

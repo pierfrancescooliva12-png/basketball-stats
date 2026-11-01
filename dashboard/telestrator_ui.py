@@ -45,7 +45,10 @@ def etichette_club(a: App) -> dict:
     """{"azioni": [...], "schemi": [...]} del club (un elenco salvato prima dei due livelli = tipi di azione)."""
     salvate = a.archivio.video_dati(a.club, "etichette")
     if isinstance(salvate, dict):
-        return {"azioni": salvate.get("azioni") or [], "schemi": salvate.get("schemi") or []}
+        out = {"azioni": salvate.get("azioni") or [], "schemi": salvate.get("schemi") or []}
+        if isinstance(salvate.get("clip"), dict):
+            out["clip"] = salvate["clip"]
+        return out
     schemi = []
     if a.mia_squadra:
         from . import lavagna_ui
@@ -68,7 +71,18 @@ def pulisci_etichette(valori) -> dict:
         valori = {"azioni": valori}
     if not isinstance(valori, dict):
         valori = {}
-    return {"azioni": pulisci(valori.get("azioni")), "schemi": pulisci(valori.get("schemi"))}
+    out = {"azioni": pulisci(valori.get("azioni")), "schemi": pulisci(valori.get("schemi"))}
+    clip = valori.get("clip")
+    if isinstance(clip, dict):
+        c = {}
+        for k in ("prima", "dopo"):
+            try:
+                c[k] = max(1, min(60, int(float(clip.get(k)))))
+            except (TypeError, ValueError):
+                pass
+        if len(c) == 2:
+            out["clip"] = c
+    return out
 
 
 def salva_memoria(a: App, pid: str, memoria) -> bool:

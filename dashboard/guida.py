@@ -321,6 +321,12 @@ GUIDA: list[tuple[str, str, list[str]]] = [
       "della vostra lavagna). Un'azione e uno schema toccati a pochi secondi di distanza sono la stessa situazione; "
       "si può segnare anche solo uno dei due. Su computer valgono i tasti 1–9.",
       "«＋ Azione» e «＋ Schema» aggiungono un tasto; «Modifica» toglie quelli che non usate.",
+      "Durata delle clip: «Di base» sceglie quanti secondi prima e dopo la segnalazione mostrare (vale per tutto il "
+      "club). Per una singola azione tocca la segnalazione nell'elenco, porta il video dove inizia e tocca «⏮ Inizio "
+      "azione», poi dove finisce e tocca «⏹ Fine azione» (su computer I e F). «⏮ Inizio azione» toccato prima di "
+      "segnalare fissa l'inizio della prossima segnalazione. Le clip ritagliate hanno il segno ✂.",
+      "Segnalazione sbagliata: «🗑 Togli» toglie quella scelta nell'elenco o l'ultima fatta (su computer il tasto "
+      "Canc); per qualche secondo «↶ Rimetti» la riporta. Nell'elenco la × rossa toglie la singola segnalazione.",
       "«Mostra» filtra l'elenco: una segnalazione, i canestri, le palle perse… con squadra, giocatore e quarto. «▶ In "
       "sequenza» rivede tutto l'elenco filtrato, una clip dopo l'altra.",
       "Con la partita si salvano solo le segnalazioni e la sincronizzazione, mai il video: riaprendo lo stesso file è "
