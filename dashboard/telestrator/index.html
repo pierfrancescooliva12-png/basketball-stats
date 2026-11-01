@@ -126,7 +126,7 @@ body.grande .btn.primario, body.grande #play { background: #faf9f5; color: #1414
 .voce:hover { background: var(--carta); }
 .voce[aria-current="true"] { background: #fbeee4; }
 .voce .quando { font-variant-numeric: tabular-nums; color: var(--tenue); font-size: .82rem; }
-.voce .x { border: 0; background: transparent; cursor: pointer; color: var(--tenue); width: 26px; height: 26px; border-radius: 50%; }
+.voce .x { border: 0; background: transparent; cursor: pointer; color: #c0392b; font-size: 1.1rem; width: 26px; height: 26px; border-radius: 50%; }
 .voce.spenta { opacity: .45; }
 .vuoto { color: var(--tenue); font-size: .9rem; padding: 10px; }
 .passi { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -207,6 +207,7 @@ body.grande .segna { color: #c9c6bb; }
     <span class="tit">Clip</span>
     <button class="btn piccolo" id="inizio-azione" title="L'azione comincia ora: tocca prima di segnalarla (tasto I)">⏮ Inizio azione</button>
     <button class="btn piccolo" id="fine-azione" title="L'azione finisce ora: vale per l'ultima segnalazione (tasto F)">⏹ Fine azione</button>
+    <button class="btn piccolo" id="togli-azione" title="Togli la segnalazione scelta nell'elenco o l'ultima fatta (tasto Canc)">🗑 Togli</button>
     <label class="nota">Di base: <select id="c-prima" title="Secondi del video prima del tocco"></select> prima,
       <select id="c-dopo" title="Secondi del video dopo il tocco"></select> dopo</label>
   </div>
@@ -878,7 +879,7 @@ async function segnala(livello, nome) {
   s[livello] = nome;
   if (inizioPendente != null && t - inizioPendente > 0 && t - inizioPendente <= 90) s.prima = Math.round((t - inizioPendente) * 10) / 10;
   inizioPendente = null; $("inizio-azione").classList.remove("primario");
-  segnalazioni.push(s); ultima = s;
+  segnalazioni.push(s); ultima = s; if (tolta) fineRimetti();
   avviso(`★ ${nome} · ${orario(t, false)}`);
   aggiornaTag(); aggiornaLista();
   const tg = await tempoDiGioco(t);
@@ -938,6 +939,38 @@ $("fine-azione").addEventListener("click", () => {
   if (t <= s.t) { avviso("La fine deve essere dopo il momento segnalato"); return; }
   s.dopo = Math.round((t - s.t) * 10) / 10; avviso(`Fine: ${s.dopo.toLocaleString("it-IT")} s dopo · ${nomeSegn(s)}`);
   aggiornaLista(); salvaPresto();
+});
+// togliere una segnalazione fatta per sbaglio: per qualche secondo si può rimettere
+let tolta = null;
+function fineRimetti() {
+  clearTimeout(togliSegn.t); tolta = null;
+  $("togli-azione").textContent = "🗑 Togli"; $("togli-azione").classList.remove("primario");
+}
+function togliScelta() {
+  const s = sceltaS && segnalazioni.includes(sceltaS) ? sceltaS : ultima && segnalazioni.includes(ultima) ? ultima : null;
+  if (!s) { avviso("Nessuna segnalazione da togliere: scegline una nell'elenco"); return; }
+  togliSegn(s);
+}
+function togliSegn(s) {
+  const i = segnalazioni.indexOf(s);
+  if (i < 0) return;
+  segnalazioni.splice(i, 1);
+  if (ultima === s) ultima = null;
+  if (sceltaS === s) sceltaS = null;
+  clearTimeout(togliSegn.t);
+  tolta = { s, i };
+  $("togli-azione").textContent = "↶ Rimetti"; $("togli-azione").classList.add("primario");
+  togliSegn.t = setTimeout(fineRimetti, 8000);
+  avviso(`Tolta «${nomeSegn(s)}» · «↶ Rimetti» per annullare`);
+  aggiornaTag(); aggiornaLista(); salvaPresto();
+}
+$("togli-azione").addEventListener("click", () => {
+  if (tolta) {
+    const { s, i } = tolta;
+    segnalazioni.splice(Math.min(i, segnalazioni.length), 0, s); ultima = s; fineRimetti();
+    avviso(`Rimessa «${nomeSegn(s)}»`); aggiornaTag(); aggiornaLista(); salvaPresto(); return;
+  }
+  togliScelta();
 });
 function togliEtichetta(livello, e) {
   if (!confirm(`Togliere «${e}» dai tasti? Le azioni già segnalate restano nell'elenco.`)) return;
@@ -1259,8 +1292,7 @@ function aggiornaLista() {
         `<span><b>★ ${esc(s.azione || "")}</b>${s.azione && s.schema ? " · " : ""}${s.schema ? `<b class="sch">${esc(s.schema)}</b>` : ""}</span>` +
         `<span class="quando">${t == null ? "—" : orario(t, false)}${s.prima != null || s.dopo != null ? " ✂" : ""}</span>`;
       const del = document.createElement("button"); del.className = "x"; del.textContent = "×"; del.title = "Togli la segnalazione";
-      del.addEventListener("click", (ev) => { ev.stopPropagation(); segnalazioni = segnalazioni.filter((y) => y !== s);
-        aggiornaTag(); aggiornaLista(); salvaPresto(); });
+      del.addEventListener("click", (ev) => { ev.stopPropagation(); togliSegn(s); });
       r.appendChild(del);
       r.addEventListener("click", () => {
         if (t == null) { nota("Questa segnalazione è stata fatta su un altro video: sincronizza questo video per ritrovarla."); return; }
@@ -1934,6 +1966,7 @@ document.addEventListener("keydown", (e) => {
   else if (e.key.toLowerCase() === "z") { e.preventDefault(); annulla(); }
   else if (e.key.toLowerCase() === "i") { e.preventDefault(); $("inizio-azione").click(); }
   else if (e.key.toLowerCase() === "f") { e.preventDefault(); $("fine-azione").click(); }
+  else if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); togliScelta(); }
   else if (/^[1-9]$/.test(e.key) && tasti()[Number(e.key) - 1]) { e.preventDefault(); segnala(...tasti()[Number(e.key) - 1]); }
   else if (e.key === "Escape" && ripiego) { esciRipiego(); grande(false); }
 });

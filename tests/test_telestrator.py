@@ -44,7 +44,7 @@ def test_strumenti_disponibili():
         assert f'data-t="{t}"' in s, t
     for id_ in ("annulla", "ripeti", "pulisci", "indietro1", "avanti1", "schermo", "velocita",
                 "zoomPiu", "zoomMeno", "zoomRiporta", "tasti-tag", "nuovo-tag", "tasti-schemi", "nuovo-schema",
-                "modifica-tag", "lista", "inizio-azione", "fine-azione", "c-prima", "c-dopo",
+                "modifica-tag", "lista", "inizio-azione", "fine-azione", "togli-azione", "c-prima", "c-dopo",
                 "qui", "seq", "sincronizza", "ferma-sync", "palla-a-due", "da", "tara", "posiziona",
                 "crea-gioco"):
         assert f'id="{id_}"' in s, id_
@@ -224,7 +224,7 @@ def test_azione_e_schema_nella_stessa_situazione():
     js = _funzione(s, "segnala").replace("async function", "function").replace("const tg = await tempoDiGioco(t);", "const tg = null;")
     r = _node("""let url = 'x', scan = null, impronta = 'f', ultima = null, segnalazioni = [];
       const occupato = { attivo: false }, UNISCI = 8, video = { currentTime: 0 };
-      let inizioPendente = null; const $ = () => ({ classList: { remove() {} } });
+      let inizioPendente = null, tolta = null; const $ = () => ({ classList: { remove() {} } });
       const avviso = () => {}, aggiornaTag = () => {}, aggiornaLista = () => {}, salvaPresto = () => {}, orario = String;
       const nomeSegn = (s) => [s.azione, s.schema].filter(Boolean).join(" · ");
       """ + js + """
