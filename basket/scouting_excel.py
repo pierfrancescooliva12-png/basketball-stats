@@ -248,7 +248,9 @@ def indici_completi(d: dict) -> dict:
         for k in ("efg", "perse", "liberi_quota", "ortg", "tre_quota"):
             if k in ia:
                 out["d_" + k] = ia[k]
-        out["ritmo"] = (out.get("possessi", 0) + ia.get("possessi", 0)) / 2
+    # ritmo: la media dei possessi delle due squadre, se ci sono i tiri degli avversari
+    if a and ia.get("possessi", 0) > 0:
+        out["ritmo"] = (out.get("possessi", 0) + ia["possessi"]) / 2
     else:
         out["ritmo"] = out.get("possessi")
     return out
@@ -339,6 +341,8 @@ def giocatori(d: dict) -> pd.DataFrame:
             ast, to = per40(g("ast")), per40(g("to"))
             if ast is not None and ast >= 6 and g("ast") >= 2 * max(g("to"), 0.1):
                 forza.append(f"passatore affidabile ({g('ast'):.1f} assist, {g('to'):.1f} perse)")
+            elif g("ast") >= 4.5:
+                forza.append(f"crea molto per i compagni ({g('ast'):.1f} assist a partita)")
             if to is not None and (to >= 4.5 or (g("ast") >= 2 and g("ast") < g("to"))):
                 debole.append(f"perde molti palloni ({g('to'):.1f} a partita)")
             if per40(g("st")) is not None and per40(g("st")) >= 2.5:

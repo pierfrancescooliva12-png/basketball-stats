@@ -172,6 +172,9 @@ def p_scouting():
     with cd:
         section("Punti deboli")
         pills(debole, "neg", "Nessuno marcato")
+    n_part = (d.get("squadra") or {}).get("partite")
+    if n_part and n_part < 6:
+        note_html(f"Solo {int(n_part)} partite: i numeri cambiano molto da una partita all'altra, considerali indicativi.")
     st_ = SX.stile(ind, rif)
     if st_:
         note_html("Come gioca: " + "; ".join(st_) + ".")

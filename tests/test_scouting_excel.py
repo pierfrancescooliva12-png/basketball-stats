@@ -79,6 +79,7 @@ def test_giocatori():
     g = SX.giocatori(d).set_index("nome")
     assert "tiratore da 3 (42% su 6,5 a partita)" in g.loc["Mario Rossi", "forza"]
     assert "passatore affidabile" in g.loc["Mario Rossi", "forza"]
+    assert "crea molto" not in g.loc["Mario Rossi", "forza"]
     assert "rimbalzista" in g.loc["Paolo Verdi", "forza"] and "tiro libero debole (44%)" in g.loc["Paolo Verdi", "debolezze"]
     assert "tiro da 3 poco preciso" in g.loc["Andrea Neri", "debolezze"]
     assert SX.chiave(SX.giocatori(d))["nome"].tolist() == ["Mario Rossi", "Paolo Verdi", "Andrea Neri"]
@@ -99,3 +100,10 @@ def test_riferimento_b_nazionale(tmp_path):
     stag = conn.execute("SELECT MAX(stagione) FROM partite").fetchone()[0]
     rif = SX.riferimento_lnp(conn, stag)
     assert 40 < rif["efg"] < 60 and 60 < rif["ritmo"] < 90 and 90 < rif["ortg"] < 120
+
+
+def test_avversari_con_i_soli_punti():
+    d = SX.leggi(_compila(avversari=[6, 65.0] + [None] * 13))
+    ind = SX.indici_completi(d)
+    assert d["avversari"] == {"partite": 6, "punti": 65.0}
+    assert ind["ritmo"] == pytest.approx(ind["possessi"]) and "d_efg" not in ind
