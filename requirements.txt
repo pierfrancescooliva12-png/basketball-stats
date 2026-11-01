@@ -11,4 +11,5 @@ modal>=1.6           # analisi delle clip (servizio su Modal, token nei Secrets)
 beautifulsoup4>=4.12  # cronaca delle partite in diretta
 lxml>=5.0
 python-docx>=1.1    # report prepartita in Word
+openpyxl>=3.1       # template Excel dello scouting di B Interregionale
 fonttools>=4.50      # logo ΛSSIST disegnato nei PDF

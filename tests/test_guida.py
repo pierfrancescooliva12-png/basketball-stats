@@ -37,6 +37,7 @@ def test_passi_della_demo():
     from dashboard import guida, pagine
     src = Path(pagine.__file__).read_text()
     chiavi = set(re.findall(r'P\(\w+,\s*"[^"]+",\s*"[\w-]+",\s*"(\w+)"', src))
+    chiavi |= {"scouting_ir", "video_ir"}         # pagine delle utenze di B Interregionale
     tipi = {"nav", "filtri", "esperto", "pagina", "tip", "sez", "btn", "tab", "exp", "sel", "frame"}
     for k, passi in guida.TOUR.items():
         assert k in chiavi and k in guida.NOMI, k
@@ -55,3 +56,30 @@ def test_componente_della_demo():
     for vietato in ("fetch(", "XMLHttpRequest", "localStorage", "sendBeacon"):
         assert vietato not in s, vietato
     assert not re.findall(r"https?://", s)
+
+
+def test_utenze_di_b_interregionale():
+    pytest.importorskip("streamlit")
+    from dashboard import guida, interregionale
+    from basket.note import Archivio
+    staff = {"username": "giorgio-donati", "club": "Basket Roma", "ruolo": interregionale.RUOLO}
+    assert guida.da_mostrare(staff, set(), "scouting_ir") and guida.da_mostrare(staff, set(), "video_ir")
+    assert {t for t, _, _ in guida.GUIDA_IR} == {"Scouting delle avversarie con Excel", "Lavagna dei giochi",
+                                                 "Lavagna sul video"}
+    assert interregionale.slug("Stella Azzurra Roma!") == "stella-azzurra-roma"
+
+
+def test_avversarie_del_club(tmp_path):
+    pytest.importorskip("streamlit")
+    from basket.note import Archivio
+    from dashboard import interregionale as IR
+    a = IR.AppLibera(utente={"username": "u", "club": "Basket Roma", "ruolo": IR.RUOLO},
+                     archivio=Archivio(f"sqlite:///{tmp_path / 'n.sqlite'}"))
+    assert a.club == "Basket Roma" and a.mia_squadra is None
+    assert IR.salva_avversaria(a, "Stella Azzurra") == "stella-azzurra"
+    IR.salva_avversaria(a, "Stella Azzurra")          # due volte: una sola
+    IR.salva_avversaria(a, "Alfa Basket")
+    assert [x["nome"] for x in IR.avversarie(a)] == ["Alfa Basket", "Stella Azzurra"]
+    a.archivio.set_video_dati(a.club, "scout:alfa-basket", {"dati": {"squadra": {"punti": 70}}})
+    assert IR.altre_caricate(a, "stella-azzurra") == [{"squadra": {"punti": 70}}]
+    assert IR.altre_caricate(a, "alfa-basket") == []

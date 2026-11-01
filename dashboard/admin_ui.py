@@ -117,6 +117,35 @@ def _nuovo_accesso(a: App, esistenti: dict):
         _password_mostrata(u, pw, accesso.blocco_toml(u, pw, club, ruolo))
 
 
+def _nuovo_interregionale(a: App, esistenti: dict):
+    section("Nuovo accesso per un club di B Interregionale",
+            "scouting delle avversarie da template Excel, lavagna dei giochi e lavagna sul video; niente statistiche di "
+            "A2 e B Nazionale")
+    with st.form("nuovo_ir", clear_on_submit=True):
+        c1, c2 = st.columns(2)
+        club = c1.text_input("Club", placeholder="es. Basket Roma")
+        nome = c2.text_input("Utente", placeholder="es. giorgio-donati")
+        crea = st.form_submit_button("Crea l'accesso" if a.archivio.permanente else "Prepara l'accesso", type="primary")
+    if not crea:
+        return
+    errore = accesso.errore_nome(nome, esistenti)
+    club = (club or "").strip()[:60]
+    if not club:
+        st.error("Scrivi il nome del club.")
+        return
+    if errore:
+        st.error(f"Utente: {errore}.")
+        return
+    pw, u = accesso.genera_password(), nome.strip().lower()
+    if a.archivio.permanente:
+        a.archivio.add_user(u, accesso.hash_password(pw), club, "interregionale", a.autore)
+        st.success(f"Accesso creato per «{u}» ({club}, B Interregionale): può entrare subito.")
+        _password_mostrata(u, pw)
+    else:
+        st.success(f"Accesso preparato per «{u}».")
+        _password_mostrata(u, pw, accesso.blocco_toml(u, pw, club, "interregionale"))
+
+
 def _gestisci(a: App, da_secrets: dict, da_db: dict):
     section("Gestisci un utente", "nuova password, disattivazione")
     tutti = sorted(set(da_secrets) | set(da_db))
@@ -223,5 +252,6 @@ def render(a: App):
         st.error("Database non raggiungibile in questo momento: riprova tra poco.")
     _utenti_attivi(a, da_secrets, da_db)
     _nuovo_accesso(a, {**da_secrets, **da_db})
+    _nuovo_interregionale(a, {**da_secrets, **da_db})
     _gestisci(a, da_secrets, da_db)
     _brand(a)

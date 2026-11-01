@@ -160,11 +160,38 @@ def render(a: App):
     valore = _lavagna_video(squadre=_squadre(a, sid, partita), partita_id=pid, partita_nome=escape(nome),
                             eventi=ev, fine=fine, memoria=memoria or {}, etichette=etichette_club(a),
                             esito=st.session_state.get("telestrator_esito"), key="telestrator", default=None)
+    _ricevi(a, valore, pid, sid)
+    _consiglio()
+
+
+def render_libero(a, avversarie: list[dict]):
+    """Senza la cronaca della Lega (B Interregionale): disegno, segnalazioni salvate con l'avversaria, giochi."""
+    note_html("Apri il video della partita e scegli qui sotto l'avversaria: le segnalazioni (tipo di azione e schema) si "
+              "salvano con lei e si rivedono una dopo l'altra. Puoi fermare il video e disegnare sul fotogramma, o creare "
+              "un gioco della lavagna dalle posizioni dei giocatori. Il video non viene caricato su ASSIST.")
+    nomi = {x["slug"]: x["nome"] for x in avversarie}
+    scelta = st.selectbox("Avversaria del video (per salvare le segnalazioni)", [None] + list(nomi), key="tele_libero",
+                          format_func=lambda s: "Nessuna: le segnalazioni restano solo in questa sessione" if s is None
+                          else nomi[s])
+    pid = f"m:{scelta}" if scelta else None
+    memoria = a.archivio.video_dati(a.club, f"partita:{pid}") if pid else None
+    club = a.utente.get("club") or ""
+    squadre = [{"id": "club", "nome": escape(club), "mia": True}] + \
+              [{"id": f"m:{s}", "nome": escape(n), "mia": False} for s, n in nomi.items()]
+    valore = _lavagna_video(squadre=squadre, partita_id=pid, partita_nome=escape(nomi.get(scelta, "")),
+                            eventi=[], fine={}, memoria=memoria or {}, etichette=etichette_club(a),
+                            esito=st.session_state.get("telestrator_esito"), key="telestrator", default=None)
+    _ricevi(a, valore, pid, "club")
+    _consiglio()
+
+
+def _ricevi(a, valore, pid, sid):
     if isinstance(valore, dict) and valore.get("t") != st.session_state.get("telestrator_ultimo"):
         st.session_state["telestrator_ultimo"] = valore.get("t")
         if valore.get("azione") == "gioco" and isinstance(valore.get("gioco"), dict):
-            a.archivio.save_play(a.club, int(valore["riferimento"]), valore["gioco"], a.autore)
-            mia = str(valore["riferimento"]) == str(sid)
+            rif = str(valore["riferimento"])
+            a.archivio.save_play(a.club, int(rif) if rif.isdigit() else rif, valore["gioco"], a.autore)
+            mia = rif == str(sid)
             st.session_state["telestrator_esito"] = {
                 "t": valore["t"], "testo": "Gioco creato ✓ Lo trovi nella " +
                 ("Lavagna dei vostri giochi." if mia else "lavagna dell'avversaria, nel suo scouting.")}
@@ -174,5 +201,8 @@ def render(a: App):
             salva_memoria(a, pid, valore.get("memoria"))
         elif valore.get("azione") == "etichette":
             a.archivio.set_video_dati(a.club, "etichette", pulisci_etichette(valore.get("etichette")))
+
+
+def _consiglio():
     st.caption("Consiglio: sul telefono gira lo schermo in orizzontale; su computer usa lo schermo intero e la "
                "tastiera (spazio, frecce, Z, numeri 1–9 per le segnalazioni).")

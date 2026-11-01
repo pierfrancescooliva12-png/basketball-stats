@@ -167,7 +167,25 @@ TOUR: dict[str, list[tuple[list[str], str, str]]] = {
     ],
 }
 
-NOMI = {"home": "Home", "scouting": "Scouting", "lavagna_avv": "Lavagna dell'avversaria", "anteprima": "Anteprima",
+# B Interregionale: scouting da template Excel e video senza la cronaca della Lega
+TOUR["scouting_ir"] = [
+    (["sel:Avversaria"], "L'avversaria", "Scegli la squadra da analizzare, o aggiungila con «＋ Aggiungi un'avversaria»."),
+    (["btn:Template Excel"], "Il template",
+     "Scaricalo e compila le medie a partita della squadra e dei giocatori (se le hai, anche quelle concesse e del "
+     "campionato). Poi caricalo qui."),
+    (["sez:Punti di forza"], "Punti di forza e punti deboli",
+     "Dai numeri del template: tiro, palle perse, rimbalzi, liberi, confrontati con il riferimento indicato sopra."),
+    (["sez:Giocatori chiave"], "I giocatori", "Chi è più coinvolto nei possessi e, per ognuno, cosa fa bene e cosa fa male."),
+    (["btn:Report PDF"], "Il report", "Un PDF per la riunione tecnica, con le note dello staff."),
+]
+TOUR["video_ir"] = [
+    (["sel:Avversaria del video"], "L'avversaria del video",
+     "Scegli l'avversaria: le segnalazioni che fai sul video si salvano con lei."),
+    (["frame:telestrator_assist>Scegli il video", "frame:telestrator_assist"], "Apri il video",
+     "Il video resta sul dispositivo. Mentre guardi, tocca i tasti «Azione» e «Schema» nel momento della situazione; "
+     "ferma il video per disegnare."),
+]
+NOMI = {"scouting_ir": "Scouting avversarie", "video_ir": "Lavagna sul video", "home": "Home", "scouting": "Scouting", "lavagna_avv": "Lavagna dell'avversaria", "anteprima": "Anteprima",
         "proiezione": "Proiezione della classifica", "mercato": "Mercato", "mia": "La mia squadra",
         "sviluppo": "Sviluppo dei giocatori", "allenamento": "Programmi di allenamento", "live": "Live",
         "lavagna": "Lavagna dei giochi", "video": "Lavagna sul video", "partite": "Partite"}
@@ -317,7 +335,41 @@ GUIDA: list[tuple[str, str, list[str]]] = [
 ]
 
 
-def pagina(a: App):
+GUIDA_IR: list[tuple[str, str, list[str]]] = [
+    ("Scouting delle avversarie con Excel",
+     "Per la B Interregionale le statistiche arrivano dallo staff, con il template di ASSIST.",
+     ["In «Scouting avversarie» scegli l'avversaria o aggiungila con «＋ Aggiungi un'avversaria».",
+      "«⬇ Template Excel da compilare»: nel foglio «Squadra» il nome e le medie a partita della squadra (colonna B); se le "
+      "hai, quelle concesse agli avversari (colonna C, per la difesa) e le medie del campionato (colonna D).",
+      "Nel foglio «Giocatori» una riga per giocatore con le medie a partita, minuti compresi. Decimali con la virgola o "
+      "con il punto; le celle vuote non contano.",
+      "Carica il file: ASSIST calcola tiro effettivo, palle perse per possesso, rimbalzi, liberi, ritmo e punti per 100 "
+      "possessi, li confronta con il riferimento e scrive punti di forza e punti deboli della squadra e di ogni giocatore.",
+      "Il riferimento è, in ordine: le medie del campionato scritte nel template; la media delle squadre già caricate dal "
+      "club (da 4 in su); la media della Serie B Nazionale, la categoria superiore, da leggere con cautela.",
+      "Ricaricando il file aggiornato i numeri si sostituiscono. «Note dello staff» e «⬇ Report PDF per la riunione "
+      "tecnica» sono in fondo alla pagina, con la lavagna per i giochi dell'avversaria.",
+      "I dati restano privati del club: non finiscono sul sito né in altre parti della piattaforma."]),
+    ("Lavagna dei giochi",
+     "I vostri giochi, fase per fase, anche in 3D e nel PDF.",
+     ["«Nuovo», poi scegli lo strumento (taglio, passaggio, palleggio, blocco) e trascina il dito dal giocatore lungo il "
+      "percorso; «+ Fase successiva» per la fase dopo, «Salva gioco» alla fine.",
+      "«Difesa» piazza le X da sole (a uomo, zone, box-and-one o manuale); «Vista 3D» rivede il gioco animato; «Schemi "
+      "pronti» ne propone 63 da adattare."]),
+    ("Lavagna sul video",
+     "Il video della partita resta sul dispositivo.",
+     ["Scegli l'avversaria del video e apri il file (su computer puoi trascinarlo).",
+      "Mentre guardi tocca i tasti «Azione» (pick and roll centrale, laterale, hand-off…) e «Schema» (i nomi dei vostri "
+      "giochi); un'azione e uno schema toccati a pochi secondi di distanza sono la stessa situazione. Si salvano con "
+      "l'avversaria e si rivedono una dopo l'altra con «▶ In sequenza».",
+      "Ferma il video per disegnare sul fotogramma; in «Crea un gioco» tocchi campo e giocatori e il gioco si apre nella "
+      "lavagna.",
+      "Per questo campionato la piattaforma non ha la cronaca delle partite: il collegamento automatico alle azioni e "
+      "l'efficienza delle situazioni restano per A2 e B Nazionale."]),
+]
+
+
+def pagina(a: App, sezioni=None):
     titolo_pagina("Guida", "come si usano le parti più complesse della piattaforma")
     note_html("Qui trovi le istruzioni delle parti meno intuitive, area per area. In ogni pagina, «? Guida della "
               "pagina» in basso a destra illumina una parte alla volta e spiega come si usa.")
@@ -333,7 +385,7 @@ def pagina(a: App):
         else:
             st.info("La demo parte da sola solo con gli accessi dello staff dei club: qui usa «? Guida della pagina» "
                     "in basso a destra.")
-    for titolo, desc, passi in GUIDA:
+    for titolo, desc, passi in (sezioni or GUIDA):
         section(titolo, desc)
         st.markdown('<ol class="guida">' + "".join(f"<li>{esc(p)}</li>" for p in passi) + "</ol>",
                     unsafe_allow_html=True)
