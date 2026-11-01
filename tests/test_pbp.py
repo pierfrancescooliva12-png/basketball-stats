@@ -130,6 +130,10 @@ def test_pdf_report(conn):
     from basket.report_pdf import build_pdf
     pdf = build_pdf(Contesto(conn, "x2627"), 10050)
     assert pdf[:4] == b"%PDF" and len(pdf) > 20_000
+    # con le situazioni segnalate dallo staff sul video
+    righe = [["Azione", "Pick and roll centrale", "6", "117", "4/7", "1"], ["Schema", "Horns 45", "3", "67", "1/3", "1"]]
+    con = build_pdf(Contesto(conn, "x2627"), 10050, situazioni=righe)
+    assert con[:4] == b"%PDF" and len(con) > len(pdf)
 
 
 def test_iterative_reconstruction_improves_old_season_game():

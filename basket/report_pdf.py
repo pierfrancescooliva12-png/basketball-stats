@@ -189,13 +189,14 @@ def _header(r, prossima, S, width, stagione_label=config.STAGIONE_LABEL):
 
 def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
               giochi: list[dict] | None = None, note: list[dict] | None = None,
-              foto: bool = True) -> bytes:
+              foto: bool = True, situazioni: list[list[str]] | None = None) -> bytes:
     """Report prepartita su squadra_id. Si apre con la visione di squadra (una pagina da
     spogliatoio) e lo scouting breve dei giocatori di rotazione (con le foto del sito se foto è
     True), poi il piano partita: con mia (la squadra dello staff) probabilità, chiavi per
     vincere e consigli; senza, i consigli ricavati dai dati. Seguono tutte le sezioni della
     pagina Scouting. Con giochi (disegnati sulla lavagna) aggiunge i suoi giochi fase per fase;
-    con note quelle dello staff."""
+    con note quelle dello staff; con situazioni (righe di situazioni.righe_report) le situazioni del loro
+    attacco segnalate dallo staff sul video."""
     from . import scheda_giocatori as SG
     from . import sintesi as SI
     _fonts()
@@ -462,6 +463,14 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
             for x in mine.itertuples():
                 chi = f"<b>{x.giocatore}</b>: " if isinstance(x.giocatore, str) else ""
                 el.append(Paragraph(f"• {chi}{x.testo}", S["body"]))
+    if situazioni:
+        media = pf.get("ortg")
+        el += [Paragraph("Situazioni segnalate sul video", S["h2"]),
+               Paragraph("Il loro attacco nelle situazioni segnate dallo staff nella lavagna sul video: come è finito "
+                         "il possesso secondo la cronaca. Punti ogni 100 situazioni, da confrontare con il loro rating "
+                         f"offensivo ({_fmt(media, 1)}). Con meno di 5 situazioni il dato è indicativo.", S["body"]),
+               _table([["", "Situazione", "Situazioni", "Punti ogni 100", "Canestri / tiri", "Palle perse"]]
+                      + situazioni, [18 * mm, W - 18 * mm - 4 * 26 * mm] + [26 * mm] * 4, align_left=(0, 1))]
     if note:
         el.append(Paragraph("Note dello staff", S["h2"]))
         for n in note:

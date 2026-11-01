@@ -242,6 +242,8 @@ def inject_css():
     div[role="radiogroup"] label {padding: .25rem .55rem;}
     [data-testid="stMetricValue"] {font-family: var(--cond); font-weight: 700; letter-spacing: .01em;}
     .note {color: var(--muted); font-size: .86rem; margin: -2px 0 12px; line-height: 1.5;}
+    ol.guida {margin: 4px 0 22px; padding-left: 1.3rem; color: var(--text-2); line-height: 1.55; max-width: 860px;}
+    ol.guida li {margin: 0 0 6px; padding-left: 4px;}
 
     /* tabelle e grafici in un riquadro bianco */
     [data-testid="stDataFrame"] {border: 1px solid var(--line); border-radius: var(--r);

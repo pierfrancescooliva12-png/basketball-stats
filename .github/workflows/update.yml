@@ -31,6 +31,11 @@ on:
         description: "Massimo giocatori di cui scaricare l'anagrafica"
         required: false
         default: "200"
+      invia_report:
+        description: "Inviare anche il report agli abbonati? (di solito no: parte da solo il lunedì)"
+        type: choice
+        options: ["no", "sì"]
+        default: "no"
 
 permissions:
   contents: write
@@ -115,10 +120,16 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           MITTENTE: ${{ secrets.MITTENTE }}
           ABBONATI: ${{ secrets.ABBONATI }}
+          INVIA_REPORT: ${{ inputs.invia_report }}
         run: |
-          # nelle esecuzioni automatiche il report parte solo il lunedì
+          # nelle esecuzioni automatiche il report parte solo il lunedì; in quelle avviate a mano
+          # solo se richiesto. In ogni caso lo stesso report sulla stessa partita parte una volta
+          # sola (registro in data/invii_report.json, solo impronte)
           if [ "$GITHUB_EVENT_NAME" = "schedule" ] && [ "$(date -u +%u)" != "1" ]; then
             echo "Report settimanale: solo il lunedì"; exit 0
+          fi
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ "$INVIA_REPORT" != "sì" ]; then
+            echo "Avvio manuale: report non inviato (scegli 'sì' in 'Inviare anche il report')"; exit 0
           fi
           python -m basket.invio_email
 

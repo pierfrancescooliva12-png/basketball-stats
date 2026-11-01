@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Guida ASSIST</title>
+</head>
+<body>
+<script>
+// Demo guidata: illumina una parte della pagina alla volta e spiega sotto come si usa. Gira nella pagina
+// della piattaforma (stessa origine del componente); questo riquadro resta invisibile. Alla fine dice a
+// Streamlit che la guida di questa pagina è stata vista, per non riproporla al prossimo accesso.
+(function () {
+"use strict";
+const P = window.parent, D = P.document;
+let dati = null, passi = [], i = 0, aperto = false, timer = null;
+
+function invia(valore) {
+  P.postMessage({ isStreamlitMessage: true, type: "streamlit:setComponentValue", value: valore, dataType: "json" }, "*");
+}
+P.postMessage({ isStreamlitMessage: true, type: "streamlit:componentReady", apiVersion: 1 }, "*");
+P.postMessage({ isStreamlitMessage: true, type: "streamlit:setFrameHeight", height: 0 }, "*");
+
+const CSS = `
+.ag-buco { position: fixed; z-index: 999991; border-radius: 12px; pointer-events: none;
+  box-shadow: 0 0 0 4px #e8631c, 0 0 0 9999px rgba(20,20,19,.58); transition: all .28s cubic-bezier(.4,0,.2,1); }
+.ag-velo { position: fixed; inset: 0; z-index: 999990; }
+.ag-carta { position: fixed; z-index: 999992; width: min(380px, calc(100vw - 32px)); background: #fffefb; color: #141413;
+  border: 1px solid #e3e0d4; border-radius: 14px; padding: 16px 16px 12px; box-shadow: 0 12px 32px rgba(20,20,19,.22);
+  font: 15px/1.45 "Instrument Sans", system-ui, sans-serif; transition: top .28s, left .28s; }
+.ag-carta .ag-ey { font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #b34a06; }
+.ag-carta h4 { margin: 4px 0 6px; font: 600 1.05rem/1.25 "Instrument Sans", system-ui, sans-serif; }
+.ag-carta p { margin: 0; color: #3d3d3a; font-size: .94rem; }
+.ag-piede { display: flex; align-items: center; gap: 6px; margin-top: 14px; }
+.ag-piede span { flex: 1; color: #6f6d66; font-size: .8rem; }
+.ag-b { height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid #e3e0d4; background: #fffefb; color: #141413;
+  font: 500 .9rem "Instrument Sans", system-ui, sans-serif; cursor: pointer; }
+.ag-b.si { background: #141413; color: #faf9f5; border-color: #141413; }
+.ag-b.salta { border: 0; background: transparent; color: #6f6d66; padding: 0 6px; }
+.ag-aiuto { position: fixed; right: 18px; bottom: 18px; z-index: 999980; height: 40px; padding: 0 16px; border-radius: 999px;
+  border: 1px solid #e3e0d4; background: #fffefb; color: #141413; box-shadow: 0 4px 14px rgba(20,20,19,.14);
+  font: 600 .88rem "Instrument Sans", system-ui, sans-serif; cursor: pointer; }
+.ag-aiuto:hover { border-color: #e8631c; }
+@media print { .ag-aiuto, .ag-buco, .ag-velo, .ag-carta { display: none !important; } }`;
+function stile() {
+  if (D.getElementById("ag-stile")) return;
+  const s = D.createElement("style"); s.id = "ag-stile"; s.textContent = CSS; D.head.appendChild(s);
+}
+
+// ------------------------------------------------------------------ dove sta ogni parte della pagina
+const visibile = (e) => !!e && e.getClientRects().length > 0 && e.getBoundingClientRect().width > 4;
+const testo = (e) => (e.innerText || e.textContent || "").replace(/\s+/g, " ").trim();
+const contenitore = (e) => e.closest('[data-testid="stElementContainer"]') || e;
+function conTesto(radice, sel, v) {
+  return [...radice.querySelectorAll(sel)].filter(visibile).find((e) => testo(e).toLowerCase().startsWith(v.toLowerCase())) ||
+         [...radice.querySelectorAll(sel)].filter(visibile).find((e) => testo(e).toLowerCase().includes(v.toLowerCase()));
+}
+// un bersaglio: {el, rett()} anche dentro i riquadri dei componenti (lavagna, video)
+function cerca(s) {
+  const k = s.indexOf(":"), tipo = k < 0 ? s : s.slice(0, k), v = k < 0 ? "" : s.slice(k + 1);
+  let el = null;
+  if (tipo === "nav") el = D.querySelector('[data-testid="stHeader"]');
+  else if (tipo === "filtri") {
+    const l = conTesto(D, '[data-testid="stWidgetLabel"]', "Stagione");
+    el = l && l.closest('[data-testid="stHorizontalBlock"]');
+  } else if (tipo === "esperto") el = conTesto(D, '[data-testid="stCheckbox"], [data-testid="stToggle"]', "Esperto");
+  else if (tipo === "pagina") el = D.querySelector(".pagina");
+  else if (tipo === "sez") {
+    // il titolo della sezione e, se non è troppo alto, il contenuto subito sotto (tabella, grafico)
+    const t = conTesto(D, ".sec .t", v), c = t && contenitore(t.closest(".sec"));
+    if (!visibile(c)) return null;
+    const dopo = c.nextElementSibling;
+    const usa = dopo && visibile(dopo) && !dopo.querySelector(".sec") && dopo.getBoundingClientRect().height < P.innerHeight * 0.55;
+    return { el: c, rett: () => unione(c, usa ? dopo : null) };
+  }
+  else if (tipo === "btn") { const b = conTesto(D, "button", v); el = b && contenitore(b); }
+  else if (tipo === "tab") el = conTesto(D, 'button[role="tab"]', v);
+  else if (tipo === "exp") { const e = conTesto(D, '[data-testid="stExpander"] summary', v); el = e && e.closest('[data-testid="stExpander"]'); }
+  else if (tipo === "sel") { const l = conTesto(D, '[data-testid="stWidgetLabel"]', v); el = l && contenitore(l); }
+  else if (tipo === "tip") { const t = [...D.querySelectorAll("details.tip summary")].find(visibile); el = t && t.closest(".sec, .note") || t; }
+  else if (tipo === "frame") {
+    const [nome, dentro] = v.split(">");
+    const f = [...D.querySelectorAll("iframe")].filter(visibile).find((x) => (x.title || "").includes(nome) || (x.src || "").includes(nome));
+    if (!f) return null;
+    if (!dentro) return { el: f, rett: () => f.getBoundingClientRect() };
+    let doc = null;
+    try { doc = f.contentDocument; } catch (e) { return null; }
+    const x = doc && conTesto(doc, "button, label, select, .tag, b, h2, h3", dentro);
+    if (!x) return null;
+    return { el: x, rett: () => { const a = f.getBoundingClientRect(), b = x.getBoundingClientRect();
+      return { left: a.left + b.left, top: a.top + b.top, width: b.width, height: b.height, right: a.left + b.right, bottom: a.top + b.bottom }; },
+      scorri: () => { f.scrollIntoView({ block: "center" }); x.scrollIntoView({ block: "center" }); } };
+  }
+  return visibile(el) ? { el, rett: () => el.getBoundingClientRect() } : null;
+}
+function unione(a, b) {
+  const r = a.getBoundingClientRect();
+  if (!b) return r;
+  const q = b.getBoundingClientRect(), left = Math.min(r.left, q.left), top = Math.min(r.top, q.top);
+  const right = Math.max(r.right, q.right), bottom = Math.max(r.bottom, q.bottom);
+  return { left, top, right, bottom, width: right - left, height: bottom - top };
+}
+const bersaglio = (p) => { for (const s of p.b) { const x = cerca(s); if (x) return x; } return null; };
+
+// ------------------------------------------------------------------ la guida
+function chiudi(vista) {
+  aperto = false; clearInterval(timer);
+  for (const id of ["ag-buco", "ag-velo", "ag-carta"]) { const e = D.getElementById(id); if (e) e.remove(); }
+  P.removeEventListener("resize", posiziona, true); P.removeEventListener("scroll", posiziona, true);
+  D.removeEventListener("keydown", tasti, true);
+  if (vista && dati) invia({ visto: dati.chiave, t: Date.now() });
+}
+let attuale = null;
+function posiziona() {
+  if (!aperto || !attuale) return;
+  const r = attuale.rett(), m = 6, buco = D.getElementById("ag-buco"), carta = D.getElementById("ag-carta");
+  const W = P.innerWidth, H = P.innerHeight;
+  const x = Math.max(4, r.left - m), y = Math.max(4, r.top - m);
+  const w = Math.min(W - 8, r.width + 2 * m), h = Math.min(H - 8, r.height + 2 * m);
+  Object.assign(buco.style, { left: x + "px", top: y + "px", width: w + "px", height: h + "px" });
+  const cw = carta.offsetWidth, ch = carta.offsetHeight;
+  // la spiegazione sotto la parte illuminata; se sotto non c'è spazio, sopra; se nemmeno, dentro in basso
+  let top = y + h + 12;
+  if (top + ch > H - 8) top = y - ch - 12 >= 8 ? y - ch - 12 : Math.max(8, H - ch - 12);
+  const left = Math.min(W - cw - 12, Math.max(12, x));
+  Object.assign(carta.style, { top: top + "px", left: left + "px" });
+}
+function tasti(e) {
+  if (!aperto) return;
+  if (e.key === "Escape") { e.preventDefault(); chiudi(true); }
+  else if (e.key === "ArrowRight" || e.key === "Enter") { e.preventDefault(); vai(i + 1); }
+  else if (e.key === "ArrowLeft") { e.preventDefault(); vai(i - 1); }
+}
+function vai(n) {
+  if (n >= passi.length) { chiudi(true); return; }
+  if (n < 0) return;
+  i = n; const p = passi[i];
+  attuale = p.dove();
+  if (!attuale) { vai(n + (n >= i ? 1 : -1)); return; }
+  (attuale.scorri || (() => attuale.el.scrollIntoView({ block: "center", behavior: "smooth" })))();
+  const c = D.getElementById("ag-carta");
+  c.innerHTML = `<div class="ag-ey">${esc(dati.nome)}</div><h4>${esc(p.t)}</h4><p>${esc(p.x)}</p>
+    <div class="ag-piede"><button class="ag-b salta" data-a="salta">Salta la guida</button><span>${i + 1} di ${passi.length}</span>
+    ${i > 0 ? '<button class="ag-b" data-a="indietro">Indietro</button>' : ""}
+    <button class="ag-b si" data-a="avanti">${i === passi.length - 1 ? "Ho capito" : "Avanti"}</button></div>`;
+  c.querySelector('[data-a="salta"]').onclick = () => chiudi(true);
+  c.querySelector('[data-a="avanti"]').onclick = () => vai(i + 1);
+  const ind = c.querySelector('[data-a="indietro"]'); if (ind) ind.onclick = () => vai(i - 1);
+  setTimeout(posiziona, 30); setTimeout(posiziona, 350); setTimeout(posiziona, 800);
+  c.querySelector('[data-a="avanti"]').focus({ preventScroll: true });
+}
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+// la pagina si disegna a pezzi: si aspetta che ci siano le parti da illuminare (al massimo qualche secondo)
+function avvia() {
+  if (aperto || !dati) return;
+  stile();
+  let prove = 0;
+  clearInterval(timer);
+  timer = setInterval(() => {
+    prove++;
+    const trovati = dati.passi.filter((p) => bersaglio(p));
+    if (trovati.length < dati.passi.length && prove < 16) return;
+    clearInterval(timer);
+    if (!trovati.length) return;
+    passi = trovati.map((p) => ({ ...p, dove: () => bersaglio(p) }));
+    aperto = true;
+    for (const [id, cls] of [["ag-velo", "ag-velo"], ["ag-buco", "ag-buco"], ["ag-carta", "ag-carta"]]) {
+      const e = D.createElement("div"); e.id = id; e.className = cls; D.body.appendChild(e);
+    }
+    D.getElementById("ag-velo").onclick = () => vai(i + 1);
+    P.addEventListener("resize", posiziona, true); P.addEventListener("scroll", posiziona, true);
+    D.addEventListener("keydown", tasti, true);
+    timer = setInterval(posiziona, 400);
+    vai(0);
+  }, 400);
+}
+function pulsante() {
+  stile();
+  let b = D.getElementById("ag-aiuto");
+  if (!dati || !dati.passi.length) { if (b) b.remove(); return; }
+  if (!b) { b = D.createElement("button"); b.id = "ag-aiuto"; b.className = "ag-aiuto"; D.body.appendChild(b); }
+  b.textContent = "? Guida della pagina";
+  b.title = "Rivedi la demo guidata di questa pagina";
+  b.onclick = () => { if (!aperto) avvia(); };
+}
+window.addEventListener("message", (ev) => {
+  const d = ev.data || {};
+  if (d.type !== "streamlit:render") return;
+  const a = d.args || {};
+  const nuova = !dati || dati.chiave !== a.chiave;
+  dati = { chiave: a.chiave, nome: a.nome || "Guida", passi: Array.isArray(a.passi) ? a.passi : [] };
+  pulsante();
+  // una volta per pagina e per sessione, anche se la pagina si ridisegna
+  P.__assistGuida = P.__assistGuida || {};
+  if (a.auto && nuova && !P.__assistGuida[a.chiave]) { P.__assistGuida[a.chiave] = true; avvia(); }
+});
+// cambiando pagina il riquadro sparisce: con lui la guida e il pulsante
+window.addEventListener("pagehide", () => { chiudi(false); const b = D.getElementById("ag-aiuto"); if (b) b.remove(); });
+})();
+</script>
+</body>
+</html>

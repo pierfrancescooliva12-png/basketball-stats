@@ -399,12 +399,13 @@ def render_scouting(a: App):
             unsafe_allow_html=True)
         frase("In una frase", X.frase_squadra(profile, sq))
         from . import lavagna_ui
-        from .nuove import DOCX, _docx, _pdf, note_json
+        from .nuove import DOCX, _docx, _pdf, note_json, situazioni_json
         from basket.report_pdf import slug
         mia = a.utente.get("squadra_id") or st.session_state.get(f"ch_mia_{sq}")
         documento(f"scout_pdf_{sq}_{mia}", "Prepara il report PDF per la riunione tecnica",
                   "⬇ Scarica il report PDF per la riunione tecnica",
-                  lambda: _pdf(a.ctx, a.mtime, a.stagione, sq, mia, lavagna_ui.giochi_json(a, sq), note_json(a, sq)),
+                  lambda: _pdf(a.ctx, a.mtime, a.stagione, sq, mia, lavagna_ui.giochi_json(a, sq), note_json(a, sq),
+                               situazioni_json(a, sq)),
                   f"scouting_{slug(r.squadra)}.pdf", "application/pdf", primario=True)
         documento(f"scout_docx_{sq}_{mia}", "Prepara il report in Word, da completare con le note dello staff",
                   "⬇ Scarica il report in Word", lambda: _docx(a.ctx, a.mtime, a.stagione, sq, mia),
@@ -434,6 +435,8 @@ def render_scouting(a: App):
         from . import chiavi_ui
         chiavi_ui.render(a, sq)
         lavagna_ui.render_avversaria(a, sq)
+        from . import situazioni_ui
+        situazioni_ui.render(a, sq, nome=r.squadra)
 
         c1, c2 = st.columns(2)
         with c1:

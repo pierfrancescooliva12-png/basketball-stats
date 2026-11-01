@@ -45,6 +45,12 @@ if utenti:
 else:
     utente = {"username": "demo", "club": None, "ruolo": "admin", "demo": True}
 
+# club di B Interregionale: scouting da Excel, lavagne e video, senza i dati di A2 e B Nazionale
+if utente.get("ruolo") == "interregionale":
+    from dashboard import interregionale
+    interregionale.esegui(utente, arch)
+    st.stop()
+
 # ------------------------------------------------------------------ filtri (dall'indirizzo)
 
 # l'area Amministrazione c'è solo per gli admin veri (non in modalità demo)
