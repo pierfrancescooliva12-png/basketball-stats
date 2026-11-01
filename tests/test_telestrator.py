@@ -44,7 +44,7 @@ def test_strumenti_disponibili():
         assert f'data-t="{t}"' in s, t
     for id_ in ("annulla", "ripeti", "pulisci", "indietro1", "avanti1", "schermo", "velocita",
                 "zoomPiu", "zoomMeno", "zoomRiporta", "tasti-tag", "nuovo-tag", "tasti-schemi", "nuovo-schema",
-                "modifica-tag", "lista",
+                "modifica-tag", "lista", "inizio-azione", "fine-azione", "c-prima", "c-dopo",
                 "qui", "seq", "sincronizza", "ferma-sync", "palla-a-due", "da", "tara", "posiziona",
                 "crea-gioco"):
         assert f'id="{id_}"' in s, id_
@@ -207,6 +207,9 @@ def test_dati_dal_componente():
     # elenco salvato prima dei due livelli: sono tipi di azione
     assert TU.pulisci_etichette(["Horns 45"]) == {"azioni": ["Horns 45"], "schemi": []}
     assert TU.pulisci_etichette("non una lista") == {"azioni": [], "schemi": []}
+    # durata di base delle clip: limitata a 1-60 secondi, scartata se incompleta
+    assert TU.pulisci_etichette({"azioni": [], "clip": {"prima": 200, "dopo": "12"}})["clip"] == {"prima": 60, "dopo": 12}
+    assert "clip" not in TU.pulisci_etichette({"clip": {"prima": "x", "dopo": 5}})
 
     salvati = {}
     a = SimpleNamespace(club="club", archivio=SimpleNamespace(set_video_dati=lambda c, k, d: salvati.update({k: d})))
@@ -221,6 +224,7 @@ def test_azione_e_schema_nella_stessa_situazione():
     js = _funzione(s, "segnala").replace("async function", "function").replace("const tg = await tempoDiGioco(t);", "const tg = null;")
     r = _node("""let url = 'x', scan = null, impronta = 'f', ultima = null, segnalazioni = [];
       const occupato = { attivo: false }, UNISCI = 8, video = { currentTime: 0 };
+      let inizioPendente = null; const $ = () => ({ classList: { remove() {} } });
       const avviso = () => {}, aggiornaTag = () => {}, aggiornaLista = () => {}, salvaPresto = () => {}, orario = String;
       const nomeSegn = (s) => [s.azione, s.schema].filter(Boolean).join(" · ");
       """ + js + """
