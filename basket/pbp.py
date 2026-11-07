@@ -514,24 +514,41 @@ def team_fouls_bonus(ev: pd.DataFrame) -> pd.DataFrame:
 
 
 def timeouts(ev: pd.DataFrame, finestra: int = 120) -> pd.DataFrame:
-    """Effetto dei propri timeout: differenza punti nei 2 minuti dopo e nei 2 minuti prima."""
+    """Effetto dei propri timeout: differenza punti nei 2 minuti dopo e nei 2 minuti prima.
+    Somme a finestra con le somme cumulate dei punti di ogni partita (un timeout = due ricerche
+    binarie), invece di filtrare la cronaca a ogni timeout."""
     t_out = ev[ev["tipo"] == "timeout"]
+    cols = ["campionato_id", "squadra_id", "diff_prima", "diff_dopo"]
+    if t_out.empty:
+        return pd.DataFrame(columns=cols)
+    scoring = ev[ev["punti"] > 0].sort_values(["partita_id", "secondi"], kind="stable")
+    partite = {}
+    for pid, g in scoring.groupby("partita_id", sort=False):
+        sec = g["secondi"].to_numpy(dtype=float)
+        pts = g["punti"].to_numpy(dtype=float)
+        partite[pid] = (sec, np.concatenate([[0.0], np.cumsum(pts)]), g["squadra_id"].to_numpy(), pts)
+    cum_squadra = {}
     rows = []
-    scoring = ev[ev["punti"] > 0]
-    by_game = {pid: g for pid, g in scoring.groupby("partita_id")}
     for e in t_out.itertuples():
-        g = by_game.get(e.partita_id)
-        if g is None:
+        dati = partite.get(e.partita_id)
+        if dati is None:
             continue
-        t = e.secondi or 0
-        dopo = g[(g["secondi"] > t) & (g["secondi"] <= t + finestra)]
-        prima = g[(g["secondi"] > t - finestra) & (g["secondi"] <= t)]
-        d_dopo = dopo.loc[dopo.squadra_id == e.squadra_id, "punti"].sum() - \
-            dopo.loc[dopo.squadra_id != e.squadra_id, "punti"].sum()
-        d_prima = prima.loc[prima.squadra_id == e.squadra_id, "punti"].sum() - \
-            prima.loc[prima.squadra_id != e.squadra_id, "punti"].sum()
-        rows.append((e.campionato_id, e.squadra_id, d_prima, d_dopo))
-    d = pd.DataFrame(rows, columns=["campionato_id", "squadra_id", "diff_prima", "diff_dopo"])
+        sec, cum_tot, sq, pts = dati
+        chiave = (e.partita_id, e.squadra_id)
+        if chiave not in cum_squadra:
+            cum_squadra[chiave] = np.concatenate([[0.0], np.cumsum(np.where(sq == e.squadra_id, pts, 0.0))])
+        cum_mia = cum_squadra[chiave]
+        t = e.secondi if e.secondi is not None else 0
+        if pd.isna(t):                       # timeout senza tempo: nessun punto nelle finestre
+            rows.append((e.campionato_id, e.squadra_id, 0, 0))
+            continue
+
+        def saldo(a, b):                     # punti propri meno punti degli altri in (a, b]
+            i, j = np.searchsorted(sec, [a, b], side="right")
+            mia = cum_mia[j] - cum_mia[i]
+            return mia - (cum_tot[j] - cum_tot[i] - mia)
+        rows.append((e.campionato_id, e.squadra_id, saldo(t - finestra, t), saldo(t, t + finestra)))
+    d = pd.DataFrame(rows, columns=cols)
     if d.empty:
         return d
     return d.groupby(["campionato_id", "squadra_id"]).agg(

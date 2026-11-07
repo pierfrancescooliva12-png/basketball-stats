@@ -9,5 +9,8 @@ fi
 # memoria: con molti thread (uno per sessione) la libreria C di sistema tiene molte "arene" e la
 # memoria occupata cresce senza essere restituita; con due arene resta molto più bassa
 export MALLOC_ARENA_MAX="${MALLOC_ARENA_MAX:-2}"
+# analisi della stagione preparate prima di aprire le porte: Render manda gli utenti alla nuova
+# versione solo quando risponde, quindi nessuno aspetta il calcolo dopo un aggiornamento dei dati
+python -m basket.precalcolo || true
 exec streamlit run streamlit_app.py \
   --server.port "${PORT:-8501}" --server.address 0.0.0.0 --server.headless true
