@@ -9,6 +9,7 @@ Dove vengono salvati:
   a ogni riavvio dell'app: va bene solo per provare.
 """
 
+import time
 import json
 from datetime import datetime, timezone
 
@@ -265,8 +266,25 @@ class Archivio:
             c.execute(text("DELETE FROM guida_vista WHERE utente = :u"), {"u": utente})
 
     # ------------------------------------------------------------ utenti
+    UTENTI_TTL = 60          # secondi: l'elenco degli utenti attivi si rilegge al massimo ogni minuto
+
     def users(self, anche_disattivi: bool = False) -> dict:
-        """{username: {password_hash, club, ruolo, attivo, cambio_password, ...}}"""
+        """{username: {password_hash, club, ruolo, attivo, cambio_password, ...}}
+        Gli utenti attivi servono a ogni clic: restano in memoria per un minuto (e si rileggono
+        subito dopo ogni modifica), così non si interroga il database esterno a ogni pagina."""
+        if not anche_disattivi:
+            mem = getattr(self, "_utenti_mem", None)
+            if mem and time.monotonic() - mem[0] < self.UTENTI_TTL:
+                return {k: dict(v) for k, v in mem[1].items()}
+            out = self._users(False)
+            self._utenti_mem = (time.monotonic(), out)
+            return {k: dict(v) for k, v in out.items()}
+        return self._users(True)
+
+    def _dimentica_utenti(self):
+        self._utenti_mem = None
+
+    def _users(self, anche_disattivi: bool) -> dict:
         q = "SELECT * FROM utenti" + ("" if anche_disattivi else " WHERE attivo = 1")
         with self.engine.connect() as c:
             rows = c.execute(text(q)).mappings().all()
@@ -281,6 +299,7 @@ class Archivio:
                            "VALUES (:u, :h, :c, :r, 1, 1, :d, :a)"),
                       {"u": username.strip().lower(), "h": password_hash, "c": club, "r": ruolo,
                        "d": _now(), "a": autore})
+        self._dimentica_utenti()
 
     def set_password(self, username: str, password_hash: str, cambio: bool):
         """Nuova password; cambio=True obbliga a cambiarla al prossimo accesso."""
@@ -288,11 +307,13 @@ class Archivio:
             c.execute(text("UPDATE utenti SET password_hash = :h, cambio_password = :x "
                            "WHERE username = :u"),
                       {"u": username, "h": password_hash, "x": int(cambio)})
+        self._dimentica_utenti()
 
     def set_active(self, username: str, attivo: bool):
         with self.engine.begin() as c:
             c.execute(text("UPDATE utenti SET attivo = :a WHERE username = :u"),
                       {"u": username, "a": int(attivo)})
+        self._dimentica_utenti()
 
     def touch_login(self, username: str):
         with self.engine.begin() as c:

@@ -93,8 +93,10 @@ def loghi_piccoli(squadre: tuple) -> dict:
 
 @st.cache_resource(show_spinner="Preparo le analisi…", max_entries=2)
 def contesto(db_mtime: float, stagione: str) -> Contesto:
+    from basket import precalcolo
     ctx = Contesto(db.connect(config.DB_PATH, readonly=True), stagione)
-    _ = ctx.players, ctx.profile        # calcolo iniziale
+    if not precalcolo.carica(ctx):      # analisi preparate all'avvio (render_start.sh)
+        _ = ctx.players, ctx.profile    # calcolo iniziale
     return ctx
 
 
