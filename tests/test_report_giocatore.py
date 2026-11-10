@@ -16,7 +16,7 @@ def test_tono_e_nomi():
 
 
 @pytest.mark.skipif(not config.DB_PATH.exists(), reason="database non disponibile")
-def test_una_pagina():
+def test_due_pagine_report_e_statistiche_avanzate():
     import io
     PdfReader = pytest.importorskip("pypdf").PdfReader
     from basket import db, mercato, sviluppo as SV
@@ -25,4 +25,8 @@ def test_una_pagina():
     sid = list(ctx.profile["squadra_id"])[0]
     g = SV.squadra(ctx, sid, foto=False)[0]
     pdf = RG.build(ctx, sid, g["giocatore_id"], mercato.season_lines(ctx.conn), foto=False)
-    assert pdf[:4] == b"%PDF" and len(PdfReader(io.BytesIO(pdf)).pages) == 1
+    pagine = PdfReader(io.BytesIO(pdf)).pages
+    # la scheda resta su una pagina; la seconda è quella delle statistiche avanzate
+    assert pdf[:4] == b"%PDF" and len(pagine) == 2
+    testo = pagine[1].extract_text().upper()
+    assert "STATISTICHE AVANZATE" in testo and "PIE" in testo and "USG%" in testo

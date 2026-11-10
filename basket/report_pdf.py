@@ -313,6 +313,28 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
     if has_pm:
         el.append(Paragraph("+/- e On-Off (Net rating con il giocatore in campo meno fuori) "
                             "calcolati dalle partite con quintetti verificati.", S["small"]))
+    try:                                    # statistiche avanzate dei giocatori più utilizzati
+        from . import avanzate as AV
+        av = AV.tabella_squadra(ctx, squadra_id, 10)
+    except Exception:  # noqa: BLE001
+        av = pd.DataFrame()
+    if not av.empty:
+        head2 = ["Giocatore", "Min", "Saldo", "Azioni %", "Tiro reale %", "Tiro eff. %", "Assist %", "Perse/100",
+                 "Rimb. %", "Impatto"]
+        rows2 = [head2]
+        for p in av.itertuples():
+            rows2.append([p.giocatore, _fmt(p.minuti_pg), _fmt(p.net_on, signed=True), _fmt(p.usg_pct),
+                          _fmt(p.ts_pct), _fmt(p.efg_pct), _fmt(p.ast_pct), _fmt(p.to_ratio), _fmt(p.trb_pct),
+                          _fmt(p.pie)])
+        w2 = [38 * mm] + [((W - 38 * mm) / (len(head2) - 1))] * (len(head2) - 1)
+        el += [KeepTogether([Paragraph("Giocatori · statistiche avanzate", S["h2"]),
+               Paragraph("Saldo: punti di margine della squadra ogni 100 possessi con il giocatore in campo. Azioni: "
+                         "quota dei tiri, liberi e palle perse della squadra che passa da lui (USG%). Tiro reale: "
+                         "resa di ogni tiro, liberi compresi (TS%); tiro effettivo: dal campo, con più peso ai tiri "
+                         "da tre (eFG%). Assist: quota dei canestri dei compagni che assiste. Perse: palle perse "
+                         "ogni 100 azioni. Rimbalzi: quota di quelli disponibili. Impatto: la sua parte di tutto "
+                         "ciò che accade nelle partite che gioca (PIE).", S["small"]),
+               Spacer(1, 3), _table(rows2, w2)])]
 
     sh = ctx.shots
     if sh is not None and not sh.empty and squadra_id in set(sh["squadra_id"]):

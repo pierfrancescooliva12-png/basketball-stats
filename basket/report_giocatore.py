@@ -16,8 +16,8 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.pdfbase.pdfmetrics import stringWidth
-from reportlab.platypus import (Flowable, KeepInFrame, Paragraph, SimpleDocTemplate, Spacer, Table,
-                                TableStyle)
+from reportlab.platypus import (Flowable, KeepInFrame, PageBreak, Paragraph, SimpleDocTemplate, Spacer,
+                                Table, TableStyle)
 
 from . import config
 from . import confronto as CF
@@ -62,6 +62,91 @@ class Barre(Flowable):
             c.setFillColor(INK)
             c.setFont("Serif", 11)
             c.drawRightString(self.w, y - 0.3 * mm, str(int(round(v))) if ok else "–")
+
+
+class Posizione(Flowable):
+    """Barra della posizione nel campionato (0-100, tacca a metà): blu se è un punto di forza,
+    rosso se è un punto debole, grigia per le voci che descrivono senza giudicare."""
+
+    def __init__(self, larghezza, pct, verso: int, altezza=3.2 * mm):
+        super().__init__()
+        self.w, self.pct, self.verso, self.h = larghezza, pct, verso, altezza
+
+    def wrap(self, aw, ah):
+        return self.w, self.h
+
+    def draw(self):
+        c, y, sp = self.canv, 0.4 * mm, 2.4 * mm
+        c.setFillColor(SEGMENTO)
+        c.roundRect(0, y, self.w, sp, sp / 2, stroke=0, fill=1)
+        if self.pct is not None:
+            neutro = colors.HexColor("#b9b5a8")
+            tinta = neutro if self.verso == 0 else BLU if self.pct >= 70 else ROSSO if self.pct < 30 else neutro
+            c.setFillColor(tinta)
+            c.roundRect(0, y, max(sp, self.w * self.pct / 100), sp, sp / 2, stroke=0, fill=1)
+        c.setFillColor(GRIGIO)
+        c.rect(self.w / 2 - 0.3, y - 0.6 * mm, 0.6, sp + 1.2 * mm, stroke=0, fill=1)
+
+
+def pagina_avanzate(ctx, sid: int, gid: str, S, W, nome: str, squadra: str, stagione: str) -> list:
+    """Seconda pagina: le statistiche avanzate in cinque famiglie, con la posizione nel
+    campionato e una lettura in parole. Lista vuota se il giocatore non ha dati."""
+    from . import avanzate as AV
+    sch = AV.scheda(ctx, sid, gid)
+    if sch is None:
+        return []
+    tit = lambda t, c=NAVY: Paragraph(t, ParagraphStyle(  # noqa: E731
+        "ra_t", parent=S["h3"], fontSize=10, leading=12, textColor=c, spaceBefore=0, spaceAfter=1))
+    piccolo = ParagraphStyle("ra_s", parent=S["small"], fontSize=7, leading=8.8)
+    nome_v = ParagraphStyle("ra_n", parent=S["body"], fontSize=8.5, leading=10)
+    valore = ParagraphStyle("ra_v", parent=S["kpi_v"], fontSize=13, leading=14, alignment=2)
+    liv = ParagraphStyle("ra_l", parent=S["body"], fontSize=7.5, leading=9)
+    el = [ST.Intestazione(W, 12 * mm, 12 * mm, f"Statistiche avanzate · stagione {stagione}", nome,
+                          meta=squadra, marchio=config.BRAND, grande=False), Spacer(1, 4)]
+    guida = (f"Ogni barra dice quanti dei {sch['confronto']} giocatori del campionato con minuti sufficienti "
+             "fanno peggio di lui in quella voce (tacca = metà del gruppo). Blu: punto di forza. Rosso: punto "
+             "debole. Grigio: la voce descrive il modo di giocare, non dice se è un bene o un male.")
+    if sch["pochi_dati"]:
+        guida += " Ha giocato poco: valori da confermare."
+    el += [Paragraph(guida, piccolo), Spacer(1, 5)]
+    if sch["forti"] or sch["deboli"]:
+        righe = [tit("In sintesi")]
+        if sch["forti"]:
+            righe.append(Paragraph('<font color="#2a78d6"><b>+</b></font>&nbsp;&nbsp;'
+                                   + _esc("; ".join(sch["forti"]).capitalize() + "."), nome_v))
+        if sch["deboli"]:
+            righe.append(Paragraph('<font color="#d95926"><b>›</b></font>&nbsp;&nbsp;'
+                                   + _esc("; ".join(sch["deboli"]).capitalize() + "."), nome_v))
+        el += [_carta(righe, W - 4, pad=8), Spacer(1, 5)]
+    cw = [62 * mm, 20 * mm, 38 * mm, 0]
+    cw[3] = W - 4 - 16 - sum(cw)
+    for g in sch["gruppi"]:
+        rows = []
+        for r in g["righe"]:
+            pct = "" if r["pct"] is None else f" · meglio del {int(round(r['pct']))}%"
+            if r["verso"] == 0 and r["pct"] is not None:
+                pct = f" · più alto del {int(round(r['pct']))}%"
+            lettura = f"<b>{_esc(r['livello'].capitalize())}</b>{pct}" if r["livello"] else "dato non disponibile"
+            if r["lettura"]:
+                lettura += f"<br/>{_esc(r['lettura'].capitalize())}"
+            rows.append([[Paragraph(f"<b>{_esc(r['nome'])}</b> <font color=\"#6f6d66\" size=\"6.5\">{r['sigla']}</font>",
+                                    nome_v), Paragraph(_esc(r["cosa"]), piccolo)],
+                         Paragraph(_esc(r["testo"]), valore),
+                         [Spacer(1, 2.2 * mm), Posizione(cw[2] - 10, r["pct"], r["verso"])],
+                         Paragraph(lettura, liv)])
+        t = Table(rows, colWidths=cw)
+        t.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                               ("RIGHTPADDING", (0, 0), (-1, -1), 8), ("TOPPADDING", (0, 0), (-1, -1), 3),
+                               ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+                               ("LINEBELOW", (0, 0), (-1, -2), 0.4, BORDO)]))
+        el += [_carta([tit(g["titolo"]), Paragraph(_esc(g["sotto"].capitalize()), piccolo), Spacer(1, 2), t],
+                      W - 4, pad=8), Spacer(1, 5)]
+    el.append(Paragraph("Rating con lui in campo: dalla cronaca, solo partite con i quintetti verificati. Ritmo: "
+                        "possessi ogni 40 minuti (campionati FIBA). PIE: la parte del giocatore su punti, canestri, "
+                        "rimbalzi, assist, recuperi, stoppate, errori al tiro, falli e palle perse delle due squadre "
+                        "nelle partite giocate. Le percentuali di rimbalzo e di assist tengono conto dei minuti "
+                        "in campo.", piccolo))
+    return el
 
 
 class Andamento(Flowable):
@@ -315,7 +400,15 @@ def build(ctx, sid: int, gid: str, hist: pd.DataFrame | None = None, foto: bool 
                             bottomMargin=14 * mm, title=f"Report individuale · {nome}", author=config.BRAND)
 
     pagina = ST.piede(f"Report individuale · {nome} · {squadra}")
-    doc.build([testata, corpo], onFirstPage=pagina, onLaterPages=pagina)
+    storia = [testata, corpo]
+    try:                                    # seconda pagina: statistiche avanzate
+        av = pagina_avanzate(ctx, sid, gid, S, W, nome, squadra, stagione)
+    except Exception:  # noqa: BLE001  (il report esce comunque con la prima pagina)
+        av = []
+    if av:
+        _, h2 = av[0].wrap(W, A4[1])
+        storia += [PageBreak(), av[0], KeepInFrame(W, A4[1] - 12 * mm - 14 * mm - 12 - h2, av[1:], mode="shrink")]
+    doc.build(storia, onFirstPage=pagina, onLaterPages=pagina)
     return buf.getvalue()
 
 
