@@ -275,6 +275,33 @@ def scheda_giocatore(a: App):
                             "crescita concordati con lo staff.")
 
 
+def avanzate_giocatore(a: App, sid: int, gid: str):
+    """Le statistiche avanzate in cinque famiglie: valore, posizione nel campionato, lettura."""
+    from basket import avanzate as AV
+    sch = AV.scheda(a.ctx, sid, gid)
+    if sch is None:
+        return
+    section("Statistiche avanzate", f"rispetto ai {sch['confronto']} giocatori del campionato con minuti "
+            "sufficienti", key="avanzate")
+    if sch["forti"] or sch["deboli"]:
+        voci = [f'<b style="color:var(--pos)">+</b> {esc("; ".join(sch["forti"]).capitalize())}.'] if sch["forti"] else []
+        if sch["deboli"]:
+            voci.append(f'<b style="color:var(--neg)">›</b> {esc("; ".join(sch["deboli"]).capitalize())}.')
+        st.markdown('<div style="margin:2px 0 12px;font-size:.98rem;line-height:1.5">' + "<br>".join(voci)
+                    + "</div>", unsafe_allow_html=True)
+    righe = []
+    for g in sch["gruppi"]:
+        for r in g["righe"]:
+            righe.append({"Famiglia": g["titolo"], "Statistica": f"{r['nome']} ({r['sigla']})", "Valore": r["testo"],
+                          "Meglio del": None if r["pct"] is None else round(r["pct"]),
+                          "Livello": r["livello"].capitalize() if r["livello"] else "–",
+                          "Cosa misura": r["cosa"]})
+    show(pd.DataFrame(righe), progress={"Meglio del": (0, 100)}, voci=[])
+    note_html("«Meglio del»: percentuale di giocatori del campionato che fanno peggio in quella voce. Per azioni "
+              "chiuse (USG%) e ritmo indica solo quanti hanno un valore più basso: non è un giudizio."
+              + (" Ha giocato poco: valori da confermare." if sch["pochi_dati"] else ""))
+
+
 def giocatore_extra(a: App):
     if a.gsel is None:
         return
@@ -282,6 +309,8 @@ def giocatore_extra(a: App):
     me = a.players[(a.players["giocatore_id"] == gid) & (a.players["squadra_id"] == gsq)].iloc[0]
     hist = storico(a.mtime)
     mine = hist[hist["giocatore_id"] == gid] if not hist.empty else hist
+
+    avanzate_giocatore(a, gsq, gid)
 
     from . import tiri_ui
     tiri_ui.render_giocatore(a, gid, gsq)
