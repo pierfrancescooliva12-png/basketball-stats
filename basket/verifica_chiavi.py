@@ -51,7 +51,27 @@ def _conta(f: str, valore: float, g: pd.Series, lato: str) -> float:
 
 def verifica(ctx, sid: int, pid: str) -> dict | None:
     """Chiavi della vigilia contro la partita giocata. None se la partita non c'è o mancano
-    i dati di prima."""
+    i dati di prima. Una partita giocata non cambia più: la verifica si calcola una volta per
+    contesto, e all'avvio della piattaforma si preparano quelle di tutte le squadre."""
+    import copy
+    memo = ctx.__dict__.get("_verifiche")
+    if memo is None:
+        pronte = ctx._pronta("verifiche") if hasattr(ctx, "_pronta") else None
+        memo = ctx.__dict__["_verifiche"] = pronte if isinstance(pronte, dict) else {}
+    chiave = (int(sid), str(pid))
+    if chiave not in memo:
+        memo[chiave] = _verifica(ctx, sid, pid)
+    return copy.deepcopy(memo[chiave])
+
+
+def prepara_tutte(ctx) -> dict:
+    """Le verifiche di tutte le partite di tutte le squadre (per l'avvio della piattaforma)."""
+    for sid in ctx.bs["squadra_id"].unique():
+        stagione(ctx, int(sid))
+    return ctx.__dict__.get("_verifiche", {})
+
+
+def _verifica(ctx, sid: int, pid: str) -> dict | None:
     bs = ctx.bs
     noi = _partita(bs, pid, sid)
     if noi is None:

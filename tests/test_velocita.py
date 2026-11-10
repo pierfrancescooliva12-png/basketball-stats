@@ -55,7 +55,7 @@ def test_analisi_preparate(tmp_path, monkeypatch):
     if not config.DB_PATH.exists():
         return
     monkeypatch.setattr(precalcolo, "CARTELLA", tmp_path)
-    f = precalcolo.prepara(config.STAGIONE)
+    f = precalcolo.prepara(config.STAGIONE, verifiche=False)
     assert f.exists()
     ctx = Contesto(db.connect(config.DB_PATH, readonly=True), config.STAGIONE)
     assert precalcolo.carica(ctx)
@@ -110,7 +110,7 @@ def test_archivio_e_analisi_pesanti_preparati(tmp_path, monkeypatch):
         return
     monkeypatch.setattr(precalcolo, "CARTELLA", tmp_path)
     assert precalcolo.storico() is None
-    precalcolo.prepara(config.STAGIONE)
+    precalcolo.prepara(config.STAGIONE, verifiche=False)
     precalcolo.prepara_storico()
     assert not precalcolo.storico().empty
     ctx = Contesto(db.connect(config.DB_PATH, readonly=True), config.STAGIONE)
@@ -127,3 +127,27 @@ def test_scelta_squadra_in_ordine_e_filtri_per_telefono():
     css = (radice / "dashboard" / "ui.py").read_text()
     assert ".st-key-filtri" in css and ".st-key-scegli_squadra" in css
     assert "short(r.squadra).lower()" in (radice / "dashboard" / "pagine.py").read_text()
+
+
+def test_verifiche_delle_chiavi_preparate(tmp_path, monkeypatch):
+    from basket import config, db, precalcolo
+    from basket import verifica_chiavi as VK
+    from basket.contesto import Contesto
+    if not config.DB_PATH.exists():
+        return
+    ctx = Contesto(db.connect(config.DB_PATH, readonly=True), config.STAGIONE)
+    sid = int(ctx.bs["squadra_id"].iloc[0])
+    partite, _ = VK.stagione(ctx, sid)
+    if partite.empty:
+        return
+    pid = partite["partita_id"].iloc[-1]
+    v = VK.verifica(ctx, sid, pid)
+    v["chiavi"].iloc[0, 0] = "modificata"                  # la copia non rovina quella in memoria
+    assert VK.verifica(ctx, sid, pid)["chiavi"].iloc[0, 0] != "modificata"
+    # salvate su disco e rilette da un contesto nuovo, senza ricalcolo
+    monkeypatch.setattr(precalcolo, "CARTELLA", tmp_path)
+    precalcolo._scrivi(precalcolo._file(config.STAGIONE, "verifiche"), ctx.__dict__["_verifiche"])
+    nuovo = Contesto(db.connect(config.DB_PATH, readonly=True), config.STAGIONE)
+    nuovo.__dict__["_preparato"] = True
+    monkeypatch.setattr(VK, "_verifica", lambda *a: (_ for _ in ()).throw(AssertionError("ricalcolata")))
+    pd.testing.assert_frame_equal(VK.verifica(nuovo, sid, pid)["chiavi"], VK.verifica(ctx, sid, pid)["chiavi"])
