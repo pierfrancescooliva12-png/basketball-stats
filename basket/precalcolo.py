@@ -24,7 +24,7 @@ DA_PREPARARE = ("players", "profile", "lineups", "shots", "clutch_players", "ass
 # la prima volta che servono, per non occupare memoria finché nessuno le apre
 PIGRE = ("leverage_eventi", "leverage")
 _CODICE = ("analysis.py", "pbp.py", "contesto.py", "db.py", "approfondimenti.py", "previsioni.py",
-           "leverage.py", "avvisi.py", "mercato.py", "impatto.py", "precalcolo.py")
+           "leverage.py", "avvisi.py", "mercato.py", "impatto.py", "verifica_chiavi.py", "chiavi.py", "validazione.py", "precalcolo.py")
 
 
 def _chiave(stagione: str) -> str:
@@ -40,7 +40,7 @@ def _file(stagione: str, parte: str = "") -> Path:
     return CARTELLA / f"{stagione}-{_chiave(stagione)}{'-' + parte if parte else ''}.pkl"
 
 
-def prepara(stagione: str = config.STAGIONE) -> Path:
+def prepara(stagione: str = config.STAGIONE, verifiche: bool = True) -> Path:
     """Calcola e salva le analisi della stagione; restituisce il file."""
     ctx = Contesto(db.connect(config.DB_PATH, readonly=True), stagione)
     for nome in DA_PREPARARE:
@@ -52,7 +52,7 @@ def prepara(stagione: str = config.STAGIONE) -> Path:
         impatto.storico(ctx)
     except Exception:  # noqa: BLE001
         pass
-    dati = {k: v for k, v in vars(ctx).items() if k not in ("conn", "stagione", "_prossime", "_vigilie")}
+    dati = {k: v for k, v in vars(ctx).items() if k not in ("conn", "stagione", "_prossime", "_vigilie", "_verifiche")}
     CARTELLA.mkdir(parents=True, exist_ok=True)
     for vecchio in CARTELLA.glob(f"{stagione}-*.pkl"):
         vecchio.unlink(missing_ok=True)
@@ -61,6 +61,14 @@ def prepara(stagione: str = config.STAGIONE) -> Path:
     with open(tmp, "wb") as out:
         pickle.dump(dati, out, protocol=pickle.HIGHEST_PROTOCOL)
     tmp.replace(f)
+    try:                                               # chiavi della vigilia contro le partite giocate
+        from . import verifica_chiavi
+        if not verifiche:
+            raise RuntimeError("non richieste")
+        _scrivi(_file(stagione, "verifiche"), verifica_chiavi.prepara_tutte(ctx))
+    except Exception:  # noqa: BLE001  (si calcoleranno alla prima apertura)
+        pass
+    ctx.__dict__.pop("_verifiche", None)
     # memoria: prima delle analisi pesanti si libera tutto quello che non serve a calcolarle
     import gc
     del dati
