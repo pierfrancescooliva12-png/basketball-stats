@@ -192,17 +192,33 @@ class Contesto:
         return avvisi.alerts(self.bs, self.bg) if not self.bs.empty else pd.DataFrame()
 
     def forze(self, campionato_id: str) -> pd.DataFrame:
-        bs = self.bs[self.bs["campionato_id"] == campionato_id]
-        return F.strengths(bs, self._prior)
+        """Forza delle squadre del campionato. Serve a previsioni, prossima avversaria e chiavi:
+        si calcola una volta per stagione (il contesto vale per un solo stato del database)."""
+        memo = self.__dict__.setdefault("_forze", {})
+        if campionato_id not in memo:
+            bs = self.bs[self.bs["campionato_id"] == campionato_id]
+            memo[campionato_id] = F.strengths(bs, self._prior)
+        return memo[campionato_id].copy()
 
     @cached_property
     def _prior(self) -> dict:
         return F.prior_from_previous(self.conn, self.stagione, self.bg)
 
     def hca(self, campionato_id: str) -> float:
-        return F.home_advantage(self.conn, campionato_id)
+        memo = self.__dict__.setdefault("_hca", {})
+        if campionato_id not in memo:
+            memo[campionato_id] = F.home_advantage(self.conn, campionato_id)
+        return memo[campionato_id]
 
     def next_game(self, squadra_id: int) -> dict | None:
+        """Prossima partita in calendario con la previsione (una volta per squadra)."""
+        import copy
+        memo = self.__dict__.setdefault("_prossime", {})
+        if squadra_id not in memo:
+            memo[squadra_id] = self._next_game(squadra_id)
+        return copy.deepcopy(memo[squadra_id])
+
+    def _next_game(self, squadra_id: int) -> dict | None:
         cols = {r[1] for r in self.conn.execute("PRAGMA table_info(calendario)")}
         stream = "c.stream_url" if "stream_url" in cols else "NULL"
         campo = "c.palazzetto" if "palazzetto" in cols else "NULL"
@@ -228,6 +244,13 @@ class Contesto:
         return g
 
     # ---------------------------------------------------------------- leverage
+    def _pronta(self, nome: str):
+        """Analisi pesante preparata all'avvio della piattaforma (None: va calcolata)."""
+        if not self.__dict__.get("_preparato"):
+            return None
+        from . import precalcolo
+        return precalcolo.pigra(self, nome)
+
     def margine_atteso(self, partite: pd.DataFrame) -> dict:
         """Margine atteso della casa prima della partita (forze attuali e fattore campo)."""
         out = {}
@@ -246,6 +269,9 @@ class Contesto:
     @cached_property
     def leverage_eventi(self) -> pd.DataFrame:
         """Cronaca con lo swing di probabilità di ogni azione e la probabilità della casa."""
+        pronta = self._pronta("leverage_eventi")
+        if pronta is not None:
+            return pronta
         if self.ev.empty:
             return pd.DataFrame()
         partite = self.ev.drop_duplicates("partita_id")[["partita_id", "campionato_id",
@@ -255,6 +281,9 @@ class Contesto:
     @cached_property
     def leverage(self) -> pd.DataFrame:
         """Merito di ogni azione per giocatore (somma zero tra le squadre)."""
+        pronta = self._pronta("leverage")
+        if pronta is not None:
+            return pronta
         sw = self.leverage_eventi
         return L.crediti(sw, self.stints) if not sw.empty else pd.DataFrame(
             columns=["partita_id", "n", "giocatore_id", "squadra_id", "leverage", "categoria"])

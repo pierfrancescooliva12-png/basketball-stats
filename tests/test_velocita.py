@@ -83,3 +83,47 @@ def test_utenti_in_memoria_e_dopo_le_modifiche(tmp_path):
     a.set_password("mario", "h2", cambio=False)
     assert a.users()["mario"]["password_hash"] == "h2"
     assert "mario" in a.users(anche_disattivi=True)
+
+
+def test_forze_e_prossima_partita_una_volta_sola():
+    from basket import config, db
+    from basket.contesto import Contesto
+    if not config.DB_PATH.exists():
+        return
+    ctx = Contesto(db.connect(config.DB_PATH, readonly=True), config.STAGIONE)
+    camp = ctx.bs["campionato_id"].iloc[0]
+    a = ctx.forze(camp)
+    a.iloc[0, a.columns.get_loc("squadra_id")] = -1          # chi modifica la copia non rovina la memoria
+    pd.testing.assert_frame_equal(ctx.forze(camp), ctx.forze(camp))
+    assert -1 not in set(ctx.forze(camp)["squadra_id"])
+    sid = int(ctx.bs["squadra_id"].iloc[0])
+    g = ctx.next_game(sid)
+    if g is not None:
+        g["casa"] = "x"
+        assert ctx.next_game(sid)["casa"] != "x"
+
+
+def test_archivio_e_analisi_pesanti_preparati(tmp_path, monkeypatch):
+    from basket import config, db, precalcolo
+    from basket.contesto import Contesto
+    if not config.DB_PATH.exists():
+        return
+    monkeypatch.setattr(precalcolo, "CARTELLA", tmp_path)
+    assert precalcolo.storico() is None
+    precalcolo.prepara(config.STAGIONE)
+    precalcolo.prepara_storico()
+    assert not precalcolo.storico().empty
+    ctx = Contesto(db.connect(config.DB_PATH, readonly=True), config.STAGIONE)
+    assert precalcolo.carica(ctx)
+    assert "_forze" in vars(ctx) and "ev" in vars(ctx)
+    rif = Contesto(db.connect(config.DB_PATH, readonly=True), config.STAGIONE)
+    pd.testing.assert_frame_equal(ctx.leverage.reset_index(drop=True), rif.leverage.reset_index(drop=True))
+
+
+def test_scelta_squadra_in_ordine_e_filtri_per_telefono():
+    from pathlib import Path
+    radice = Path(__file__).resolve().parent.parent
+    assert 'key="filtri"' in (radice / "streamlit_app.py").read_text()
+    css = (radice / "dashboard" / "ui.py").read_text()
+    assert ".st-key-filtri" in css and ".st-key-scegli_squadra" in css
+    assert "short(r.squadra).lower()" in (radice / "dashboard" / "pagine.py").read_text()

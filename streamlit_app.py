@@ -64,7 +64,8 @@ if "f_stag" not in st.session_state and qp.get("stagione") in stagioni:
     st.session_state["f_stag"] = qp["stagione"]
 
 barra = st.container()
-f0, f1, f2, f3, f4 = st.columns([1, 1.25, 1.6, 1.8, 0.9], vertical_alignment="bottom")
+# contenitore con chiave: su telefono i filtri stanno su due colonne (dashboard/ui.py)
+f0, f1, f2, f3, f4 = st.container(key="filtri").columns([1, 1.25, 1.6, 1.8, 0.9], vertical_alignment="bottom")
 stagione = f0.selectbox("Stagione", stagioni, format_func=config.STAGIONI.get, key="f_stag")
 ctx = contesto(mtime, stagione)
 bs = ctx.bs

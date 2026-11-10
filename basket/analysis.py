@@ -201,13 +201,17 @@ def _team_summary(bs: pd.DataFrame, by: list[str] | None = None) -> pd.DataFrame
     tot["vinte"] = g["vinta"].sum()
     tot["perse_partite"] = tot["partite"] - tot["vinte"]
     tot = team_ratings(tot.reset_index())
+    # le colonne derivate si aggiungono tutte insieme: una alla volta la tabella si frammenta
+    # e questa funzione, la più usata della piattaforma, diventa lenta
+    nuove = {}
+    partite, minuti5 = tot["partite"], tot["minuti"] / 5
     for c in ["punti", "punti_subiti", "rimb_off", "rimb_dif", "rimb_tot", "assist",
               "perse", "recuperate", "stoppate", "valutazione", "t3m", "t3a", "tlm", "tla",
               "t2m", "t2a", "falli_commessi"]:
-        tot[f"{c}_pg"] = tot[c] / tot["partite"]
-        tot[f"{c}_p40"] = 40 * _div(tot[c], tot["minuti"] / 5)
-    tot["vittorie_pct"] = 100 * tot["vinte"] / tot["partite"]
-    return tot
+        nuove[f"{c}_pg"] = tot[c] / partite
+        nuove[f"{c}_p40"] = 40 * _div(tot[c], minuti5)
+    nuove["vittorie_pct"] = 100 * tot["vinte"] / partite
+    return pd.concat([tot, pd.DataFrame(nuove, index=tot.index)], axis=1)
 
 
 def standings(bs: pd.DataFrame) -> pd.DataFrame:

@@ -60,10 +60,16 @@ def verifica(ctx, sid: int, pid: str) -> dict | None:
     prima = bs[(bs["campionato_id"] == camp) & (bs["data"] < data)]
     if prima[prima["squadra_id"] == sid].empty or prima[prima["squadra_id"] == avv].empty:
         return None
-    lega = A.team_summary(prima)
+    # il campionato "alla vigilia" è lo stesso per tutte le partite di quel giorno: si calcola
+    # una volta e vale per la squadra, per l'avversaria e per chi guarda le altre squadre
+    memo = ctx.__dict__.setdefault("_vigilie", {})
+    if (camp, data) not in memo:
+        if len(memo) > 400:
+            memo.clear()
+        memo[(camp, data)] = (A.team_summary(prima), F.strengths(prima, ctx._prior))
+    lega, forze = memo[(camp, data)]
     if not {sid, avv} <= set(lega["squadra_id"]):
         return None
-    forze = F.strengths(prima, ctx._prior)
     if not {sid, avv} <= set(forze["squadra_id"]):
         return None
     hca = ctx.hca(camp)
