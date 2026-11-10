@@ -37,9 +37,10 @@ def data_it(d) -> str:
 def scegli_squadra(a: App, motivo: str):
     """Griglia di pulsanti per scegliere la squadra (al posto di una pagina vuota)."""
     note_html(motivo)
-    teams = a.profile.sort_values("squadra")
-    cols = st.columns(4)
-    for i, r in enumerate(teams.itertuples()):
+    # in ordine alfabetico del nome mostrato (la città), non del nome con lo sponsor
+    teams = sorted(a.profile.itertuples(), key=lambda r: short(r.squadra).lower())
+    cols = st.container(key="scegli_squadra").columns(4)
+    for i, r in enumerate(teams):
         cols[i % 4].button(short(r.squadra), key=f"pick_{r.squadra_id}", width="stretch",
                            help=r.squadra, on_click=imposta, kwargs={"f_sq": r.squadra_id})
 

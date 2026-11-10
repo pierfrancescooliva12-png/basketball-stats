@@ -151,6 +151,15 @@ def _validazione(mtime: float) -> pd.DataFrame:
     return V.carica()
 
 
+@st.cache_data(show_spinner=False, max_entries=2)
+def _gruppi_validazione(mtime: float) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Le due tabelle per fase e per campionato: calcolate una volta, non a ogni visita."""
+    bt = _validazione(mtime)
+    return (V.per_gruppo(bt.assign(fase=V.fase_stagione(bt)), "fase"),
+            V.per_gruppo(bt.assign(gruppo=bt["campionato_id"].map(config.CAMPIONATI) + " · " +
+                                   bt["stagione"].map(config.STAGIONI)), "gruppo"))
+
+
 def render_affidabilita(a: App):
     st.markdown('<div class="pagina-d">Validazione su 3 stagioni e registro delle previsioni'
                 '</div>', unsafe_allow_html=True)
@@ -198,7 +207,7 @@ def render_affidabilita(a: App):
     c1, c2 = st.columns(2)
     with c1:
         section("Nel corso della stagione")
-        g = V.per_gruppo(bt.assign(fase=V.fase_stagione(bt)), "fase")
+        g = _gruppi_validazione(a.mtime)[0]
         show(g.rename(columns={"fase": "Fase", "partite": "Partite",
                                "accuratezza": "Favorita vince %", "brier": "Brier",
                                "errore_margine": "Errore margine"}), voci=[])
@@ -206,8 +215,7 @@ def render_affidabilita(a: App):
                   "valore della rosa nella stagione precedente e impara partita dopo partita.")
     with c2:
         section("Per campionato e stagione")
-        g = V.per_gruppo(bt.assign(gruppo=bt["campionato_id"].map(config.CAMPIONATI) + " · " +
-                                   bt["stagione"].map(config.STAGIONI)), "gruppo")
+        g = _gruppi_validazione(a.mtime)[1]
         show(g.rename(columns={"gruppo": "Campionato", "partite": "Partite",
                                "accuratezza": "Favorita vince %", "brier": "Brier",
                                "errore_margine": "Errore margine"}), voci=[])

@@ -71,6 +71,22 @@ def inject_css():
         font-size: .8rem !important;}
     }
 
+    /* ------------------------------------------------------------ telefono: i filtri su due colonne
+       (prima occupavano tutta la prima schermata), la scelta della squadra su due colonne */
+    @media (max-width: 640px) {
+      .st-key-filtri [data-testid="stHorizontalBlock"],
+      .st-key-scegli_squadra [data-testid="stHorizontalBlock"] {
+        display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px 10px !important;}
+      .st-key-filtri [data-testid="stColumn"], .st-key-scegli_squadra [data-testid="stColumn"] {
+        width: auto !important; min-width: 0 !important; flex: none !important;}
+      .st-key-filtri [data-testid="stColumn"]:nth-child(5) {grid-column: 1 / -1;}
+      .st-key-filtri [data-testid="stWidgetLabel"] p {font-size: .78rem !important;}
+      .st-key-filtri [data-baseweb="select"] > div {min-height: 38px !important;}
+      .topbar {gap: 6px 10px; margin-bottom: 8px; padding-bottom: 8px;}
+      .topbar .meta {font-size: .76rem; line-height: 1.35;}
+      .block-container {padding-left: .9rem; padding-right: .9rem;}
+    }
+
     /* ------------------------------------------------------------ barra del marchio */
     .topbar {display: flex; align-items: center; gap: 12px; margin: 0 0 14px; flex-wrap: wrap; width: 100%;
       padding-bottom: 12px; border-bottom: 1px solid var(--line);}

@@ -102,6 +102,10 @@ def contesto(db_mtime: float, stagione: str) -> Contesto:
 
 @st.cache_resource(show_spinner="Carico l'archivio delle stagioni…", max_entries=1)
 def storico(db_mtime: float) -> pd.DataFrame:
+    from basket import precalcolo
+    pronto = precalcolo.storico()       # preparato all'avvio (render_start.sh)
+    if pronto is not None:
+        return pronto
     return mercato.season_lines(db.connect(config.DB_PATH, readonly=True))
 
 

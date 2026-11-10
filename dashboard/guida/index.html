@@ -40,6 +40,8 @@ const CSS = `
   border: 1px solid #e3e0d4; background: #fffefb; color: #141413; box-shadow: 0 4px 14px rgba(20,20,19,.14);
   font: 600 .88rem "Instrument Sans", system-ui, sans-serif; cursor: pointer; }
 .ag-aiuto:hover { border-color: #e8631c; }
+@media (max-width: 640px) { .ag-aiuto { right: 12px; bottom: 12px; width: 40px; padding: 0; font-size: 1rem; }
+  .ag-aiuto span { display: none; } }
 @media print { .ag-aiuto, .ag-buco, .ag-velo, .ag-carta { display: none !important; } }`;
 function stile() {
   if (D.getElementById("ag-stile")) return;
@@ -178,7 +180,8 @@ function pulsante() {
   let b = D.getElementById("ag-aiuto");
   if (!dati || !dati.passi.length) { if (b) b.remove(); return; }
   if (!b) { b = D.createElement("button"); b.id = "ag-aiuto"; b.className = "ag-aiuto"; D.body.appendChild(b); }
-  b.textContent = "? Guida della pagina";
+  b.innerHTML = "?<span>&nbsp;Guida della pagina</span>";
+  b.setAttribute("aria-label", "Guida della pagina");
   b.title = "Rivedi la demo guidata di questa pagina";
   b.onclick = () => { if (!aperto) avvia(); };
 }
