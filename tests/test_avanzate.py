@@ -54,3 +54,26 @@ def test_scheda_e_pagina_del_report_sui_dati_veri():
     from basket import report_giocatore as RG
     pdf = RG.build(ctx, int(r.squadra_id), r.giocatore_id, None, foto=False)
     assert pdf[:4] == b"%PDF" and pdf.count(b"/Type /Page\n") + pdf.count(b"/Type /Page ") >= 0
+
+
+def test_pagine_accorpate_e_nomi_italiani():
+    pytest = __import__("pytest")
+    pytest.importorskip("streamlit")
+    import streamlit as st
+    from dashboard import pagine, ui
+    from pathlib import Path
+    import re
+    src = Path(pagine.__file__).read_text()
+    u = set(re.findall(r'P\(\w+,\s*[^,]+?,\s*"([\w-]+)",\s*"\w+"', src, flags=re.S))
+    # pronostici, proiezione e affidabilità in una pagina; la panoramica dentro la classifica
+    assert not {"pronostici", "affidabilita", "panoramica"} & u
+    assert {"proiezione", "classifica", "squadre", "partite", "scouting"} <= u
+    df = pd.DataFrame({"Giocatore": ["a"], "TS%": [55.0], "USG%": [20.0], "Net Rtg": [1.0]})
+    st.session_state["esperto"] = False
+    d, colori = ui.nomi_italiani(df, {"TS%": True})
+    assert list(d.columns) == ["Giocatore", "Tiro (TS%)", "Possessi usati (USG%)", "Net rating"]
+    assert colori == {"Tiro (TS%)": True}
+    st.session_state["esperto"] = True                      # vista Esperto: restano le sigle
+    assert list(ui.nomi_italiani(df, None)[0].columns) == list(df.columns)
+    from basket.glossario import COLONNE
+    assert all(n in COLONNE or n in ("Game Score",) for n in ui.NOMI_ITALIANI.values())

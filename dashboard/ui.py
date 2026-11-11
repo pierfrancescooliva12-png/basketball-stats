@@ -654,6 +654,29 @@ def _colori(df: pd.DataFrame, colori: dict) -> pd.DataFrame:
 TABELLA_MAX = 800          # fino a qui la tabella del sito (dashboard/tabella.py), oltre la griglia
 
 
+# Nella vista Essenziale le sigle inglesi diventano nomi italiani (con la sigla tra parentesi dove
+# aiuta a ritrovarla); nella vista Esperto restano le sigle, più compatte.
+NOMI_ITALIANI = {
+    "TS%": "Tiro (TS%)", "USG%": "Possessi usati (USG%)", "eFG%": "Tiro (eFG%)", "eFG% avv.": "Tiro avv. (eFG%)",
+    "ORtg": "Attacco (ORtg)", "DRtg": "Difesa (DRtg)", "Net Rtg": "Net rating", "GmSc": "Game Score",
+    "AST%": "Assist % (AST%)", "REB%": "Rimbalzi % (REB%)", "TOV%": "Palle perse %",
+    "TOV% avv.": "Palle perse avv. %", "OREB%": "Rimb. offensivi %", "DREB%": "Rimb. difensivi %",
+    "Pace": "Ritmo", "AST ratio": "Assist ogni 100 azioni", "FT rate": "Liberi / tiri",
+    "FT rate avv.": "Liberi / tiri avv.", "Net on": "Saldo in campo", "Net off": "Saldo fuori",
+}
+
+
+def nomi_italiani(df: pd.DataFrame, *dizionari):
+    """La tabella con le colonne rinominate e, allo stesso modo, i dizionari che le citano."""
+    if st.session_state.get("esperto"):
+        return (df, *dizionari)
+    cambia = {c: n for c, n in NOMI_ITALIANI.items() if c in df.columns and n not in df.columns}
+    if not cambia:
+        return (df, *dizionari)
+    return (df.rename(columns=cambia),
+            *[None if d is None else {cambia.get(k, k): v for k, v in d.items()} for d in dizionari])
+
+
 def show(df: pd.DataFrame, height: int | None = None, progress: dict | None = None,
          voci: list | None = None, colori: dict | None = None, rif: dict | None = None):
     """Tabella a tutta larghezza. progress: {colonna: (min, max)} per le barre nelle celle;
@@ -663,6 +686,7 @@ def show(df: pd.DataFrame, height: int | None = None, progress: dict | None = No
     I numeri seguono il formato del dispositivo (virgola per i decimali in italiano);
     i valori mancanti sono mostrati come "–"."""
     spiegazioni = voci if voci is not None else voci_per_colonne(df.columns)
+    df, progress, colori, rif = nomi_italiani(df, progress, colori, rif)
     if spiegazioni:
         st.markdown(legend(spiegazioni), unsafe_allow_html=True)
     if len(df) <= TABELLA_MAX:

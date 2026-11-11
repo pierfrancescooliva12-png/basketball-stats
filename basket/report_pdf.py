@@ -298,13 +298,13 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
         "minuti", ascending=False).head(12)
     has_pm = "plus_minus" in pl.columns and pl["plus_minus"].notna().any()
     head = ["Giocatore", "PG", "Min", "Pt", "Rimb", "Ass", "Perse", "3PM-A", "TL%", "TS%",
-            "USG%", "GmSc"] + (["+/-", "On-Off"] if has_pm else [])
+            "USG%"] + (["+/-", "On-Off"] if has_pm else [])
     rows = [head]
     for p in pl.itertuples():
         row = [p.giocatore, str(p.partite), _fmt(p.minuti_pg), _fmt(p.punti_pg),
                _fmt(p.rimb_tot_pg), _fmt(p.assist_pg), _fmt(p.perse_pg),
                f"{_fmt(p.t3m_pg)}-{_fmt(p.t3a_pg)}", _fmt(p.tl_pct, 0), _fmt(p.ts_pct),
-               _fmt(p.usg_pct), _fmt(p.game_score_pg)]
+               _fmt(p.usg_pct)]
         if has_pm:
             row += [_fmt(p.plus_minus, 0, signed=True), _fmt(p.on_off, signed=True)]
         rows.append(row)

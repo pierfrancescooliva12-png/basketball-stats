@@ -36,7 +36,8 @@ def test_passi_della_demo():
     pytest.importorskip("streamlit")
     from dashboard import guida, pagine
     src = Path(pagine.__file__).read_text()
-    chiavi = set(re.findall(r'P\(\w+,\s*"[^"]+",\s*"[\w-]+",\s*"(\w+)"', src))
+    # il titolo può essere un testo o un'espressione (una pagina cambia nome per i club)
+    chiavi = set(re.findall(r'P\(\w+,\s*[^,]+?,\s*"[\w-]+",\s*"(\w+)"', src, flags=re.S))
     chiavi |= {"scouting_ir", "video_ir"}         # pagine delle utenze di B Interregionale
     tipi = {"nav", "filtri", "esperto", "pagina", "tip", "sez", "btn", "tab", "exp", "sel", "frame"}
     for k, passi in guida.TOUR.items():
