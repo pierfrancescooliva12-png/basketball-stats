@@ -260,7 +260,7 @@ GUIDA: list[tuple[str, str, list[str]]] = [
       "«Scenari: e se…»: scegli gli assenti di ciascuna squadra, la forma secondo lo staff o il campo neutro. La "
       "probabilità si ricalcola subito, senza toccare i dati della piattaforma.",
       "«Four Factors incrociati» mette l'attacco di una squadra contro la difesa dell'altra.",
-      "«Proiezione della classifica» (in Previsioni) simula 5.000 volte le partite ancora da giocare: vittorie "
+      "La proiezione della classifica (in Previsioni) simula 5.000 volte le partite ancora da giocare: vittorie "
       "attese, posizione media e probabilità di finire in ogni zona della classifica."]),
     ("Mercato",
      "Per il direttore sportivo: cercare, confrontare, tenere d'occhio.",

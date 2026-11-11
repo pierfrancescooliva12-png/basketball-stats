@@ -270,20 +270,25 @@ def p_anteprima():
     nuove.render_anteprima(APP)
 
 
-def p_pronostici():
-    titolo_pagina("Pronostici della giornata", "tutte le partite in programma: probabilità, margine e punti attesi")
-    from . import pronostici_ui
-    pronostici_ui.render(APP)
-
-
 def p_proiezione():
-    titolo_pagina("Proiezione della classifica", "dove può arrivare ogni squadra")
-    previsioni_ui.render_proiezione(APP)
-
-
-def p_affidabilita():
-    titolo_pagina("Affidabilità delle previsioni")
-    previsioni_ui.render_affidabilita(APP)
+    """Pronostici della giornata, proiezione della classifica e affidabilità in una pagina
+    (prima erano tre). Gli utenti dei club vedono solo la proiezione."""
+    a = APP
+    club = bool(a.utente.get("club")) and not a.utente.get("demo")
+    if club:
+        titolo_pagina("Proiezione della classifica", "dove può arrivare ogni squadra")
+        previsioni_ui.render_proiezione(a)
+        return
+    titolo_pagina("Pronostici e classifica", "le partite della giornata e dove può arrivare ogni squadra")
+    section("Pronostici della giornata", "probabilità, margine e punti attesi di ogni partita in programma",
+            key=None)
+    from . import pronostici_ui
+    pronostici_ui.render(a)
+    section("Proiezione della classifica", "dove può arrivare ogni squadra", key=None)
+    previsioni_ui.render_proiezione(a)
+    section("Affidabilità delle previsioni", "quanto ci hanno preso finora", key=None)
+    if st.toggle("Mostra la validazione su 3 stagioni e il registro delle previsioni", key="mostra_affidabilita"):
+        previsioni_ui.render_affidabilita(a)
 
 
 def p_lavagna_avv():
@@ -300,7 +305,7 @@ def p_lavagna_avv():
 
 
 def p_squadre():
-    titolo_pagina("Squadre", "tutte le squadre del campionato a confronto")
+    titolo_pagina("Squadre a confronto", "tutte le squadre del campionato, voce per voce")
     schede.render_squadre(APP)
 
 
@@ -366,14 +371,12 @@ def p_avvisi():
     nuove.render_avvisi(APP)
 
 
-def p_panoramica():
-    titolo_pagina("Panoramica", "il campionato in numeri")
-    schede.render_panoramica(APP)
-
-
 def p_classifica():
+    """La classifica e, sotto, il campionato in numeri (prima era la pagina Panoramica)."""
     titolo_pagina("Classifica", "con forma, vittorie attese e forza del calendario")
     schede.render_classifica(APP)
+    section("Il campionato in numeri", "medie, leader e mappa delle squadre", key=None)
+    schede.render_panoramica(APP)
 
 
 def p_partite():
@@ -413,14 +416,10 @@ def mappa(admin: bool = False, club: bool = False) -> dict:
              P(p_guida, "Guida", "guida", "guida", icona=":material/help:")],
         "Avversaria": [P(p_scouting, "Scouting", "scouting", "scouting"),
                        P(p_lavagna_avv, "Lavagna dell'avversaria", "lavagna-avversaria",
-                         "lavagna_avv"),
-                       P(p_squadre, "Squadre", "squadre", "squadre")],
+                         "lavagna_avv")],
         "Previsioni": [P(p_anteprima, "Anteprima e scenari", "anteprima", "anteprima"),
-                       P(p_pronostici, "Pronostici della giornata", "pronostici", "pronostici"),
-                       P(p_proiezione, "Proiezione della classifica", "proiezione",
-                         "proiezione"),
-                       P(p_affidabilita, "Affidabilità delle previsioni", "affidabilita",
-                         "affidabilita")],
+                       P(p_proiezione, "Proiezione della classifica" if club else "Pronostici e classifica",
+                         "proiezione", "proiezione")],
         "Giocatori": [P(p_giocatori, "Elenco giocatori", "giocatori", "giocatori"),
                       P(p_giocatore, "Scheda giocatore", "giocatore", "giocatore"),
                       P(p_mercato, "Mercato", "mercato", "mercato")],
@@ -431,13 +430,10 @@ def mappa(admin: bool = False, club: bool = False) -> dict:
                            P(p_lavagna, "Lavagna dei giochi", "lavagna", "lavagna"),
                            P(p_video, "Lavagna sul video", "video", "video"),
                            P(p_avvisi, "Avvisi", "avvisi", "avvisi")],
-        "Campionato": [P(p_panoramica, "Panoramica", "panoramica", "panoramica"),
-                       P(p_classifica, "Classifica", "classifica", "classifica"),
+        "Campionato": [P(p_classifica, "Classifica", "classifica", "classifica"),
+                       P(p_squadre, "Squadre a confronto", "squadre", "squadre"),
                        P(p_partite, "Partite", "partite", "partite")],
     }
-    if club:      # utenti dei club: solo l'anteprima della propria partita e la proiezione
-        pagine["Previsioni"] = [p for p in pagine["Previsioni"]
-                                if p.url_path not in ("pronostici", "affidabilita")]
     if admin:
         pagine["Admin"] = [P(p_admin, "Amministrazione", "amministrazione", "admin",
                              icona=":material/admin_panel_settings:")]

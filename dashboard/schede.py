@@ -480,18 +480,23 @@ def render_scouting(a: App):
         from .stato import tema_squadra
         figurine_ui.render(a, sq, "I giocatori in figurine", "rotazione per minuti · confronto con il ruolo",
                            tema_squadra(sq, r.squadra))
-        c1, c2 = st.columns(2)
-        with c1:
-            section("Ultime 5 partite")
-            show(r.ultime)
-        with c2:
-            section("Casa / trasferta")
-            show(r.casa_trasferta)
-        section("Profilo completo", "posizione nel campionato per ogni metrica")
-        show(scouting.profilo_leggibile(r.profilo), voci=[G[k] for k in ("ortg", "drtg", "net_rtg", "pace", "four_factors",
-                                             "efg", "tov", "orb", "drb", "ft_rate", "ast_ratio")])
-        st.download_button("⬇ Scarica report (Markdown)", scouting.to_markdown(r),
-                           file_name=f"scouting_{r.squadra}.md", mime="text/markdown")
+
+
+def scouting_coda(a: App):
+    """Ultime partite, casa/trasferta e profilo completo: negli approfondimenti dello Scouting."""
+    r = report(a.mtime, a.stagione, a.sq)
+    c1, c2 = st.columns(2)
+    with c1:
+        section("Ultime 5 partite")
+        show(r.ultime)
+    with c2:
+        section("Casa / trasferta")
+        show(r.casa_trasferta)
+    section("Profilo completo", "posizione nel campionato per ogni metrica")
+    show(scouting.profilo_leggibile(r.profilo), voci=[G[k] for k in ("ortg", "drtg", "net_rtg", "pace", "four_factors",
+                                         "efg", "tov", "orb", "drb", "ft_rate", "ast_ratio")])
+    st.download_button("⬇ Scarica report (Markdown)", scouting.to_markdown(r),
+                       file_name=f"scouting_{r.squadra}.md", mime="text/markdown")
 
 
 def render_partite(a: App):

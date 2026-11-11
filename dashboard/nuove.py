@@ -113,15 +113,55 @@ def _notes_box(a: App, tipo: str, riferimento, titolo: str):
 # ------------------------------------------------------------------ scouting: cronaca
 
 def scouting_extra(a: App):
+    """Sotto il report: quintetti, On-Off e note dello staff sempre visibili; il resto negli
+    approfondimenti, che si aprono con un interruttore (la pagina resta corta e veloce)."""
     sq = a.sq
     if sq is None:
         return
     ctx = a.ctx
-    pf = a.profile[a.profile["squadra_id"] == sq].iloc[0]
-    if not _coverage(a):
-        _notes_box(a, "squadra", sq, "Note dello staff")
-        return
+    con_cronaca = _coverage(a)
+    if con_cronaca:
+        section("Quintetti più usati", "dai quintetti verificati")
+        lu = _team(ctx.lineups, sq).head(8)
+        if lu.empty:
+            note_html("Quintetti non ancora disponibili (servono partite con quintetti verificati).",
+                      "quintetti")
+        else:
+            show(lu[["giocatori", "minuti", "partite", "plus_minus", "ortg", "drtg", "net_rtg"]]
+                 .rename(columns={"giocatori": "Quintetto", "minuti": "Min", "partite": "PG",
+                                  "plus_minus": "+/-", "ortg": "ORtg", "drtg": "DRtg",
+                                  "net_rtg": "Net Rtg"}), colori={"Net Rtg": True})
+        from . import miglioramento_ui
+        miglioramento_ui.render_quintetti(ctx, sq, noi=sq == a.utente.get("squadra_id"))
 
+        section("+/- e On-Off", "impatto con il giocatore in campo")
+        oo = a.players[(a.players["squadra_id"] == sq)]
+        if "on_off" in oo and oo["on_off"].notna().any():
+            show(oo.sort_values("minuti_campo", ascending=False)[
+                ["giocatore", "minuti_campo", "plus_minus", "plus_minus_40", "net_on", "net_off",
+                 "on_off"]].rename(columns={"giocatore": "Giocatore", "minuti_campo": "Min in campo",
+                                            "plus_minus": "+/-", "plus_minus_40": "+/- per 40",
+                                            "net_on": "Net on", "net_off": "Net off",
+                                            "on_off": "On-Off"}), colori={"On-Off": True})
+        else:
+            note_html("Non ancora disponibile.", "on_off")
+
+
+    _notes_box(a, "squadra", sq, "Note dello staff")
+
+    section("Approfondimenti", "finali punto a punto, rotazioni, origine dei punti, momenti, tiro, falli, "
+            "ultime partite, profilo completo", key=None)
+    if not st.toggle("Mostra gli approfondimenti", key="scouting_approfondimenti"):
+        return
+    if con_cronaca:
+        _scouting_approfondimenti(a, sq)
+    from .schede import scouting_coda
+    scouting_coda(a)
+
+
+def _scouting_approfondimenti(a: App, sq: int):
+    ctx = a.ctx
+    pf = a.profile[a.profile["squadra_id"] == sq].iloc[0]
     section("Finali punto a punto", "ultimi 5' con scarto ≤ 5")
     ct = _team(ctx.clutch_teams, sq)
     cp = _team(ctx.clutch_players, sq)
@@ -144,32 +184,7 @@ def scouting_extra(a: App):
                 progress={"Quota tiri": (0, 100)})
 
     analisi.sezione_rotazioni(a, sq, ctx.nomi_giocatori)
-
-    section("Quintetti più usati", "dai quintetti verificati")
-    lu = _team(ctx.lineups, sq).head(8)
-    if lu.empty:
-        note_html("Quintetti non ancora disponibili (servono partite con quintetti verificati).",
-                  "quintetti")
-    else:
-        show(lu[["giocatori", "minuti", "partite", "plus_minus", "ortg", "drtg", "net_rtg"]]
-             .rename(columns={"giocatori": "Quintetto", "minuti": "Min", "partite": "PG",
-                              "plus_minus": "+/-", "ortg": "ORtg", "drtg": "DRtg",
-                              "net_rtg": "Net Rtg"}), colori={"Net Rtg": True})
-    from . import miglioramento_ui
-    miglioramento_ui.render_quintetti(ctx, sq, noi=sq == a.utente.get("squadra_id"))
     analisi.sezione_taglie(a, sq)
-
-    section("+/- e On-Off", "impatto con il giocatore in campo")
-    oo = a.players[(a.players["squadra_id"] == sq)]
-    if "on_off" in oo and oo["on_off"].notna().any():
-        show(oo.sort_values("minuti_campo", ascending=False)[
-            ["giocatore", "minuti_campo", "plus_minus", "plus_minus_40", "net_on", "net_off",
-             "on_off"]].rename(columns={"giocatore": "Giocatore", "minuti_campo": "Min in campo",
-                                        "plus_minus": "+/-", "plus_minus_40": "+/- per 40",
-                                        "net_on": "Net on", "net_off": "Net off",
-                                        "on_off": "On-Off"}), colori={"On-Off": True})
-    else:
-        note_html("Non ancora disponibile.", "on_off")
 
     section("Chi serve chi", "assist → canestro")
     an = _team(ctx.assists, sq).head(10)
@@ -228,7 +243,6 @@ def scouting_extra(a: App):
                          "uscite_5_falli": "Uscito per 5 falli", "falli": "Falli totali"}))
 
     analisi.sezione_fisico(a, sq)
-    _notes_box(a, "squadra", sq, "Note dello staff")
 
 
 # ------------------------------------------------------------------ giocatore: extra
