@@ -259,7 +259,7 @@ class Sommario(Flowable):
 
 
 class Tessera(Flowable):
-    """Voce del "come stanno in campionato": valore, giudizio, barra con una casella per
+    """Voce del "come sono posizionati in campionato": valore, giudizio, barra con una casella per
     squadra (quella colorata è la loro posizione)."""
 
     def __init__(self, larghezza, voce, valore_txt, altezza=24 * mm):

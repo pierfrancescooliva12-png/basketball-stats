@@ -214,7 +214,7 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
     prossima = ctx.next_game(squadra_id)
     giocatori = SG.schede(ctx, squadra_id, foto=foto)
     # i capitoli del report, nell'ordine: la prima pagina li elenca
-    capitoli = (["La squadra"] + (["I giocatori"] if giocatori else []) + ["Il piano partita", "I numeri"]
+    capitoli = (["La squadra"] + (["I giocatori"] if giocatori else []) + ["I punti della partita", "I numeri"]
                 + (["I giochi"] if giochi else []))
     cap = Capitoli(capitoli, W)
     el = [_header(r, prossima, S, W, config.STAGIONI.get(ctx.stagione, ctx.stagione)),
@@ -234,8 +234,8 @@ def build_pdf(ctx: Contesto, squadra_id: int, mia: int | None = None,
                                   "minuti, con gli obiettivi per limitarne l'impatto.") \
             + _schede(giocatori, r.squadra, S, W, obiettivi)
     # ---- 3. il piano partita
-    el += [PageBreak()] + cap("Il piano partita", "I numeri chiave, come affrontarli in difesa e in attacco, "
-                              "le chiavi per vincere.")
+    el += [PageBreak()] + cap("I punti della partita", "I numeri chiave, i punti di attenzione sul loro attacco e "
+                              "sulla loro difesa, le chiavi della partita.")
 
     el.append(_kpis([
         ("Net rating", _fmt(pf["net_rtg"], signed=True), f"ORtg {_fmt(pf['ortg'])} · "
@@ -540,8 +540,8 @@ def _carta(contenuto, w, bordo=None, sfondo=None, pad=8):
 
 
 def _sintesi(s: dict, r, S, W) -> list:
-    """Prima pagina, visione di squadra: in 30 secondi, come stanno in campionato, come
-    difendere e attaccare, ritmo e momenti, le tre cose da ricordare."""
+    """Prima pagina, visione di squadra: in 30 secondi, come sono posizionati in campionato, i punti
+    di attenzione sul loro attacco e sulla loro difesa, ritmo e momenti, le tre cose da ricordare."""
     titolo = ParagraphStyle("tmd", parent=S["h2"], fontSize=13, leading=15, textColor=ARANCIO,
                             spaceBefore=0, spaceAfter=2)
     sez = ParagraphStyle("smd", parent=S["h2"], fontSize=13, leading=15, textColor=NAVY,
@@ -550,7 +550,7 @@ def _sintesi(s: dict, r, S, W) -> list:
     voce = ParagraphStyle("voce", parent=S["body"], fontSize=8.6, leading=11.2, spaceAfter=4)
     el = [_carta([Paragraph("La squadra in 30 secondi", titolo), Paragraph(_esc(s.get("sintesi", "")), grande)],
                  W - 4, pad=10),
-          Paragraph("Come stanno in campionato", sez), _semaforo(r.profilo, S, W, s.get("riga"))]
+          Paragraph("Come sono posizionati in campionato", sez), _semaforo(r.profilo, S, W, s.get("riga"))]
 
     def colonna(titolo_c, voci, colore, w):
         st_t = ParagraphStyle("ct", parent=S["h3"], fontSize=11, leading=13, textColor=colore,
@@ -559,8 +559,8 @@ def _sintesi(s: dict, r, S, W) -> list:
         corpo += [Paragraph(_esc(v), voce) for v in voci] or [Paragraph("Nessuna indicazione marcata.", S["small"])]
         return _carta(corpo, w, pad=9)
     w3 = W / 3 - 4
-    tre = Table([[colonna("In difesa · contro il loro attacco", s.get("in_difesa", []), BLU, w3),
-                  colonna("In attacco · contro la loro difesa", s.get("in_attacco", []), ARANCIO, w3),
+    tre = Table([[colonna("Il loro attacco · punti di attenzione", s.get("in_difesa", []), BLU, w3),
+                  colonna("La loro difesa · punti di attenzione", s.get("in_attacco", []), ARANCIO, w3),
                   colonna("Ritmo, momenti e finali", s.get("ritmo", []), NAVY, w3)]],
                 colWidths=[W / 3] * 3)
     tre.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 2),
@@ -855,7 +855,7 @@ def _piano(ctx: Contesto, avv: int, mia: int | None, S, W) -> tuple[list, list]:
     nome_avv = ctx.nomi_squadre.get(avv, str(avv))
     g_avv = int(lega.set_index("squadra_id").loc[avv, "partite"])
     if mia is None or mia == avv or mia not in set(lega["squadra_id"]):
-        el = [Paragraph(f"Come affrontare {nome_avv}", S["h2"]),
+        el = [Paragraph(f"Su cosa concentrarsi contro {nome_avv}", S["h2"]),
               Paragraph("Indicazioni ricavate dai dati della squadra rispetto al campionato. "
                         "Con la propria squadra impostata il report aggiunge le probabilità di "
                         "vittoria e le chiavi della partita.", S["small"])]
@@ -885,14 +885,14 @@ def _piano(ctx: Contesto, avv: int, mia: int | None, S, W) -> tuple[list, list]:
     lento_meglio = lento["prob"] >= veloce["prob"]
     rit = lento if lento_meglio else veloce
 
-    el = [Paragraph(f"Piano partita · {nome_mia} contro {nome_avv}", S["h2"]),
+    el = [Paragraph(f"I punti della partita · {nome_mia} contro {nome_avv}", S["h2"]),
           _kpis([("Probabilità ora", f"{_fmt(p0, 0)}%",
                   f"{nome_mia.split()[-1]} {'in casa' if casa_mia else 'in trasferta'}"),
                  ("Con tutte le chiavi", f"{_fmt(comb['prob_tutte'], 0)}%",
                   f"scenario migliore · {_fmt(comb['prob_tutte'] - p0, 0, signed=True)} punti"),
                  ("Leva principale", top["breve"],
                   f"da sola fino a {_fmt(top['prob_obiettivo'], 0)}%"),
-                 ("Ritmo che conviene", "lento" if lento_meglio else "veloce",
+                 ("Ritmo più favorevole", "lento" if lento_meglio else "veloce",
                   f"{_fmt(rit['prob'], 0)}% con {_fmt(rit['possessi'], 0)} possessi")], S, W),
           Spacer(1, 4),
           Paragraph("Le chiavi della partita", S["h3"])]
@@ -902,18 +902,19 @@ def _piano(ctx: Contesto, avv: int, mia: int | None, S, W) -> tuple[list, list]:
                         S["body"]))
     if min(g_avv, int(lega.set_index("squadra_id").loc[mia, "partite"])) < 8:
         el.append(Paragraph("<b>Attenzione</b> · Inizio stagione: con meno di 8 partite i valori sono avvicinati "
-                            "alla media del campionato e i consigli vanno confermati.",
+                            "alla media del campionato e le indicazioni vanno confermate.",
                             S["small"]))
     el.append(Spacer(1, 4))
     el += _consigli(ctx, avv, mia, rt, S, W)
-    el.append(Paragraph(f"Consigli dal confronto tra i dati di {nome_mia} e di {nome_avv} "
+    el.append(Paragraph(f"Indicazioni dal confronto tra i dati di {nome_mia} e di {nome_avv} "
                         "(voci lontane dalla media del campionato). <b>Sfida chiave</b>: un loro "
                         "punto forte contro un vostro punto debole. <b>Occasione</b>: un vostro "
                         "punto forte contro un loro punto debole. <b>Forza contro forza</b>: i "
                         "due punti forti si incontrano. <b>Neutralizzata</b>: un loro punto "
                         "forte dove siete forti anche voi. <b>Da curare</b>: un vostro punto "
                         "debole. Probabilità dal modello di previsione; sono associazioni "
-                        "statistiche, non garanzie.", S["small"]))
+                        "statistiche, non garanzie. Il report indica su cosa concentrarsi: come "
+                        "giocare lo decide lo staff.", S["small"]))
 
     # ---- dettaglio
     det = [Paragraph("Le chiavi in dettaglio · Four Factors della partita", S["h2"])]

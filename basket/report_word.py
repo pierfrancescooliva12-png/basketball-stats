@@ -124,7 +124,7 @@ def build_docx(ctx, squadra_id: int, mia: int | None = None, foto: bool = True) 
     _titolo(doc, "La squadra in 30 secondi")
     p = doc.add_paragraph()
     _testo(p, s["sintesi"], size=11)
-    _titolo(doc, "Come stanno in campionato", 2)
+    _titolo(doc, "Come sono posizionati in campionato", 2)
     voci = SI.semaforo(r.profilo, s.get("riga"))
     tab = doc.add_table(rows=1, cols=4)
     tab.style = "Light Grid Accent 1"
@@ -136,8 +136,8 @@ def build_docx(ctx, squadra_id: int, mia: int | None = None, foto: bool = True) 
         c[1].text = _it(v["valore"])
         c[2].text = f"{v['posizione']}° su {v['squadre']}"
         _testo(c[3].paragraphs[0], v["giudizio"], bold=True, colore=TINTA[v["tipo"]])
-    for titolo, chiave, colore in (("In difesa · contro il loro attacco", "in_difesa", BLU),
-                                   ("In attacco · contro la loro difesa", "in_attacco", ARANCIO),
+    for titolo, chiave, colore in (("Il loro attacco · punti di attenzione", "in_difesa", BLU),
+                                   ("La loro difesa · punti di attenzione", "in_attacco", ARANCIO),
                                    ("Ritmo, momenti e finali", "ritmo", GRIGIO)):
         _titolo(doc, titolo, 2)
         _elenco(doc, s[chiave], "›", colore)

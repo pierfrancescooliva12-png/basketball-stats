@@ -75,7 +75,7 @@ def render(a: App, avv: int):
           ("Con tutte le chiavi", f"{num(comb['prob_tutte'], 0)}%",
            f"scenario migliore · {num(comb['prob_tutte'] - p0, 0, signed=True)} punti"),
           ("Leva principale", top["breve"], f"da sola fino a {num(top['prob_obiettivo'], 0)}%"),
-          ("Ritmo che conviene", "lento" if lento_meglio else "veloce",
+          ("Ritmo più favorevole", "lento" if lento_meglio else "veloce",
            f"{num(rit['prob'], 0)}% con {num(rit['possessi'], 0)} possessi")])
     voci = "".join(f"<li>{esc(it(v))}</li>" for v in C.sintesi(lv, gc_avv, short(nomi[avv])))
     st.markdown(f'<div class="frase"><b>Le chiavi della partita</b><ol style="margin:6px 0 0 '

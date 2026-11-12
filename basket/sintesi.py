@@ -1,5 +1,6 @@
-"""Visione di squadra per la prima pagina del report prepartita: chi sono, come difendere e
-attaccare, ritmo e momenti, tre cose da ricordare. Tutto dai consigli già calcolati da ASSIST
+"""Visione di squadra per la prima pagina del report prepartita: chi sono, i punti di attenzione
+sul loro attacco e sulla loro difesa, ritmo e momenti, tre cose da ricordare. Tutto dalle
+indicazioni già calcolate da ASSIST
 (piano_partita.consigli), senza servizi esterni."""
 
 import re
@@ -15,7 +16,8 @@ def _gruppo(consigli: dict, prefisso: str) -> list[str]:
 
 
 def azione(consiglio: str) -> str:
-    """Dal consiglio "Situazione (dato): cosa fare. Pericolosi: ..." tiene il cosa fare."""
+    """Dall'indicazione "Situazione (dato): punto di attenzione. Pericolosi: ..." tiene il punto
+    di attenzione (o, se non c'è, la situazione)."""
     x = re.sub(r"^\w[\w ]*· ", "", consiglio).split(". Pericolosi")[0]
     m = re.search(r"\):\s*(.+)$", x)
     x = (m.group(1) if m else x).strip().rstrip(".")
@@ -34,7 +36,7 @@ def squadra(ctx, sid: int, mia: int | None = None, report=None) -> dict:
     if mia is not None and (mia == sid or mia not in set(lega["squadra_id"])):
         mia = None
     c = PP.consigli(ctx, sid, mia, None)
-    difesa, attacco = _gruppo(c, "In difesa")[:4], _gruppo(c, "In attacco")[:4]
+    difesa, attacco = _gruppo(c, "Il loro attacco")[:4], _gruppo(c, "La loro difesa")[:4]
     ritmo = (_gruppo(c, "Ritmo")[:3] + _gruppo(c, "Finali")[:2])[:4]
     frasi = X.frase_squadra(lega, sid)
     chi = f"{r.squadra} ({r.record}, {r.posizione}° posto)"
