@@ -239,6 +239,25 @@ def _brand(a: App):
               "squadra) e salva: i colori cambiano per tutti gli utenti del club.")
 
 
+def _email_report(a: App):
+    """Chi ha lasciato la propria email per ricevere i report (li vede solo l'amministratore)."""
+    section("Email dei report", "chi riceve per email il post-partita e lo scouting", key=None)
+    try:
+        iscritti = a.archivio.iscritti_email()
+    except Exception:
+        note_html("Archivio non raggiungibile.")
+        return
+    if not iscritti:
+        note_html("Nessun utente ha ancora lasciato la propria email. La richiesta compare al primo accesso "
+                  "dello staff dei club; in seguito si cambia dal pulsante «Email» in alto.")
+        return
+    show(pd.DataFrame([{"Utente": r["utente"], "Club": r["club"] or "–", "Email": r["email"],
+                        "Post-partita": "sì" if r["post_partita"] else "no",
+                        "Scouting": "sì" if r["scouting"] else "no"} for r in iscritti]), voci=[])
+    note_html("I report partono dal controllo orario di GitHub (Actions › Report per email): servono i segreti "
+              "SMTP_HOST, SMTP_USER, SMTP_PASSWORD, MITTENTE e ARCHIVIO_URL.")
+
+
 def render(a: App):
     if a.utente.get("ruolo") != "admin" or a.utente.get("demo"):
         st.error("Pagina riservata all'amministratore.")
@@ -253,5 +272,6 @@ def render(a: App):
     _utenti_attivi(a, da_secrets, da_db)
     _nuovo_accesso(a, {**da_secrets, **da_db})
     _nuovo_interregionale(a, {**da_secrets, **da_db})
+    _email_report(a)
     _gestisci(a, da_secrets, da_db)
     _brand(a)

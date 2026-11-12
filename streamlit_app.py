@@ -42,6 +42,7 @@ if utenti:
         st.rerun()
     if utente.get("cambio"):
         accesso_ui.cambio_obbligatorio(utente, arch)   # primo accesso: nuova password
+    accesso_ui.email_primo_accesso(utente, arch)       # una volta: i report nella propria email
 else:
     utente = {"username": "demo", "club": None, "ruolo": "admin", "demo": True}
 
@@ -201,7 +202,7 @@ chi = (" · modalità demo" if utente.get("demo") else
        f" · {esc(utente['username'])} ({esc(utente['club'] or 'amministratore')})")
 n_incomplete = a.bs_c.loc[~a.bs_c["affidabile"], "partita_id"].nunique()
 with barra:
-    c1, c2 = st.columns([6, 1], vertical_alignment="center")
+    c1, c2 = st.columns([5, 1.6], vertical_alignment="center")
     with c1:
         meta = (f"{config.STAGIONI.get(stagione, stagione)} · {config.CAMPIONATI[camp]} · "
                 f"{a.bs_c['partita_id'].nunique()} partite, fino alla "
@@ -225,7 +226,10 @@ with barra:
                            "l'aggiornamento automatico potrebbe essersi fermato (GitHub, Actions › "
                            "Aggiornamento dati). Se sono partite rinviate, ignora l'avviso.")
     if not utente.get("demo"):
-        b1, b2 = c2.columns(2)
+        b0, b1, b2 = c2.columns(3)
+        if accesso_ui.riceve_report(utente) and b0.button("Email", key="email_report",
+                                                          help="Ricevi i report nella tua email"):
+            accesso_ui.email_report(utente, arch)
         if utente.get("fonte") == "database" and b1.button("Password", key="cambia_pw",
                                                            help="Cambia la tua password"):
             accesso_ui.cambia_password(utente, arch)

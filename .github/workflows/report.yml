@@ -1,0 +1,60 @@
+name: Report per email
+
+# Controllo orario: se una partita delle squadre che ricevono i report (o della loro prossima
+# avversaria) è finita e i dati non sono ancora in archivio, li scarica e manda i report pronti:
+# - post-partita, appena ci sono i dati della partita;
+# - scouting della prossima avversaria, quando hanno giocato sia lei sia la squadra.
+# Non salva nulla nel repository (i dati li salva l'aggiornamento notturno; gli invii fatti sono
+# nell'archivio): così la piattaforma non viene ripubblicata a ogni controllo.
+# Servono i segreti SMTP_HOST, SMTP_USER, SMTP_PASSWORD, MITTENTE e ARCHIVIO_URL.
+
+on:
+  schedule:
+    # ogni ora dalle 9:37 alle 00:37 ora solare italiana (minuti non tondi: meno ritardi di GitHub)
+    - cron: "37 8-23 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: report-email
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+      MITTENTE: ${{ secrets.MITTENTE }}
+      ABBONATI: ${{ secrets.ABBONATI }}
+      ARCHIVIO_URL: ${{ secrets.ARCHIVIO_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-update.txt
+
+      - name: Installa dipendenze
+        run: pip install -r requirements-update.txt
+
+      # senza destinatari o senza partite finite da scaricare il controllo finisce qui
+      - name: Ci sono partite finite senza dati?
+        id: controllo
+        run: python -m basket.invio_email --controlla
+
+      - name: Scarica le partite appena finite
+        if: steps.controllo.outputs.aggiorna == 'si'
+        continue-on-error: true
+        run: python -m basket.update --anagrafica 0 --recupero-cronaca 30
+
+      - name: Invia i report pronti
+        if: steps.controllo.outputs.aggiorna == 'si'
+        run: python -m basket.invio_email

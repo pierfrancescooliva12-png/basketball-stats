@@ -12,7 +12,7 @@ Funziona interamente nel cloud, senza un PC locale:
 
 - **GitHub Actions** scarica ogni mattina le partite nuove (box score, cronaca, anagrafica) e il
   calendario aggiornato (si gioca anche il sabato, il mercoledì e in altri giorni), aggiorna il database
-  e l'Excel, e il lunedì invia via email il report PDF sulla prossima avversaria;
+  e l'Excel, e manda per email i report appena sono pronti (post-partita e scouting della prossima avversaria);
 - **Streamlit Community Cloud** pubblica la dashboard, da aprire da iPad (Safari).
 
 ---
@@ -46,12 +46,12 @@ La dashboard è organizzata in **aree**, con la navigazione in alto (comoda al t
 
 **Report PDF**
 
-- **Scouting** sulla squadra scelta (e ogni lunedì via email sulla prossima avversaria): si apre con il
+- **Scouting** sulla squadra scelta (e per email, appena l'avversaria ha giocato la sua ultima partita): si apre con il
   **punti della partita** (probabilità, chiavi della partita, punti di attenzione sul loro attacco, sulla loro difesa,
   per ritmo e momenti e nei finali), poi le chiavi in dettaglio e tutte le sezioni della pagina Scouting,
   con le note dello staff e i giochi disegnati;
 - **La mia squadra**: tutte le voci della pagina in un documento;
-- **post-partita** sulla propria ultima partita (allegato anche all'email del lunedì);
+- **post-partita** sulla propria ultima partita (anche per email, appena arrivano i dati della partita);
 - **individuale** per il giocatore, con lo spazio per gli obiettivi concordati con lo staff.
 
 **Previsioni: probabilità, non certezze**
@@ -251,7 +251,24 @@ Le tabelle si creano da sole al primo avvio. Con il database collegato:
 - gli utenti nei Secrets (l'amministratore) restano come accesso di riserva: a parità di nome
   vincono sul database.
 
-### Report PDF via email ogni lunedì
+### Report per email
+
+**Chi li riceve.** Al primo accesso lo staff di un club può lasciare la propria email personale
+(facoltativa: c'è «Non ora»). In seguito si cambia o si toglie dal pulsante **Email** in alto.
+Si sceglie quali report ricevere. Gli indirizzi stanno nell'archivio (tabella `email_report`) e
+li vede solo l'amministratore, in Amministrazione › Email dei report. Restano validi anche gli
+indirizzi della variabile `ABBONATI`.
+
+**Quando partono.**
+- **Post-partita**: appena i dati della partita della squadra sono in archivio.
+- **Scouting della prossima avversaria**: quando hanno giocato, e ci sono i dati, sia la squadra
+  sia l'avversaria (cioè la prossima partita di tutte e due è quella tra loro).
+
+Ogni report parte una sola volta per destinatario e partita. Il workflow **Report per email**
+controlla ogni ora (9:37 – 00:37): se una partita delle squadre seguite è finita da almeno un'ora
+e tre quarti e mancano i dati, li scarica e manda i report pronti, senza salvare nulla nel
+repository (la piattaforma non viene ripubblicata). Gli stessi report partono anche dopo i due
+aggiornamenti notturni.
 
 In GitHub: **Settings → Secrets and variables → Actions → New repository secret**:
 
@@ -261,11 +278,11 @@ In GitHub: **Settings → Secrets and variables → Actions → New repository s
 | `SMTP_PORT` | `587` |
 | `SMTP_USER` / `SMTP_PASSWORD` | account e password per app |
 | `MITTENTE` | `ASSIST <report@tuodominio.it>` |
-| `ABBONATI` | `[{"email": "staff@club.it", "squadra": "Forlì"}]` |
+| `ARCHIVIO_URL` | la stessa stringa di `[database] url` dei Secrets della piattaforma: serve a leggere gli indirizzi lasciati dagli utenti e a registrare gli invii fatti |
+| `ABBONATI` (facoltativo) | `[{"email": "staff@club.it", "squadra": "Forlì"}]` |
 
-Ogni lunedì, dopo l'aggiornamento, ogni abbonato riceve il PDF sulla **prossima avversaria**
-della propria squadra. I PDF restano scaricabili anche dalla pagina del workflow (artefatto
-`report-pdf`) e, in ogni momento, dalla scheda **Scouting** della dashboard.
+I PDF restano scaricabili anche dalla pagina del workflow (artefatto `report-pdf`) e, in ogni
+momento, dalla scheda **Scouting** della dashboard.
 
 ### Formula del campionato
 
@@ -288,7 +305,7 @@ Allineale alla formula ufficiale in `basket/config.py` (`ZONE_CLASSIFICA`).
 
 ## Aggiornamento dei dati
 
-- **Automatico**: ogni giorno alle **07:00** (ora legale; 06:00 con l'ora solare); il report agli abbonati parte solo il lunedì.
+- **Automatico**: ogni giorno alle **07:00** (ora legale; 06:00 con l'ora solare); i report per email partono appena sono pronti.
 - **Manuale**: **Actions → Aggiornamento dati → Run workflow**, con campi facoltativi per
   campionati, giornate, stagioni e numero massimo di anagrafiche.
 - **Excel**: `reports/riepilogo_x2627.xlsx` (17 fogli, con rotazioni, momenti della partita e presenze).

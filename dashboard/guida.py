@@ -230,6 +230,9 @@ GUIDA: list[tuple[str, str, list[str]]] = [
      "Come è fatta la piattaforma e gli strumenti che valgono ovunque.",
      ["In alto ci sono le aree (Avversaria, Previsioni, Giocatori, La mia squadra, Campionato): tocca un'area per "
       "vederne le pagine.",
+      "«Email», in alto a destra: lascia la tua email per ricevere da solo il report post-partita, appena arrivano "
+      "i dati della vostra partita, e lo scouting della prossima avversaria, appena lei ha giocato. Si può "
+      "cambiare o togliere quando vuoi.",
       "Stagione, campionato, squadra e giocatore valgono per tutte le pagine. L'indirizzo della pagina li conserva: "
       "mandalo a un collega e vedrà la stessa cosa.",
       "«Esperto» spento mostra solo le voci essenziali con i nomi per esteso; acceso, tutte le colonne e le metriche "
