@@ -63,6 +63,13 @@ SCHEMA = [
     """CREATE TABLE IF NOT EXISTS brand (
         squadra_id INTEGER PRIMARY KEY, primario TEXT, secondario TEXT, logo_url TEXT,
         aggiornato_il TEXT NOT NULL, autore TEXT)""",
+    # email personale a cui mandare i report (facoltativa): una riga per utente. La riga senza
+    # indirizzo vuol dire "già chiesto, non ora": al primo accesso non si chiede due volte
+    """CREATE TABLE IF NOT EXISTS email_report (
+        utente TEXT PRIMARY KEY, club TEXT, email TEXT, post_partita INTEGER NOT NULL DEFAULT 1,
+        scouting INTEGER NOT NULL DEFAULT 1, aggiornato_il TEXT NOT NULL)""",
+    # report già inviati: solo impronte (hash di indirizzo, tipo di report e partita)
+    """CREATE TABLE IF NOT EXISTS invii_email (chiave TEXT PRIMARY KEY, inviato_il TEXT NOT NULL)""",
 ]
 
 
@@ -314,6 +321,44 @@ class Archivio:
             c.execute(text("UPDATE utenti SET attivo = :a WHERE username = :u"),
                       {"u": username, "a": int(attivo)})
         self._dimentica_utenti()
+
+    # ------------------------------------------------------------ email dei report
+    def email_report(self, utente: str) -> dict | None:
+        """{email, post_partita, scouting, club} dell'utente; None se non gli è mai stato chiesto."""
+        with self.engine.connect() as c:
+            r = c.execute(text("SELECT * FROM email_report WHERE utente = :u"), {"u": utente}).mappings().first()
+        if r is None:
+            return None
+        return {"email": r["email"] or "", "post_partita": bool(r["post_partita"]),
+                "scouting": bool(r["scouting"]), "club": r["club"]}
+
+    def set_email_report(self, utente: str, club: str | None, email: str | None,
+                         post_partita: bool = True, scouting: bool = True):
+        """Salva (o toglie, con email vuota) l'indirizzo a cui l'utente riceve i report."""
+        with self.engine.begin() as c:
+            c.execute(text("DELETE FROM email_report WHERE utente = :u"), {"u": utente})
+            c.execute(text("INSERT INTO email_report (utente, club, email, post_partita, scouting, "
+                           "aggiornato_il) VALUES (:u, :c, :e, :p, :s, :d)"),
+                      {"u": utente, "c": club, "e": (email or "").strip().lower() or None,
+                       "p": int(post_partita), "s": int(scouting), "d": _now()})
+
+    def iscritti_email(self) -> list[dict]:
+        """Chi ha lasciato un indirizzo: [{utente, club, email, post_partita, scouting}]."""
+        with self.engine.connect() as c:
+            rows = c.execute(text("SELECT * FROM email_report WHERE email IS NOT NULL AND email <> ''"
+                                  )).mappings().all()
+        return [{"utente": r["utente"], "club": r["club"], "email": r["email"],
+                 "post_partita": bool(r["post_partita"]), "scouting": bool(r["scouting"])} for r in rows]
+
+    def invii_fatti(self) -> set:
+        with self.engine.connect() as c:
+            return {r[0] for r in c.execute(text("SELECT chiave FROM invii_email"))}
+
+    def segna_invii(self, chiavi: list[str]):
+        with self.engine.begin() as c:
+            for k in chiavi:
+                c.execute(text("DELETE FROM invii_email WHERE chiave = :k"), {"k": k})
+                c.execute(text("INSERT INTO invii_email VALUES (:k, :d)"), {"k": k, "d": _now()})
 
     def touch_login(self, username: str):
         with self.engine.begin() as c:

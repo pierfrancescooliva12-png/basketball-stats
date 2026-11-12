@@ -259,3 +259,91 @@ def cambio_obbligatorio(utente: dict, arch) -> None:
 def cambia_password(utente: dict, arch) -> None:
     if _nuova_password(utente, arch, "pw_cambio", vecchia_richiesta=True):
         st.success("Password aggiornata: vale dal prossimo accesso.")
+
+
+# ------------------------------------------------------------------ email dei report
+
+RICHIESTA_EMAIL = ("Se lasci la tua email ricevi da solo due report: il **post-partita**, appena arrivano i dati "
+                   "della vostra partita, e lo **scouting della prossima avversaria**, appena lei ha giocato la "
+                   "sua ultima partita prima di affrontarvi.")
+PRIVACY_EMAIL = ("L'indirizzo serve solo a mandarti questi report e lo vede solo l'amministratore di ASSIST. "
+                 "Puoi cambiarlo o toglierlo quando vuoi dal pulsante «Email» in alto.")
+
+
+def riceve_report(utente: dict) -> bool:
+    """I report per email valgono per lo staff dei club di A2 e B Nazionale (non demo, non B
+    Interregionale, non l'amministratore senza club)."""
+    return bool(utente.get("club")) and not utente.get("demo") and utente.get("ruolo") != "interregionale"
+
+
+def _modulo_email(utente: dict, arch, chiave: str, attuale: dict | None, salta: bool) -> bool:
+    """Modulo dell'email dei report. True quando l'utente ha salvato o ha scelto «Non ora»."""
+    from basket.invio_email import valida_email
+    attuale = attuale or {"email": "", "post_partita": True, "scouting": True}
+    with st.form(chiave, border=True):
+        email = st.text_input("La tua email", value=attuale["email"], placeholder="nome@esempio.it",
+                              autocomplete="email")
+        post = st.checkbox("Report post-partita, appena arrivano i dati", value=attuale["post_partita"])
+        scout = st.checkbox("Scouting della prossima avversaria, appena ha giocato", value=attuale["scouting"])
+        c1, c2 = st.columns(2)
+        salva = c1.form_submit_button("Salva", type="primary", width="stretch")
+        dopo = c2.form_submit_button("Non ora" if salta else "Non ricevere più i report", width="stretch")
+    if dopo:
+        arch.set_email_report(utente["username"], utente.get("club"), None)
+        return True
+    if salva:
+        indirizzo = valida_email(email)
+        if not indirizzo:
+            st.error("Controlla l'indirizzo: non sembra un'email valida.")
+            return False
+        if not (post or scout):
+            st.error("Scegli almeno uno dei due report, oppure «Non ora».")
+            return False
+        arch.set_email_report(utente["username"], utente.get("club"), indirizzo, post, scout)
+        return True
+    return False
+
+
+def email_primo_accesso(utente: dict, arch) -> None:
+    """Al primo accesso (una volta sola): la proposta di ricevere i report per email."""
+    if not riceve_report(utente) or st.session_state.get("_email_chiesta"):
+        return
+    try:
+        if arch.email_report(utente["username"]) is not None:
+            st.session_state["_email_chiesta"] = True
+            return
+    except Exception:                      # archivio non raggiungibile: non si blocca l'accesso
+        st.session_state["_email_chiesta"] = True
+        return
+    from basket import brand
+    tema = _tema_link(brand.slug(utente["club"]))
+    st.markdown(CSS, unsafe_allow_html=True)
+    from . import icona_app
+    icona_app.imposta(tema)
+    _barra(tema)
+    c1, _, c2 = st.columns([1.2, 0.12, 0.9], vertical_alignment="top")
+    with c1:
+        _hero(tema)
+    with c2:
+        st.markdown('<div class="accesso-titolo">I report nella tua email</div>', unsafe_allow_html=True)
+        st.markdown(RICHIESTA_EMAIL)
+        if _modulo_email(utente, arch, "email_primo", None, salta=True):
+            st.session_state["_email_chiesta"] = True
+            st.rerun()
+        st.caption(PRIVACY_EMAIL)
+    st.stop()
+
+
+@st.dialog("I report nella tua email")
+def email_report(utente: dict, arch) -> None:
+    st.markdown(RICHIESTA_EMAIL)
+    try:
+        attuale = arch.email_report(utente["username"])
+    except Exception:
+        st.error("Archivio non raggiungibile: riprova tra poco.")
+        return
+    if attuale and attuale["email"]:
+        st.caption(f"Ora li ricevi a {attuale['email']}.")
+    if _modulo_email(utente, arch, "email_modifica", attuale, salta=not (attuale and attuale["email"])):
+        st.success("Salvato.")
+    st.caption(PRIVACY_EMAIL)

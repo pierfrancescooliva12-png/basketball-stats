@@ -8,7 +8,7 @@ on:
   # - 04:23 UTC (05:23 ora solare, 06:23 ora legale): rete di sicurezza per cronache pubblicate
   #   tardi e per il calendario (orari spostati), così la diretta parte all'ora giusta.
   # Minuti non tondi: GitHub ritarda di più le esecuzioni programmate allo scoccare dell'ora.
-  # Il report agli abbonati resta settimanale (lunedì).
+  # I report per email partono appena sono pronti (vedi anche report.yml, controllo orario).
   schedule:
     - cron: "17 22 * * *"
     - cron: "23 4 * * *"
@@ -32,7 +32,7 @@ on:
         required: false
         default: "200"
       invia_report:
-        description: "Inviare anche il report agli abbonati? (di solito no: parte da solo il lunedì)"
+        description: "Inviare anche i report per email? (di solito no: partono da soli appena pronti)"
         type: choice
         options: ["no", "sì"]
         default: "no"
@@ -109,9 +109,10 @@ jobs:
         run: |
           if [ -f data/lnp.sqlite ]; then python -m basket.export_excel; fi
 
-      # Report PDF sulla prossima avversaria agli abbonati (solo se configurati i segreti
-      # SMTP_HOST, SMTP_USER, SMTP_PASSWORD, MITTENTE e ABBONATI)
-      - name: Invia report agli abbonati
+      # Report per email (post-partita e scouting): partono appena sono pronti, una volta sola per
+      # destinatario e partita. Destinatari: chi ha lasciato l'email nella piattaforma (segreto
+      # ARCHIVIO_URL) e la variabile ABBONATI. Il controllo orario è in report.yml.
+      - name: Invia i report pronti
         continue-on-error: true
         env:
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
@@ -120,16 +121,11 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           MITTENTE: ${{ secrets.MITTENTE }}
           ABBONATI: ${{ secrets.ABBONATI }}
+          ARCHIVIO_URL: ${{ secrets.ARCHIVIO_URL }}
           INVIA_REPORT: ${{ inputs.invia_report }}
         run: |
-          # nelle esecuzioni automatiche il report parte solo il lunedì; in quelle avviate a mano
-          # solo se richiesto. In ogni caso lo stesso report sulla stessa partita parte una volta
-          # sola (registro in data/invii_report.json, solo impronte)
-          if [ "$GITHUB_EVENT_NAME" = "schedule" ] && [ "$(date -u +%u)" != "1" ]; then
-            echo "Report settimanale: solo il lunedì"; exit 0
-          fi
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ "$INVIA_REPORT" != "sì" ]; then
-            echo "Avvio manuale: report non inviato (scegli 'sì' in 'Inviare anche il report')"; exit 0
+            echo "Avvio manuale: report non inviati (scegli 'sì' in 'Inviare anche i report')"; exit 0
           fi
           python -m basket.invio_email
 
