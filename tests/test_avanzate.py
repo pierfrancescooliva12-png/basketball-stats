@@ -77,3 +77,32 @@ def test_pagine_accorpate_e_nomi_italiani():
     assert list(ui.nomi_italiani(df, None)[0].columns) == list(df.columns)
     from basket.glossario import COLONNE
     assert all(n in COLONNE or n in ("Game Score",) for n in ui.NOMI_ITALIANI.values())
+
+
+def test_report_senza_istruzioni_tattiche():
+    """I report indicano su cosa concentrarsi: non dicono alla squadra cosa fare."""
+    from basket import config, db
+    from basket import piano_partita as PP
+    from basket.contesto import Contesto
+    from pathlib import Path
+    radice = Path(PP.__file__).parent
+    assert "Come stanno in campionato" not in (radice / "report_pdf.py").read_text() + (radice / "report_word.py").read_text()
+    assert "Come sono posizionati in campionato" in (radice / "report_pdf.py").read_text()
+    vietate = ("raddoppi", "tagliafuori", "chiusure", "pressione a tutto campo", "fallo tattico", "trappole",
+               "timeout presto", "con un timeout", "mandare in lunetta", "attaccarli", "attaccare il", "correre dopo",
+               "correre sempre", "spingere", "marcature", "extra-passaggio", "spaziature", "allungare le rotazioni",
+               "due portatori", "crash", "alzare l'intensità", "cambi difensivi", "aiuti")
+    sorgente = (radice / "piano_partita.py").read_text().lower()
+    for parola in vietate:
+        assert parola not in sorgente, parola
+    if not config.DB_PATH.exists():
+        return
+    ctx = Contesto(db.connect(config.DB_PATH, readonly=True), config.STAGIONE)
+    a2 = ctx.profile[ctx.profile["campionato_id"] == ctx.profile["campionato_id"].iloc[0]]
+    ids = [int(x) for x in a2["squadra_id"]]
+    for avv, mia in ((ids[0], ids[1]), (ids[2], None), (ids[3], ids[0])):
+        gruppi = PP.consigli(ctx, avv, mia)
+        assert list(gruppi)[0].startswith("Il loro attacco") and list(gruppi)[1].startswith("La loro difesa")
+        testo = " ".join(v for voci in gruppi.values() for v in voci).lower()
+        for parola in vietate:
+            assert parola not in testo, (parola, testo[:200])

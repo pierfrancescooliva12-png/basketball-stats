@@ -1,7 +1,7 @@
-"""Piano partita: consigli concreti su come affrontare una squadra, ricavati dai dati delle due
-squadre.
+"""Punti della partita: su cosa concentrarsi contro una squadra, dai dati delle due squadre.
 
-Ogni consiglio nasce da una regola esplicita. Una voce lontana dalla media del campionato
+Il report dà indicazioni e punti di attenzione, non istruzioni tattiche: come giocare lo decide
+lo staff. Ogni indicazione nasce da una regola esplicita. Una voce lontana dalla media del campionato
 (almeno SOGLIA_Z deviazioni standard) diventa un'indicazione, con il numero che la giustifica.
 Con la propria squadra le regole mettono a confronto le due squadre sulla stessa voce:
 
@@ -12,7 +12,7 @@ Con la propria squadra le regole mettono a confronto le due squadre sulla stessa
 - vostro punto forte: un'arma vostra che la loro difesa non toglie;
 - da curare: un vostro punto debole che loro possono sfruttare anche senza eccellere.
 
-I consigli sono divisi in quattro gruppi e ordinati per importanza (somma delle distanze dalla
+Le indicazioni sono divise in quattro gruppi e ordinati per importanza (somma delle distanze dalla
 media delle due squadre). Sono associazioni osservate nei dati, non certezze.
 """
 
@@ -22,7 +22,7 @@ import pandas as pd
 SOGLIA_Z = 0.6          # distanza minima dalla media del campionato, in deviazioni standard
 MAX_PER_GRUPPO = 6
 
-GRUPPI = ["In difesa · contro il loro attacco", "In attacco · contro la loro difesa",
+GRUPPI = ["Il loro attacco · punti di attenzione", "La loro difesa · punti di attenzione",
           "Ritmo, rotazioni e momenti", "Finali punto a punto"]
 D, A, R, F = GRUPPI
 
@@ -184,32 +184,32 @@ def consigli(ctx, avv: int, mia: int | None = None, rt: pd.DataFrame | None = No
     c3 = f"{_it(N.v('opp_t3_pct'), 1)}% da 3 concesso, {N.pos('opp_t3_pct', False)}" if noi \
         else ""
     P.duello(D, L.z("quota_punti_3"), N.z("opp_t3_pct"),
-             f"Vivono del tiro da 3 ({q3}): chiusure aggressive, niente aiuti lunghi dal lato "
-             f"forte{chi3}",
+             f"Vivono del tiro da 3 ({q3}): il perimetro è il primo punto di "
+             f"attenzione{chi3}",
              f"Il tiro da 3 è la loro arma ({q3}) e il vostro punto debole in difesa ({c3}): "
-             f"chiusure in anticipo, cambiare sui blocchi lontano dalla palla{chi3}",
-             f"Tirano molto da 3 ({q3}), ma voi difendete bene il perimetro ({c3}): restare "
-             f"attaccati ai tiratori e non concedere penetrazioni{chi3}",
-             f"Concedete molto da 3 ({c3}): anche contro una squadra che non ne vive, chiusure "
-             "sui loro tiratori migliori")
+             f"è il confronto che pesa di più{chi3}",
+             f"Tirano molto da 3 ({q3}), ma voi difendete bene il perimetro ({c3}): il "
+             f"confronto sul perimetro è a vostro favore{chi3}",
+             f"Concedete molto da 3 ({c3}): un punto di attenzione anche contro una squadra "
+             "che non ne vive")
     if L.z("quota_punti_3") <= -SOGLIA_Z:
         P.add(D, -L.z("quota_punti_3"),
-              f"Tirano poco da 3 ({q3}): difesa più stretta, aiuti presto sulle penetrazioni e "
-              "protezione dell'area")
+              f"Tirano poco da 3 ({q3}): i loro punti arrivano soprattutto da dentro "
+              "l'area")
 
     P.duello(D, L.z("orb_pct"), -N.z("drb_pct"),
-             f"Forti a rimbalzo offensivo ({_q(L, 'orb')}, {L.pos('orb_pct')}): tagliafuori "
-             "su ogni tiro, anche degli esterni",
+             f"Forti a rimbalzo offensivo ({_q(L, 'orb')}, {L.pos('orb_pct')}): il rimbalzo difensivo è un "
+             "punto di attenzione",
              f"Rimbalzo difensivo: loro prendono {_q(L, 'orb')} ({L.pos('orb_pct')}), voi "
              f"concedete {_q(N, 'orb_concessi')} ({N.pos('drb_pct')} in difesa). Obiettivo: "
-             f"tenerli sotto i {_it(_n(N, 'orb_concessi'), 0)} a partita con il tagliafuori di "
-             "tutti e cinque, nessuno parte in contropiede prima del rimbalzo",
+             f"tenerli sotto i {_it(_n(N, 'orb_concessi'), 0)} a partita"
+             "",
              f"Forti a rimbalzo offensivo ({_q(L, 'orb')}), ma voi siete tra i migliori a "
-             f"rimbalzo difensivo ({_q(N, 'drb')}, {N.pos('drb_pct')}): mantenere il "
-             "tagliafuori e il vantaggio è vostro",
+             f"rimbalzo difensivo ({_q(N, 'drb')}, {N.pos('drb_pct')}): il "
+             "confronto a rimbalzo è a vostro favore",
              f"Concedete troppi rimbalzi offensivi ({_q(N, 'orb_concessi')}, "
-             f"{N.pos('drb_pct')} a rimbalzo difensivo): tagliafuori come priorità della "
-             "settimana")
+             f"{N.pos('drb_pct')} a rimbalzo difensivo): è un punto su cui "
+             "concentrarsi")
 
     caccia = pl.sort_values("falli_subiti_pg", ascending=False).head(2)
     chi_ft = " e ".join(f"{_cognome(x.giocatore)} ({_it(x.falli_subiti_pg)} falli subiti a "
@@ -219,162 +219,162 @@ def consigli(ctx, avv: int, mia: int | None = None, rt: pd.DataFrame | None = No
              f"{L.pos('ft_rate')}): difendere senza falli; chi cerca il contatto: {chi_ft}",
              f"Lunetta: loro ci vanno spesso ({_it(L.v('ft_rate'), 2)}, "
              f"{L.pos('ft_rate')}) e voi fate molti falli ({_it(N.v('opp_ft_rate'), 2)} "
-             f"concessi, {N.pos('opp_ft_rate')}): niente mani addosso, aiuti in verticalità; "
+             f"concessi, {N.pos('opp_ft_rate')}): i falli sono un punto di attenzione; "
              f"chi cerca il contatto: {chi_ft}",
              f"Vanno spesso in lunetta ({_it(L.v('ft_rate'), 2)}), ma voi concedete pochi liberi "
-             f"({N.pos('opp_ft_rate', False)} per meno liberi): continuare a difendere senza "
-             "fallo",
+             f"({N.pos('opp_ft_rate', False)} per meno liberi): il confronto è a vostro "
+             "favore",
              f"Fate molti falli ({_it(N.v('opp_ft_rate'), 2)} liberi concessi per tiro, "
-             f"{N.pos('opp_ft_rate')}): occhio al bonus, difendere senza falli")
+             f"{N.pos('opp_ft_rate')}): falli e bonus sono un punto di attenzione")
 
     if Lo is not None and Lo.ok:
         P.duello(D, L.z("punti_contropiede_pg"), zc(No, "concessi_contropiede_pg"),
                  f"Pericolosi in transizione ({_it(L.v('punti_contropiede_pg'))} punti a partita "
-                 "in contropiede): due giocatori sempre pronti a rientrare dopo il tiro",
+                 "in contropiede): il rientro difensivo è un punto di attenzione",
                  f"Transizione: loro segnano {_it(L.v('punti_contropiede_pg'))} "
                  f"punti in contropiede ({L.pos('punti_contropiede_pg')}) e voi ne concedete "
-                 f"{_it(No.v('concessi_contropiede_pg'))} a partita: rientro di tutti e cinque, "
-                 "fermare il primo passaggio, fallo tattico se serve",
+                 f"{_it(No.v('concessi_contropiede_pg'))} a partita: il rientro difensivo è il "
+                 "confronto che pesa di più",
                  f"Corrono molto ({_it(L.v('punti_contropiede_pg'))} punti in contropiede), ma voi "
-                 "rientrate bene: mantenere l'equilibrio dopo il tiro",
+                 "rientrate bene: il confronto è a vostro favore",
                  f"Concedete molti punti in contropiede "
-                 f"({_it(No.v('concessi_contropiede_pg'))} a partita): equilibrio difensivo dopo "
-                 "ogni tiro")
+                 f"({_it(No.v('concessi_contropiede_pg'))} a partita): il rientro difensivo è un punto "
+                 "di attenzione")
     P.duello(D, L.z("punti_da_perse_pg"), N.z("tov_pct"),
              f"Puniscono le palle perse ({_it(L.v('punti_da_perse_pg'))} punti a partita, "
-             f"{L.pos('punti_da_perse_pg')}): attacco ordinato, niente passaggi in mezzo al "
-             "traffico",
+             f"{L.pos('punti_da_perse_pg')}): la gestione della palla è un punto di "
+             "attenzione",
              f"Palle perse: loro segnano {_it(L.v('punti_da_perse_pg'))} punti a partita dalle "
              f"palle perse avversarie e voi ne perdete {_q(N, 'perse')}, {N.pos('tov_pct')}. "
-             f"Obiettivo: sotto le {_it(_n(N, 'perse') - 2, 0)}, con passaggi semplici e la "
-             "palla al portatore più sicuro",
+             f"Obiettivo: sotto le {_it(_n(N, 'perse') - 2, 0)}"
+             "",
              None,
              f"Perdete molti palloni ({_q(N, 'perse')}, {N.pos('tov_pct')}): contro di loro "
-             "costano punti, priorità alla gestione della palla")
+             "costano punti: la gestione della palla è un punto su cui concentrarsi")
     P.duello(D, L.z("tov_pct"), N.z("opp_tov_pct"),
-             f"Perdono molti palloni ({_q(L, 'perse')}, {L.pos('tov_pct')}): pressione sul "
-             "portatore e sulle linee di passaggio",
+             f"Perdono molti palloni ({_q(L, 'perse')}, {L.pos('tov_pct')}): la loro gestione della palla è un "
+             "punto debole",
              f"Pressione: loro perdono {_q(L, 'perse')} ({L.pos('tov_pct')}) e voi ne forzate "
              f"{_q(N, 'forzate')} ({N.pos('opp_tov_pct')}). Obiettivo: almeno "
-             f"{_it(max(_n(L, 'perse'), _n(N, 'forzate')) + 1, 0)} palle perse loro, con "
-             "trappole sul portatore e pressione a tutto campo nei momenti giusti")
+             f"{_it(max(_n(L, 'perse'), _n(N, 'forzate')) + 1, 0)} palle perse loro"
+             "")
 
     if L.z("quota_top2") >= SOGLIA_Z and not pl.empty:
         top = pl.sort_values("punti_pg", ascending=False).head(2)
         chi = " e ".join(f"{_cognome(x.giocatore)} ({_it(x.punti_pg)} punti)"
                          for x in top.itertuples())
         P.add(D, L.z("quota_top2"), f"Due giocatori fanno il {_it(L.v('quota_top2'), 0)}% dei "
-                                    f"punti: {chi}. Difesa dedicata su di loro e far prendere i "
-                                    "tiri agli altri")
+                                    f"punti: {chi}. L'attacco dipende da "
+                                    "loro")
     elif L.z("quota_top2") <= -SOGLIA_Z:
         P.add(D, L.z("quota_top2"), f"Punti distribuiti tra molti giocatori (i primi due fanno "
-                                    f"il {_it(L.v('quota_top2'), 0)}%): difesa di squadra più "
-                                    "che marcature speciali")
+                                    f"il {_it(L.v('quota_top2'), 0)}%): non c'è un solo "
+                                    "riferimento offensivo")
     mig, peg = _quintetti(ctx, avv)
     if not mig.empty:
         q = mig.iloc[0]
         P.add(D, 0.7, f"Il loro quintetto migliore ({q['giocatori']}, "
                       f"{_it(q['net_rtg'], 0, True)} punti ogni 100 possessi in {_it(q['minuti'], 0)}' insieme) "
-                      "va spezzato: preparare i cambi difensivi per quando entra")
+                      "è quello a cui prestare attenzione")
 
     # ================================================ in attacco (vostro attacco, loro difesa)
     vs = "tirate con il" if noi else ""
     P.duello(A, L.z("opp_efg_pct"), N.z("efg_pct"),
              f"Concedono tiri facili (gli avversari tirano con il {_it(L.v('opp_efg_pct'))}%, "
-             f"{L.pos('opp_efg_pct', False)} per difesa): muovere la palla e prendere tiri "
-             "aperti, senza fretta",
+             f"{L.pos('opp_efg_pct', False)} per difesa): la qualità del tiro è "
+             "un'occasione",
              f"Tiro: il vostro attacco è tra i più efficaci ({vs} {_it(N.v('efg_pct'))}% al tiro, "
              f"{N.pos('efg_pct')}) e la loro difesa concede molto "
-             f"({_it(L.v('opp_efg_pct'))}%, {L.pos('opp_efg_pct', False)}): giocare il vostro "
-             "attacco abituale, cercare i tiri migliori",
+             f"({_it(L.v('opp_efg_pct'))}%, {L.pos('opp_efg_pct', False)}): il confronto al tiro è a "
+             "vostro favore",
              curare=f"Il vostro tiro è tra i migliori del campionato ("
-                    f"{_it(N.v('efg_pct'))}% al tiro, {N.pos('efg_pct')}): costruire tiri per chi è in "
-                    "forma e non accontentarsi del primo tiro")
+                    f"{_it(N.v('efg_pct'))}% al tiro, {N.pos('efg_pct')}): è uno dei vostri punti di "
+                    "forza")
     if L.z("opp_efg_pct") <= -SOGLIA_Z:
         tt = (f", contro il vostro attacco al {_it(N.v('efg_pct'))}% ({N.pos('efg_pct')})"
               if noi else "")
         P.add(A, -L.z("opp_efg_pct") + max(0, N.z("efg_pct")),
               f"Difesa che concede poco al tiro (gli avversari tirano con il {_it(L.v('opp_efg_pct'))}%, "
-              f"{L.pos('opp_efg_pct', False)}){tt}: pazienza, extra-passaggio, cercare la "
-              "lunetta e i rimbalzi offensivi", "sfida" if N.z("efg_pct") >= SOGLIA_Z else "")
+              f"{L.pos('opp_efg_pct', False)}){tt}: la qualità dei tiri è il punto su cui "
+              "concentrarsi", "sfida" if N.z("efg_pct") >= SOGLIA_Z else "")
     tir = pn[(pn["t3a_pg"] >= 2.5)].sort_values("t3_pct", ascending=False).head(2)
     nostri3 = ", ".join(f"{_cognome(x.giocatore)} ({_it(x.t3_pct, 0)}%)"
                         for x in tir.itertuples())
     P.duello(A, L.z("opp_t3_pct"), N.z("t3_pct"),
              f"Concedono molto da 3 ({_it(L.v('opp_t3_pct'))}% ai loro avversari, "
-             f"{L.pos('opp_t3_pct')}): cercare i tiratori dopo la penetrazione e lo scarico",
+             f"{L.pos('opp_t3_pct')}): il tiro da 3 è un'occasione",
              f"Tiro da 3: voi tirate con il {_it(N.v('t3_pct'))}% ({N.pos('t3_pct')}) e loro ne "
-             f"concedono il {_it(L.v('opp_t3_pct'))}% ({L.pos('opp_t3_pct')}): spaziature "
-             f"larghe e palla ai tiratori" + (f" ({nostri3})" if nostri3 else ""),
+             f"concedono il {_it(L.v('opp_t3_pct'))}% ({L.pos('opp_t3_pct')}): il "
+             f"confronto è a vostro favore" + (f" ({nostri3})" if nostri3 else ""),
              curare=f"Tirate bene da 3 ({_it(N.v('t3_pct'))}%, {N.pos('t3_pct')}): "
-                    "spaziature larghe e scarichi dopo la penetrazione"
+                    "è un vostro punto di forza"
                     + (f" ({nostri3})" if nostri3 else ""),
              forza=f"Tiro da 3: voi tirate con il {_it(N.v('t3_pct'))}% "
                    f"({N.pos('t3_pct')}), loro concedono solo il {_it(L.v('opp_t3_pct'))}% "
-                   f"({L.pos('opp_t3_pct', False)} per difesa): tiri da 3 solo dopo "
-                   "ribaltamento o extra-passaggio")
+                   f"({L.pos('opp_t3_pct', False)} per difesa): è il confronto più "
+                   "equilibrato")
     P.duello(A, -L.z("drb_pct"), N.z("orb_pct"),
              f"Soffrono a rimbalzo difensivo (concedono "
              f"{_it(_n(L, 'orb_concessi'))} rimbalzi offensivi a partita, {L.pos('drb_pct')}): "
-             "mandare a rimbalzo offensivo anche un'ala",
+             "il rimbalzo offensivo è un'occasione",
              f"Rimbalzo offensivo: voi prendete {_q(N, 'orb')} ({N.pos('orb_pct')}) e loro ne "
              f"concedono {_it(_n(L, 'orb_concessi'))} a partita ({L.pos('drb_pct')} a rimbalzo "
              f"difensivo). Obiettivo: almeno {_it(max(_n(N, 'orb'), _n(L, 'orb_concessi')) + 1, 0)} "
-             "rimbalzi offensivi, crash con quattro giocatori",
+             "rimbalzi offensivi",
              curare=f"Il rimbalzo offensivo è una vostra arma ({_q(N, 'orb')}, "
-                    f"{N.pos('orb_pct')}): continuare a mandare i lunghi e un'ala a rimbalzo",
+                    f"{N.pos('orb_pct')}): è un vostro punto di forza",
              forza=f"Rimbalzo offensivo: voi prendete {_q(N, 'orb')} ({N.pos('orb_pct')}), loro "
                    f"sono tra i migliori a rimbalzo difensivo ({_q(L, 'drb')}, "
-                   f"{L.pos('drb_pct')}): chi va a rimbalzo deve muoversi prima del tiro, gli "
-                   "altri rientrano")
+                   f"{L.pos('drb_pct')}): è un confronto tra due punti "
+                   "di forza")
     P.duello(A, L.z("opp_ft_rate"), N.z("ft_rate"),
              f"Fanno molti falli (liberi concessi/tiri {_it(L.v('opp_ft_rate'), 2)}, "
-             f"{L.pos('opp_ft_rate')}): attaccare il ferro e il corpo del difensore",
+             f"{L.pos('opp_ft_rate')}): la lunetta è un'occasione",
              f"Lunetta: voi ci andate spesso ({_it(N.v('ft_rate'), 2)}, {N.pos('ft_rate')}) e "
              f"loro fanno molti falli ({_it(L.v('opp_ft_rate'), 2)}, {L.pos('opp_ft_rate')}): "
-             "attaccare il canestro dal primo minuto per mandarli presto in bonus",
+             "la lunetta e il bonus sono un'occasione",
              curare=f"Andate spesso in lunetta ({_it(N.v('ft_rate'), 2)}, {N.pos('ft_rate')}): "
-                    "continuare ad attaccare il ferro",
+                    "è un vostro punto di forza",
              forza=f"Lunetta: voi ci andate spesso "
                    f"({_it(N.v('ft_rate'), 2)}, {N.pos('ft_rate')}), loro fanno pochi falli "
-                   f"({L.pos('opp_ft_rate', False)} per meno liberi concessi): servono "
-                   "penetrazioni decise cercando il contatto")
+                   f"({L.pos('opp_ft_rate', False)} per meno liberi concessi): è un confronto "
+                   "tra due punti di forza")
     P.duello(A, L.z("opp_tov_pct"), N.z("tov_pct"),
-             f"Difesa aggressiva: forzano {_q(L, 'forzate')} ({L.pos('opp_tov_pct')}): due "
-             "portatori, passaggi corti, contro la pressione attaccare in fretta il centro del "
-             "campo",
+             f"Difesa aggressiva: forzano {_q(L, 'forzate')} ({L.pos('opp_tov_pct')}): la "
+             "gestione della palla sotto pressione è un punto di "
+             "attenzione",
              f"Palle perse: la loro difesa ne forza {_q(L, 'forzate')} ({L.pos('opp_tov_pct')}) "
              f"e voi ne perdete {_q(N, 'perse')} ({N.pos('tov_pct')}). Obiettivo: non più di "
-             f"{_it(_n(N, 'perse') - 2, 0)}, con due portatori, nessun palleggio in mezzo all'area "
-             "e l'uscita dalla pressione preparata",
+             f"{_it(_n(N, 'perse') - 2, 0)}"
+             "",
              f"La loro difesa forza {_q(L, 'forzate')}, ma voi ne perdete poche "
-             f"({_q(N, 'perse')}, {N.pos('tov_pct', False)} per meno palle perse): attaccare la "
-             "pressione, dietro di loro c'è spazio",
-             f"Perdete molti palloni ({_q(N, 'perse')}, {N.pos('tov_pct')}): due portatori e "
-             "passaggi semplici", tipo_curare="curare")
+             f"({_q(N, 'perse')}, {N.pos('tov_pct', False)} per meno palle perse): la loro "
+             "pressione pesa meno contro di voi",
+             f"Perdete molti palloni ({_q(N, 'perse')}, {N.pos('tov_pct')}): la gestione della palla è un "
+             "punto di attenzione", tipo_curare="curare")
     if L.z("opp_tov_pct") <= -SOGLIA_Z:
-        P.add(A, -L.z("opp_tov_pct"), f"Forzano poche palle perse ({_q(L, 'forzate')}): si può "
-                                      "attaccare in uno contro uno e in pick and roll senza "
-                                      "grandi rischi")
+        P.add(A, -L.z("opp_tov_pct"), f"Forzano poche palle perse ({_q(L, 'forzate')}): la loro "
+                                      "difesa mette poca pressione sulla "
+                                      "palla")
     if Lo is not None and Lo.ok:
         P.duello(A, zc(Lo, "concessi_contropiede_pg"), N.z("punti_contropiede_pg"),
                  f"Rientrano male in difesa ({_it(Lo.v('concessi_contropiede_pg'))} punti "
-                 "concessi in contropiede): correre dopo ogni rimbalzo e palla recuperata",
+                 "concessi in contropiede): la transizione è un'occasione",
                  f"Contropiede: è un vostro punto forte ({_it(N.v('punti_contropiede_pg'))} punti "
                  f"a partita, {N.pos('punti_contropiede_pg')}) e loro rientrano male "
-                 f"({_it(Lo.v('concessi_contropiede_pg'))} concessi): correre sempre, rimesse "
-                 "veloci",
+                 f"({_it(Lo.v('concessi_contropiede_pg'))} concessi): la transizione è il "
+                 "confronto più favorevole",
                  curare=f"Il contropiede è un vostro punto forte "
                         f"({_it(N.v('punti_contropiede_pg'))} punti a partita, "
-                        f"{N.pos('punti_contropiede_pg')}): correre dopo ogni rimbalzo difensivo")
+                        f"{N.pos('punti_contropiede_pg')})")
         P.duello(A, zc(Lo, "concessi_seconda_occasione_pg"), 0.0,
                  f"Concedono seconde occasioni ({_it(Lo.v('concessi_seconda_occasione_pg'))} "
-                 "punti a partita): insistere a rimbalzo offensivo")
+                 "punti a partita): il rimbalzo offensivo è un'occasione")
     if not pd.isna(L.v("minuto_medio_bonus")) and -L.z("minuto_medio_bonus") >= SOGLIA_Z:
         P.add(A, -L.z("minuto_medio_bonus"),
               f"Vanno in bonus presto (5° fallo di squadra in media al "
-              f"{_it(L.v('minuto_medio_bonus'))}' del quarto): nella seconda metà dei quarti "
-              "attaccare il canestro per andare in lunetta")
+              f"{_it(L.v('minuto_medio_bonus'))}' del quarto): la seconda metà dei quarti è "
+              "un'occasione per andare in lunetta")
     fo = ctx.fouls
     if fo is not None and not fo.empty:
         f = fo[(fo["squadra_id"] == avv) & (fo["partite_problemi"] > 0)].sort_values(
@@ -382,13 +382,13 @@ def consigli(ctx, avv: int, mia: int | None = None, rt: pd.DataFrame | None = No
         if not f.empty:
             chi = ", ".join(f"{_cognome(x.giocatore)} ({_volte(int(x.partite_problemi))})"
                             for x in f.itertuples())
-            P.add(A, 0.8, f"Spesso in difficoltà con i falli: {chi}. Attaccarli dal primo "
-                          "quarto in post e in uno contro uno")
+            P.add(A, 0.8, f"Spesso in difficoltà con i falli: {chi}"
+                          "")
     if not peg.empty:
         q = peg.iloc[0]
         P.add(A, 0.7, f"Quando giocano con {q['giocatori']} ({_it(q['net_rtg'], 0, True)} punti "
-                      f"ogni 100 possessi in {_it(q['minuti'], 0)}' insieme) rendono peggio: è il momento di "
-                      "spingere")
+                      f"ogni 100 possessi in {_it(q['minuti'], 0)}' insieme) rendono peggio"
+                      "")
 
     # ================================================ ritmo, rotazioni e momenti
     if rt is not None and not rt.empty and noi:
@@ -397,11 +397,11 @@ def consigli(ctx, avv: int, mia: int | None = None, rt: pd.DataFrame | None = No
         altro = veloce if meglio is lento else lento
         tipo = "più lenta" if meglio is lento else "più veloce"
         P.add(R, 1 + abs(lento["prob"] - veloce["prob"]) / 5,
-              f"Conviene una partita {tipo}: {_it(meglio['prob'], 0)}% di probabilità con "
+              f"Ritmo: una partita {tipo} è più favorevole, {_it(meglio['prob'], 0)}% di probabilità con "
               f"{_it(meglio['possessi'], 0)} possessi contro {_it(altro['prob'], 0)}%. "
               f"Ritmo medio: voi {_it(N.v('pace'))}, loro {_it(L.v('pace'))} possessi per 40'"
-              + (" — attacchi lunghi e rimesse senza fretta" if meglio is lento else
-                 " — correre dopo ogni rimbalzo, rimesse veloci"))
+              + ("" if meglio is lento else
+                 ""))
     elif abs(L.z("pace")) >= SOGLIA_Z:
         P.add(R, L.z("pace"), f"Il loro ritmo è {'alto' if L.z('pace') > 0 else 'basso'} "
                               f"({_it(L.v('pace'))} possessi per 40', {L.pos('pace')})")
@@ -417,26 +417,26 @@ def consigli(ctx, avv: int, mia: int | None = None, rt: pd.DataFrame | None = No
                 P.add(R, (nostro - peg_m["diff_pg"]) / 3,
                       f"{peg_m['etichetta']}: è il loro momento peggiore "
                       f"({_it(peg_m['diff_pg'], 1, True)} a partita) e uno dei vostri migliori "
-                      f"({_it(nostro, 1, True)}): spingere lì per prendere vantaggio",
+                      f"({_it(nostro, 1, True)}): è il momento più favorevole",
                       "occasione")
             else:
                 P.add(R, -peg_m["diff_pg"] / 3,
                       f"Calano in: {peg_m['etichetta'].lower()} ({_it(peg_m['diff_pg'], 1, True)} "
-                      f"a partita, {peg_m['posizione']}° su {peg_m['squadre']}): è lì che si "
-                      "può fare la differenza")
+                      f"a partita, {peg_m['posizione']}° su {peg_m['squadre']}): è un "
+                      "momento favorevole")
         if mig_m["diff_pg"] > 1.5:
             nostro = mn["diff_pg"].get(mig_m.name) if mn is not None else None
             if nostro is not None and nostro < -1:
                 P.add(R, (mig_m["diff_pg"] - nostro) / 3,
                       f"{mig_m['etichetta']}: è il loro momento migliore "
                       f"({_it(mig_m['diff_pg'], 1, True)}) e uno dei vostri peggiori "
-                      f"({_it(nostro, 1, True)}): preparare quei minuti (quintetto, timeout "
-                      "presto)", "sfida")
+                      f"({_it(nostro, 1, True)}): sono i minuti a cui prestare più "
+                      "attenzione", "sfida")
             else:
                 P.add(R, mig_m["diff_pg"] / 3,
                       f"Partono forte in: {mig_m['etichetta'].lower()} "
-                      f"({_it(mig_m['diff_pg'], 1, True)} a partita): attenzione in quel "
-                      "momento, timeout presto se allungano")
+                      f"({_it(mig_m['diff_pg'], 1, True)} a partita): è un momento a cui prestare "
+                      "attenzione")
     rot = ctx.rotazioni["squadre"] if ctx.rotazioni else pd.DataFrame()
     if not rot.empty and avv in set(rot["squadra_id"]):
         rl = rot[rot["squadra_id"].isin(L.lega.index)].set_index("squadra_id")
@@ -450,20 +450,20 @@ def consigli(ctx, avv: int, mia: int | None = None, rt: pd.DataFrame | None = No
                      else "")
             P.add(R, -zr + (0.5 if extra else 0),
                   f"Rotazione corta ({_it(s['giocatori_rotazione'])} giocatori con almeno 5'): "
-                  "alzare l'intensità per stancare i titolari nel secondo tempo." + extra,
+                  "la tenuta dei titolari nel secondo tempo è un punto da osservare." + extra,
                   "occasione" if extra else "")
         P.add(R, 0.4, f"Primo cambio in media al minuto {_it(s['minuto_primo_cambio'])}; "
                       f"quintetto base nel {_it(s['quota_quintetto_base'], 0)}% delle partite")
     P.duello(R, -L.z("quota_punti_panchina"), N.z("quota_punti_panchina"),
              f"Panchina poco produttiva ({_it(L.v('quota_punti_panchina'), 0)}% dei punti): "
-             "spingere quando riposano i titolari",
+             "i minuti senza i titolari sono un'occasione",
              f"Panchine: la vostra produce il {_it(N.v('quota_punti_panchina'), 0)}% dei punti, "
              f"la loro solo il {_it(L.v('quota_punti_panchina'), 0)}%: i minuti delle seconde "
-             "linee sono a vostro favore, allungare le rotazioni")
+             "linee sono a vostro favore")
     if L.z("break_fatti_pg") >= SOGLIA_Z:
         P.add(R, L.z("break_fatti_pg"),
               f"Fanno parziali ({_it(L.v('break_fatti_pg'))} break da 8-0 a partita, massimo "
-              f"{_it(L.v('max_fatto'), 0)}-0): fermarli subito con un timeout")
+              f"{_it(L.v('max_fatto'), 0)}-0): i loro parziali sono un punto di attenzione")
     if L.z("diff_dopo") >= SOGLIA_Z:
         P.add(R, L.z("diff_dopo"),
               f"Escono bene dai loro timeout ({_it(L.v('diff_dopo'), 1, True)} punti nei 2' "
@@ -491,26 +491,26 @@ def consigli(ctx, avv: int, mia: int | None = None, rt: pd.DataFrame | None = No
             x = chi.iloc[0]
             P.add(F, 1, f"Nei finali la palla va a {_cognome(x['giocatore'])} "
                         f"({_it(x['quota_tiri'], 0)}% dei tiri, {int(x['fgm'])}/{int(x['fga'])}): "
-                        "anticipare la ricezione e raddoppiare in uscita dai blocchi")
+                        "è il riferimento nei possessi decisivi")
     scarsi = pl[(pl["minuti_pg"] >= 20) & (pl["tla"] >= 8) & (pl["tl_pct"] < tl_lega - 12)]
     if not scarsi.empty:
         x = scarsi.sort_values("tl_pct").iloc[0]
-        P.add(F, 0.9, f"In vantaggio nel finale si può mandare in lunetta "
+        P.add(F, 0.9, f"Tira male i liberi: "
                       f"{_cognome(x['giocatore'])} ({_it(x['tl_pct'], 0)}% ai liberi, media "
                       f"{_it(tl_lega, 0)}%)")
     bravi = pl[(pl["minuti_pg"] >= 15) & (pl["tla"] >= 8)].sort_values("tl_pct", ascending=False)
     if not bravi.empty and bravi["tl_pct"].iloc[0] >= 85:
         x = bravi.iloc[0]
-        P.add(F, 0.6, f"Da non mandare in lunetta: {_cognome(x['giocatore'])} "
+        P.add(F, 0.6, f"Tira molto bene i liberi: {_cognome(x['giocatore'])} "
                       f"({_it(x['tl_pct'], 0)}% ai liberi)")
     if noi:
         nostri = pn[(pn["minuti_pg"] >= 15) & (pn["tla"] >= 6)].sort_values("tl_pct",
                                                                            ascending=False)
         if not nostri.empty:
             x = nostri.iloc[0]
-            P.add(F, 0.8, f"Da voi, nel finale la palla in mano a chi tira bene i liberi: "
+            P.add(F, 0.8, f"Tra i vostri, il più affidabile ai liberi: "
                           f"{_cognome(x['giocatore'])} ({_it(x['tl_pct'], 0)}%)"
-                          + (f"; evitare che la riceva {_cognome(nostri.iloc[-1]['giocatore'])} "
+                          + (f"; il meno affidabile: {_cognome(nostri.iloc[-1]['giocatore'])} "
                              f"({_it(nostri.iloc[-1]['tl_pct'], 0)}%)"
                              if len(nostri) > 2 and nostri.iloc[-1]["tl_pct"] < tl_lega - 10
                              else ""))

@@ -47,7 +47,7 @@ La dashboard è organizzata in **aree**, con la navigazione in alto (comoda al t
 **Report PDF**
 
 - **Scouting** sulla squadra scelta (e ogni lunedì via email sulla prossima avversaria): si apre con il
-  **piano partita** (probabilità, chiavi per vincere, consigli su come affrontarla in difesa, in attacco,
+  **punti della partita** (probabilità, chiavi della partita, punti di attenzione sul loro attacco, sulla loro difesa,
   per ritmo e momenti e nei finali), poi le chiavi in dettaglio e tutte le sezioni della pagina Scouting,
   con le note dello staff e i giochi disegnati;
 - **La mia squadra**: tutte le voci della pagina in un documento;
@@ -321,7 +321,7 @@ fonte dati** salva le pagine in `discovery/output` per adeguare il parser.
 | `basket/report_extra.py` | Report PDF post-partita e individuale |
 | `basket/report_mia.py` | PDF completo della propria squadra |
 | `basket/confronto.py` | Confronto tra due giocatori con metriche avanzate |
-| `basket/piano_partita.py` | Consigli su come affrontare un'avversaria, dal confronto con i dati della propria squadra |
+| `basket/piano_partita.py` | Punti di attenzione contro un'avversaria, dal confronto con i dati della propria squadra: indicazioni, non istruzioni tattiche |
 | `basket/scouting.py`, `report_pdf.py`, `invio_email.py` | Report di scouting, PDF, invio email |
 | `basket/accesso.py`, `note.py` | Login per club, note, osservati, obiettivi |
 | `basket/glossario.py` | Spiegazioni delle statistiche (pulsanti "?") |
