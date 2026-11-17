@@ -200,11 +200,8 @@ class Andamento(Flowable):
 
 def _breve(nome: str) -> str:
     """Città della squadra per le etichette del grafico ("Ruvo di Puglia", "Cento")."""
-    generici = {"basket", "pallacanestro", "basketball", "academy"}
-    parole = [p for p in str(nome).split() if not p.isdigit() and p.lower() not in generici]
-    if len(parole) >= 3 and parole[-2].islower():
-        return " ".join(parole[-3:])
-    return parole[-1] if parole else str(nome)
+    from .nomi import nome_breve
+    return nome_breve(nome)
 
 
 # i testi delle schede sono scritti per lo staff ("con lui in campo"): nel report al giocatore
