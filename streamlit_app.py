@@ -34,7 +34,11 @@ utenti = accesso.unisci(secrets().get("utenti") or {}, utenti_db)
 if utenti:
     from dashboard import accesso_ui
     if "utente" not in st.session_state:
-        accesso_ui.login(utenti, arch)      # si ferma qui finché l'accesso non riesce
+        ricordato = accesso_ui.utente_ricordato(utenti, arch)   # pagina ricaricata: niente password
+        if ricordato:
+            st.session_state["utente"] = ricordato
+        else:
+            accesso_ui.login(utenti, arch)  # si ferma qui finché l'accesso non riesce
     utente = dict(st.session_state["utente"])
     # utente del database disattivato nel frattempo: fuori
     if utente.get("fonte") == "database" and utente["username"] not in utenti:
@@ -42,6 +46,7 @@ if utenti:
         st.rerun()
     if utente.get("cambio"):
         accesso_ui.cambio_obbligatorio(utente, arch)   # primo accesso: nuova password
+    accesso_ui.scrivi_cookie()                         # dopo il login: il browser ricorda l'accesso
     accesso_ui.email_primo_accesso(utente, arch)       # una volta: i report nella propria email
 else:
     utente = {"username": "demo", "club": None, "ruolo": "admin", "demo": True}
@@ -234,9 +239,7 @@ with barra:
                                                            help="Cambia la tua password"):
             accesso_ui.cambia_password(utente, arch)
         if b2.button("Esci", key="logout"):
-            st.session_state.clear()        # niente filtri o scelte del precedente utente
-            st.query_params.clear()
-            st.rerun()
+            accesso_ui.esci(arch)
 
 # ------------------------------------------------------------------ pagine
 

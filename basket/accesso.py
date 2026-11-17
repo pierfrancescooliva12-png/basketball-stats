@@ -57,14 +57,48 @@ def unisci(da_secrets: dict, da_database: dict) -> dict:
     return out
 
 
+def dati_utente(utenti: dict, username: str) -> dict | None:
+    """I dati dell'utente che la piattaforma tiene in sessione (senza la password)."""
+    nome = (username or "").strip().lower()
+    u = utenti.get(nome)
+    if not u:
+        return None
+    return {"username": nome, "club": u.get("club"), "ruolo": u.get("ruolo", "staff"),
+            "fonte": u.get("fonte", "secrets"), "cambio": bool(u.get("cambio_password"))}
+
+
 def authenticate(utenti: dict, username: str, password: str) -> dict | None:
     """Restituisce i dati dell'utente se le credenziali sono corrette."""
     u = utenti.get((username or "").strip().lower())
     if not u or not verify_password(password or "", u.get("password_hash", "")):
         return None
-    return {"username": username.strip().lower(), "club": u.get("club"),
-            "ruolo": u.get("ruolo", "staff"), "fonte": u.get("fonte", "secrets"),
-            "cambio": bool(u.get("cambio_password"))}
+    return dati_utente(utenti, username)
+
+
+# ------------------------------------------------------------------ accesso ricordato
+# Dopo il login il browser tiene un codice casuale (cookie) per GIORNI_RICORDATO giorni: ricaricando
+# la pagina si rientra senza password. Nel database c'è solo l'impronta del codice, con l'impronta
+# della password: se la password cambia (o l'utente viene disattivato) il codice non vale più.
+COOKIE = "assist_sessione"
+GIORNI_RICORDATO = 30
+
+
+def nuovo_codice() -> str:
+    return secrets.token_urlsafe(32)
+
+
+def impronta(testo: str) -> str:
+    return hashlib.sha256((testo or "").encode()).hexdigest()
+
+
+def utente_ricordato(utenti: dict, sessione: dict | None) -> dict | None:
+    """L'utente di un accesso ricordato, se esiste ancora e la password non è cambiata."""
+    if not sessione:
+        return None
+    u = utenti.get(sessione.get("utente") or "")
+    if not u or impronta(u.get("password_hash", ""))[:24] != sessione.get("password"):
+        return None
+    return dati_utente(utenti, sessione["utente"])
 
 
 def errore_password(nuova: str, ripeti: str, vecchia: str | None = None) -> str | None:

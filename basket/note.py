@@ -11,7 +11,7 @@ Dove vengono salvati:
 
 import time
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 from sqlalchemy import create_engine, text
@@ -72,6 +72,10 @@ SCHEMA = [
     """CREATE TABLE IF NOT EXISTS invii_email (chiave TEXT PRIMARY KEY, inviato_il TEXT NOT NULL)""",
     # attività degli utenti dei club per l'Amministrazione: ogni accesso (tipo "accesso") e ogni
     # pagina aperta (tipo "pagina", solo il titolo della pagina, non cosa c'è dentro)
+    # accessi ricordati dal browser: solo impronte del codice e della password, con la scadenza
+    """CREATE TABLE IF NOT EXISTS sessioni (
+        codice TEXT PRIMARY KEY, utente TEXT NOT NULL, password TEXT NOT NULL,
+        creata_il TEXT NOT NULL, scade_il TEXT NOT NULL)""",
     """CREATE TABLE IF NOT EXISTS attivita (
         utente TEXT NOT NULL, tipo TEXT NOT NULL, pagina TEXT, quando TEXT NOT NULL)""",
 ]
@@ -371,6 +375,24 @@ class Archivio:
                       {"u": username, "d": d})
             c.execute(text("INSERT INTO attivita (utente, tipo, pagina, quando) VALUES (:u, 'accesso', NULL, :d)"),
                       {"u": username, "d": d})
+
+    def crea_sessione(self, codice: str, utente: str, password: str, giorni: int):
+        adesso = datetime.now(timezone.utc)
+        with self.engine.begin() as c:
+            c.execute(text("DELETE FROM sessioni WHERE scade_il < :d"), {"d": adesso.isoformat(timespec="seconds")})
+            c.execute(text("INSERT INTO sessioni VALUES (:k, :u, :p, :d, :s)"),
+                      {"k": codice, "u": utente, "p": password, "d": adesso.isoformat(timespec="seconds"),
+                       "s": (adesso + timedelta(days=giorni)).isoformat(timespec="seconds")})
+
+    def sessione(self, codice: str) -> dict | None:
+        with self.engine.connect() as c:
+            r = c.execute(text("SELECT utente, password FROM sessioni WHERE codice = :k AND scade_il > :d"),
+                          {"k": codice, "d": _now()}).first()
+        return {"utente": r[0], "password": r[1]} if r else None
+
+    def chiudi_sessione(self, codice: str):
+        with self.engine.begin() as c:
+            c.execute(text("DELETE FROM sessioni WHERE codice = :k"), {"k": codice})
 
     def registra_pagina(self, username: str, pagina: str):
         with self.engine.begin() as c:

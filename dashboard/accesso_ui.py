@@ -130,8 +130,69 @@ def _tema_link(voluto: str | None = None):
     return tema
 
 
+# ------------------------------------------------------------------ accesso ricordato
+
+def ricorda(arch, username: str, password_hash: str) -> None:
+    """Crea l'accesso ricordato: il codice va nel cookie (scritto da scrivi_cookie al giro dopo)."""
+    if arch is None:
+        return
+    codice = accesso.nuovo_codice()
+    try:
+        arch.crea_sessione(accesso.impronta(codice), username, accesso.impronta(password_hash)[:24],
+                           accesso.GIORNI_RICORDATO)
+    except Exception:
+        return
+    st.session_state["_cookie"] = codice
+    st.session_state["_codice"] = codice
+
+
+def scrivi_cookie() -> None:
+    """Scrive (o cancella, con "") il cookie dell'accesso ricordato, se c'è qualcosa da scrivere."""
+    codice = st.session_state.pop("_cookie", None)
+    if codice is None:
+        return
+    durata = accesso.GIORNI_RICORDATO * 86400 if codice else 0
+    st.html(f"""<script>document.cookie = "{accesso.COOKIE}={codice}; Max-Age={durata}; Path=/; SameSite=Lax"
+             + (location.protocol === "https:" ? "; Secure" : "");</script>""", unsafe_allow_javascript=True)
+
+
+def utente_ricordato(utenti: dict, arch) -> dict | None:
+    """L'utente dell'accesso ricordato dal browser, se il codice è valido."""
+    if arch is None:
+        return None
+    try:
+        codice = st.context.cookies.get(accesso.COOKIE)
+    except Exception:
+        return None
+    if not codice:
+        return None
+    try:
+        sessione = arch.sessione(accesso.impronta(codice))
+    except Exception:
+        return None
+    u = accesso.utente_ricordato(utenti, sessione)
+    if u:
+        st.session_state["_codice"] = codice
+    return u
+
+
+def esci(arch) -> None:
+    """Esce: chiude l'accesso ricordato e cancella il cookie."""
+    codice = st.session_state.get("_codice")
+    if codice and arch is not None:
+        try:
+            arch.chiudi_sessione(accesso.impronta(codice))
+        except Exception:
+            pass
+    st.session_state.clear()            # niente filtri o scelte del precedente utente
+    st.session_state["_cookie"] = ""    # la pagina di accesso cancella il cookie
+    st.query_params.clear()
+    st.rerun()
+
+
 def login(utenti: dict, arch=None) -> None:
     """Mostra la schermata di accesso e ferma la pagina finché le credenziali non sono giuste."""
+    scrivi_cookie()                       # dopo «Esci»: cancella l'accesso ricordato
     tema = _tema_link()                   # pagina di accesso con il brand del club
     st.markdown(CSS, unsafe_allow_html=True)   # dopo il brand: fondo crema e pulsante scuro restano
     from . import icona_app
@@ -162,6 +223,7 @@ def login(utenti: dict, arch=None) -> None:
                         del st.session_state[k]     # filtri e scelte di prima non valgono più
                     st.query_params.clear()
                     st.session_state["utente"] = ok
+                    ricorda(arch, ok["username"], utenti[ok["username"]].get("password_hash", ""))
                     if ok.get("fonte") == "database" and arch is not None:
                         try:
                             arch.touch_login(ok["username"])
@@ -230,7 +292,9 @@ def _nuova_password(utente: dict, arch, chiave: str, vecchia_richiesta: bool) ->
     if errore:
         st.error(f"Nuova password: {errore}.")
         return False
-    arch.set_password(utente["username"], accesso.hash_password(nuova), cambio=False)
+    nuovo_hash = accesso.hash_password(nuova)
+    arch.set_password(utente["username"], nuovo_hash, cambio=False)
+    ricorda(arch, utente["username"], nuovo_hash)    # il vecchio accesso ricordato non vale più
     return True
 
 
@@ -258,6 +322,7 @@ def cambio_obbligatorio(utente: dict, arch) -> None:
 @st.dialog("Cambia la password")
 def cambia_password(utente: dict, arch) -> None:
     if _nuova_password(utente, arch, "pw_cambio", vecchia_richiesta=True):
+        scrivi_cookie()
         st.success("Password aggiornata: vale dal prossimo accesso.")
 
 
