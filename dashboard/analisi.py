@@ -245,7 +245,7 @@ def ultima_partita(a: App):
                 "game_score": "Game Score", "gs_medio": "Media stagione",
                 "delta_gs": "Differenza"}), colori={"Differenza": True})
     verifica_chiavi(a, sid, pid)
-    st.download_button("⬇ Report post-partita (PDF)", pdf_post_partita(a, sid, pid),
+    st.download_button("⬇ Report post-partita (PDF)", lambda: pdf_post_partita(a, sid, pid),
                        file_name=f"post_partita_{slug(r['squadra'])}_{pid}.pdf",
                        mime="application/pdf", type="primary")
 
