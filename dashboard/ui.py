@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 import plotly.io as pio
 import streamlit as st
 
+from basket import nomi as NOMI
 from basket.glossario import G, voci_per_colonne
 
 # Palette dei grafici: la stessa dei report PDF ("Match day"), su fondo bianco
@@ -733,19 +734,12 @@ def plot(fig, height=380, **layout):
                     config={"displayModeBar": False})
 
 
-GENERICI = {"basket", "pallacanestro", "basketball", "knights", "bees", "sharks", "academy"}
+GENERICI = NOMI.GENERICI
 
 
 def short(name: str) -> str:
     """Nome breve per le etichette dei grafici: di solito la città (es. 'Ruvo di Puglia')."""
-    words = [w for w in name.split() if not w.isdigit() and w.lower() not in GENERICI]
-    if not words:
-        return name
-    if len(words) >= 3 and words[-2].islower():
-        return " ".join(words[-3:])
-    if len(words) >= 2 and words[-1][0].islower():
-        return " ".join(words[-2:])
-    return words[-1]
+    return NOMI.nome_breve(name)
 
 
 

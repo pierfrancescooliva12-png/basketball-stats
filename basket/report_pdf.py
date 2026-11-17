@@ -27,6 +27,7 @@ from . import lavagna as L
 from . import config, scouting
 from . import pdf_stile as ST
 from .contesto import Contesto, open_readonly
+from .nomi import nome_breve
 
 FONT_DIR = config.ROOT / "assets" / "fonts"
 # stile editoriale, come la piattaforma: carta crema, inchiostro, arancio solo come accento
@@ -180,7 +181,7 @@ def _header(r, prossima, S, width, stagione_label=config.STAGIONE_LABEL):
         pv = prossima.get("previsione")
         if pv:
             p_team = pv["prob_casa"] if prossima["casa"] == r.squadra else 1 - pv["prob_casa"]
-            meta += f" · vittoria {r.squadra.split()[-1]} {100 * p_team:.0f}%"
+            meta += f" · vittoria {nome_breve(r.squadra)} {100 * p_team:.0f}%"
     return ST.Intestazione(width, 12 * mm, 12 * mm,
                            f"Scouting report · {r.campionato} {stagione_label}", r.squadra,
                            chips=[r.record, f"{r.posizione}° posto"] if r.posizione else [r.record],
@@ -887,7 +888,7 @@ def _piano(ctx: Contesto, avv: int, mia: int | None, S, W) -> tuple[list, list]:
 
     el = [Paragraph(f"I punti della partita · {nome_mia} contro {nome_avv}", S["h2"]),
           _kpis([("Probabilità ora", f"{_fmt(p0, 0)}%",
-                  f"{nome_mia.split()[-1]} {'in casa' if casa_mia else 'in trasferta'}"),
+                  f"{nome_breve(nome_mia)} {'in casa' if casa_mia else 'in trasferta'}"),
                  ("Con tutte le chiavi", f"{_fmt(comb['prob_tutte'], 0)}%",
                   f"scenario migliore · {_fmt(comb['prob_tutte'] - p0, 0, signed=True)} punti"),
                  ("Leva principale", top["breve"],
@@ -896,7 +897,7 @@ def _piano(ctx: Contesto, avv: int, mia: int | None, S, W) -> tuple[list, list]:
                   f"{_fmt(rit['prob'], 0)}% con {_fmt(rit['possessi'], 0)} possessi")], S, W),
           Spacer(1, 4),
           Paragraph("Le chiavi della partita", S["h3"])]
-    for i, frase in enumerate(C.sintesi(lv, gc, nome_avv.split()[-1]), start=1):
+    for i, frase in enumerate(C.sintesi(lv, gc, nome_breve(nome_avv)), start=1):
         el.append(Paragraph(f"<b>{i}.</b> {_virgole(frase)}".replace(" → ", " · "), S["body"]))
     el.append(Paragraph(f"<b>Tutte insieme:</b> {_virgole(C.frase_combinata(comb))}.",
                         S["body"]))
@@ -930,14 +931,14 @@ def _piano(ctx: Contesto, avv: int, mia: int | None, S, W) -> tuple[list, list]:
                          "e sui tiri attesi nella partita. Il tiro è la percentuale dal campo con "
                          "le triple che valgono 1,5.", S["small"]))
     for _, x in lv.iterrows():
-        det.append(Paragraph(f"• {_virgole(C.frase_leva(x, nome_avv.split()[-1]))}", S["small"]))
+        det.append(Paragraph(f"• {_virgole(C.frase_leva(x, nome_breve(nome_avv)))}", S["small"]))
     det.append(Paragraph(f"Ritmo: con {_fmt(lento['possessi'], 0)} possessi "
                          f"{_fmt(lento['prob'], 0)}%, con {_fmt(veloce['possessi'], 0)} possessi "
                          f"{_fmt(veloce['prob'], 0)}%.", S["small"]))
 
     blocchi = []
-    for sid, titolo in ((avv, f"Quando {nome_avv.split()[-1]} perde"),
-                        (mia, f"Quando perdete voi ({nome_mia.split()[-1]})")):
+    for sid, titolo in ((avv, f"Quando {nome_breve(nome_avv)} perde"),
+                        (mia, f"Quando perdete voi ({nome_breve(nome_mia)})")):
         qp = C.quando_perdono(ctx.bs, sid)
         corpo = [Paragraph(titolo, S["h3"])]
         if qp.empty:
