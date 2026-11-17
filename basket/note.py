@@ -70,6 +70,10 @@ SCHEMA = [
         scouting INTEGER NOT NULL DEFAULT 1, aggiornato_il TEXT NOT NULL)""",
     # report già inviati: solo impronte (hash di indirizzo, tipo di report e partita)
     """CREATE TABLE IF NOT EXISTS invii_email (chiave TEXT PRIMARY KEY, inviato_il TEXT NOT NULL)""",
+    # attività degli utenti dei club per l'Amministrazione: ogni accesso (tipo "accesso") e ogni
+    # pagina aperta (tipo "pagina", solo il titolo della pagina, non cosa c'è dentro)
+    """CREATE TABLE IF NOT EXISTS attivita (
+        utente TEXT NOT NULL, tipo TEXT NOT NULL, pagina TEXT, quando TEXT NOT NULL)""",
 ]
 
 
@@ -361,9 +365,31 @@ class Archivio:
                 c.execute(text("INSERT INTO invii_email VALUES (:k, :d)"), {"k": k, "d": _now()})
 
     def touch_login(self, username: str):
+        d = _now()
         with self.engine.begin() as c:
             c.execute(text("UPDATE utenti SET ultimo_accesso = :d WHERE username = :u"),
-                      {"u": username, "d": _now()})
+                      {"u": username, "d": d})
+            c.execute(text("INSERT INTO attivita (utente, tipo, pagina, quando) VALUES (:u, 'accesso', NULL, :d)"),
+                      {"u": username, "d": d})
+
+    def registra_pagina(self, username: str, pagina: str):
+        with self.engine.begin() as c:
+            c.execute(text("INSERT INTO attivita (utente, tipo, pagina, quando) VALUES (:u, 'pagina', :p, :d)"),
+                      {"u": username, "p": str(pagina)[:120], "d": _now()})
+
+    def statistiche_accessi(self) -> dict:
+        """Per utente: numero di accessi e data del primo (dal registro delle attività)."""
+        with self.engine.connect() as c:
+            righe = c.execute(text("SELECT utente, COUNT(*), MIN(quando) FROM attivita "
+                                   "WHERE tipo = 'accesso' GROUP BY utente")).fetchall()
+        return {r[0]: {"accessi": int(r[1]), "primo": r[2]} for r in righe}
+
+    def pagine_aperte(self) -> pd.DataFrame:
+        """Pagine aperte da ogni utente: quante volte e l'ultima volta."""
+        with self.engine.connect() as c:
+            return pd.read_sql_query(text(
+                "SELECT utente, pagina, COUNT(*) AS volte, MAX(quando) AS ultima FROM attivita "
+                "WHERE tipo = 'pagina' GROUP BY utente, pagina ORDER BY utente, volte DESC"), c)
 
     # ------------------------------------------------------------ brand
     def brand(self, squadra_id: int) -> dict:

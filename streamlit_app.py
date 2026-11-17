@@ -241,6 +241,16 @@ with barra:
 # ------------------------------------------------------------------ pagine
 
 pagine.APP = a
+# pagine aperte dagli utenti dei club (per l'Amministrazione): una riga quando si cambia pagina
+if (utente.get("fonte") == "database" and not utente.get("demo") and utente.get("ruolo") != "admin"
+        and arch is not None):
+    if st.session_state.get("_pagina_registrata") != nav.title:
+        st.session_state["_pagina_registrata"] = nav.title
+        try:
+            arch.registra_pagina(utente["username"], nav.title)
+        except Exception:
+            pass
+
 nav.run()
 
 # memoria: dopo ogni pagina si restituisce al sistema quella liberata (al massimo ogni 20 secondi).
