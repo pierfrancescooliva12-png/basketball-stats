@@ -212,8 +212,10 @@ def render(a: App, hist: pd.DataFrame):
 
     # ---- PDF
     from basket.report_confronto import build_confronto
-    pdf = build_confronto(sa, sb, aa, ab, fit, [sa_, sb_], [na, nb],
-                          pr["squadra"].iloc[0] if not fit.empty else None)
+    squadra_fit = pr["squadra"].iloc[0] if not fit.empty else None
+
+    def pdf():                       # creato solo al clic su «Confronto in PDF»
+        return build_confronto(sa, sb, aa, ab, fit, [sa_, sb_], [na, nb], squadra_fit)
     st.download_button("⬇ Confronto in PDF (una pagina per il direttore sportivo)", pdf,
                        file_name=f"confronto_{CF._cognome(sa['riga']['giocatore']).lower()}_"
                                  f"{CF._cognome(sb['riga']['giocatore']).lower()}.pdf",

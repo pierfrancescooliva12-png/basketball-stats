@@ -80,14 +80,14 @@ def render(a: App, riferimento: int, contesto: str, titolo: str, nome_squadra: s
                   "l'archivio permanente del club restano salvati e condivisi con lo staff.")
     if salvati:
         st.download_button(f"⬇ PDF dei giochi ({len(salvati)})",
-                           build_giochi(salvati, nome_squadra),
+                           lambda: build_giochi(salvati, nome_squadra),
                            file_name=f"giochi_{slug(nome_squadra)}.pdf", mime="application/pdf",
                            key=f"pdf_giochi_{contesto}_{riferimento}")
     return salvati
 
 
 def render_nostri(a: App):
-    st.download_button(f"⬇ Archivio degli schemi pronti in PDF ({len(SCHEMI)})", _pdf_archivio(),
+    st.download_button(f"⬇ Archivio degli schemi pronti in PDF ({len(SCHEMI)})", _pdf_archivio,
                        file_name="archivio_schemi_assist.pdf", mime="application/pdf",
                        key="pdf_archivio_schemi")
     sid = a.mia_squadra

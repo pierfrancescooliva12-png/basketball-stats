@@ -213,7 +213,7 @@ def _note_e_lavagna(a, scelta, nome, salvato, d=None, ind=None, rif=None, fonte=
             st.success("Note salvate.")
     if d is not None:
         st.download_button("⬇ Report PDF per la riunione tecnica",
-                           SX.pdf(nome, a.club, d, ind, rif, fonte, gioc, salvato.get("note", "")),
+                           lambda: SX.pdf(nome, a.club, d, ind, rif, fonte, gioc, salvato.get("note", "")),
                            file_name=f"scouting_{scelta}.pdf", mime="application/pdf", type="primary")
     from . import lavagna_ui
     section("Giochi dell'avversaria", "disegnati dallo staff sulla lavagna")
