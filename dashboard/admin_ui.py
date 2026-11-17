@@ -8,6 +8,8 @@ Gli utenti dei Secrets (l'amministratore) restano come accesso di riserva.
 La password provvisoria si vede una volta sola e non viene salvata da nessuna parte."""
 
 import json
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import streamlit as st
@@ -69,20 +71,76 @@ def _stato_database(a: App):
 
 # ------------------------------------------------------------------ utenti
 
+ROMA = ZoneInfo("Europe/Rome")
+
+
+def ora_italiana(iso) -> str:
+    """Data e ora salvate in UTC ("2026-11-17T14:30:00+00:00") in ora italiana: "17/11/2026 15:30"."""
+    if not iso:
+        return "–"
+    try:
+        d = datetime.fromisoformat(str(iso))
+    except ValueError:
+        return str(iso)[:16].replace("T", " ")
+    if d.tzinfo is None:
+        d = d.replace(tzinfo=ZoneInfo("UTC"))
+    return d.astimezone(ROMA).strftime("%d/%m/%Y %H:%M")
+
+
+def _statistiche(a: App) -> dict:
+    try:
+        return a.archivio.statistiche_accessi()
+    except Exception:
+        return {}
+
+
 def _utenti_attivi(a: App, da_secrets: dict, da_db: dict):
-    section("Utenti", "chi può entrare nella piattaforma")
+    section("Utenti", "chi può entrare nella piattaforma · orari in ora italiana")
+    stat = _statistiche(a) if a.archivio.permanente else {}
     righe = [{"Utente": u, "Club": d.get("club") or "– (tutte le squadre)", "Ruolo": d.get("ruolo", "staff"),
-              "Dove": "Secrets (riserva)", "Stato": "attivo", "Ultimo accesso": "–"}
+              "Dove": "Secrets (riserva)", "Stato": "attivo", "Accessi": 0, "Primo accesso": "–",
+              "Ultimo accesso": "–"}
              for u, d in sorted(da_secrets.items())]
     righe += [{"Utente": u, "Club": d.get("club") or "– (tutte le squadre)", "Ruolo": d.get("ruolo"),
                "Dove": "database", "Stato": ("da attivare (password provvisoria)" if d["cambio_password"]
                                              else "attivo") if d["attivo"] else "disattivato",
-               "Ultimo accesso": (d.get("ultimo_accesso") or "–")[:16].replace("T", " ")}
+               "Accessi": stat.get(u, {}).get("accessi", 0),
+               "Primo accesso": ora_italiana(stat.get(u, {}).get("primo")),
+               "Ultimo accesso": ora_italiana(d.get("ultimo_accesso"))}
               for u, d in sorted(da_db.items()) if u not in da_secrets]
     if righe:
         show(pd.DataFrame(righe), voci=[])
     else:
         note_html("Nessun utente: il sito è in modalità demo.")
+
+
+def _attivita(a: App, da_db: dict):
+    """Le pagine più aperte da ogni utente dei club: cosa interessa durante la prova."""
+    if not a.archivio.permanente:
+        return
+    try:
+        pg = a.archivio.pagine_aperte()
+    except Exception:
+        return
+    section("Cosa guardano i club", "le pagine aperte da ogni utente, dalla più vista · orari in ora italiana")
+    if pg.empty:
+        note_html("Ancora nessuna pagina aperta dagli utenti dei club.")
+        return
+    righe = []
+    for u, g in pg.groupby("utente", sort=False):
+        g = g.sort_values("volte", ascending=False)
+        righe.append({"Utente": u, "Club": (da_db.get(u) or {}).get("club") or "–",
+                      "Pagine aperte": int(g["volte"].sum()), "Pagine diverse": len(g),
+                      "Le più aperte": " · ".join(f"{r.pagina} ({r.volte})" for r in g.head(5).itertuples()),
+                      "Ultima attività": ora_italiana(g["ultima"].max()), "_ord": str(g["ultima"].max())})
+    righe.sort(key=lambda r: r.pop("_ord"), reverse=True)      # le date in UTC si ordinano come testo
+    show(pd.DataFrame(righe), voci=[])
+    scelto = st.selectbox("Dettaglio di un utente", [r["Utente"] for r in righe], index=None,
+                          placeholder="Scegli un utente", key="attivita_utente")
+    if scelto:
+        d = pg[pg["utente"] == scelto].sort_values("volte", ascending=False)
+        show(pd.DataFrame({"Pagina": d["pagina"], "Volte": d["volte"].astype(int),
+                           "Ultima volta": d["ultima"].map(ora_italiana)}), voci=[])
 
 
 def _nuovo_accesso(a: App, esistenti: dict):
@@ -270,6 +328,7 @@ def render(a: App):
         da_db = {}
         st.error("Database non raggiungibile in questo momento: riprova tra poco.")
     _utenti_attivi(a, da_secrets, da_db)
+    _attivita(a, da_db)
     _nuovo_accesso(a, {**da_secrets, **da_db})
     _nuovo_interregionale(a, {**da_secrets, **da_db})
     _email_report(a)
