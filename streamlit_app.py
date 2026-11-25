@@ -66,6 +66,13 @@ nav = st.navigation(pagine.mappa(admin=utente.get("ruolo") == "admin" and not ut
 qp = st.query_params
 mtime = config.DB_PATH.stat().st_mtime
 stagioni = stagioni_disponibili()
+# i club vedono solo la stagione in corso: ogni stagione in più carica in memoria un'altra copia
+# completa delle analisi (circa 240 MB per una stagione intera) e sul server da 512 MB bastava
+# un cambio di stagione per esaurire la memoria. Le stagioni passate restano per l'amministratore.
+if utente.get("club") and not utente.get("demo"):
+    stagioni = stagioni[:1]
+if st.session_state.get("f_stag") not in stagioni:
+    st.session_state.pop("f_stag", None)
 if "f_stag" not in st.session_state and qp.get("stagione") in stagioni:
     st.session_state["f_stag"] = qp["stagione"]
 
