@@ -91,7 +91,8 @@ def loghi_piccoli(squadre: tuple) -> dict:
     return {s: memo.get(s) for s in squadre}
 
 
-@st.cache_resource(show_spinner="Preparo le analisi…", max_entries=2)
+# una sola stagione in memoria: due insieme (circa 240 MB in più) superano i 512 MB del server
+@st.cache_resource(show_spinner="Preparo le analisi…", max_entries=1)
 def contesto(db_mtime: float, stagione: str) -> Contesto:
     from basket import precalcolo
     ctx = Contesto(db.connect(config.DB_PATH, readonly=True), stagione)

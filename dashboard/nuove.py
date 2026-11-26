@@ -282,7 +282,7 @@ def scheda_giocatore(a: App):
         section("Scheda", "anagrafica, presenze, impatto, finali")
         kpis(items)
     st.download_button("⬇ Report individuale per il giocatore (PDF)",
-                       analisi.pdf_giocatore(a, gid, gsq, hist),
+                       lambda: analisi.pdf_giocatore(a, gid, gsq, hist),
                        file_name=f"giocatore_{analisi.slug(me['giocatore'])}.pdf",
                        mime="application/pdf",
                        help="Profilo, ultime partite, carriera e spazio per gli obiettivi di "
