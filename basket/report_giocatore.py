@@ -127,6 +127,8 @@ def pagina_avanzate(ctx, sid: int, gid: str, S, W, nome: str, squadra: str, stag
             if r["verso"] == 0 and r["pct"] is not None:
                 pct = f" · più alto del {int(round(r['pct']))}%"
             lettura = f"<b>{_esc(r['livello'].capitalize())}</b>{pct}" if r["livello"] else "dato non disponibile"
+            if r.get("in_squadra"):
+                lettura += f" · <b>{r['in_squadra']['testo']}</b> in squadra"
             if r["lettura"]:
                 lettura += f"<br/>{_esc(r['lettura'].capitalize())}"
             rows.append([[Paragraph(f"<b>{_esc(r['nome'])}</b> <font color=\"#6f6d66\" size=\"6.5\">{r['sigla']}</font>",
@@ -141,12 +143,44 @@ def pagina_avanzate(ctx, sid: int, gid: str, S, W, nome: str, squadra: str, stag
                                ("LINEBELOW", (0, 0), (-1, -2), 0.4, BORDO)]))
         el += [_carta([tit(g["titolo"]), Paragraph(_esc(g["sotto"].capitalize()), piccolo), Spacer(1, 2), t],
                       W - 4, pad=8), Spacer(1, 5)]
+    el += _con_senza_pdf(sch, W, tit, piccolo, nome_v)
     el.append(Paragraph("Rating con lui in campo: dalla cronaca, solo partite con i quintetti verificati. Ritmo: "
                         "possessi ogni 40 minuti (campionati FIBA). PIE: la parte del giocatore su punti, canestri, "
                         "rimbalzi, assist, recuperi, stoppate, errori al tiro, falli e palle perse delle due squadre "
                         "nelle partite giocate. Le percentuali di rimbalzo e di assist tengono conto dei minuti "
                         "in campo.", piccolo))
     return el
+
+
+def _con_senza_pdf(sch: dict, W, tit, piccolo, nome_v) -> list:
+    """La squadra con lui in campo e senza di lui: il confronto che non dipende dalla forza della squadra."""
+    cs = sch.get("con_senza")
+    if not cs:
+        return []
+    cella = ParagraphStyle("cs_c", parent=nome_v, alignment=2)
+    rows = [[Paragraph("<b>La squadra…</b>", piccolo), Paragraph("<b>con lui</b>", ParagraphStyle("h", parent=piccolo, alignment=2)),
+             Paragraph("<b>senza di lui</b>", ParagraphStyle("h2", parent=piccolo, alignment=2)),
+             Paragraph("<b>differenza</b>", ParagraphStyle("h3", parent=piccolo, alignment=2))]]
+    for r in cs["righe"]:
+        colore = "#2a78d6" if r["meglio"] is True else "#d95926" if r["meglio"] is False else "#6f6d66"
+        rows.append([Paragraph(f"{_esc(r['nome'])} <font color=\"#6f6d66\" size=\"6.5\">{r['sigla']}</font>", nome_v),
+                     Paragraph(_esc(r["testo_con"]), cella), Paragraph(_esc(r["testo_senza"]), cella),
+                     Paragraph(f'<font color="{colore}"><b>{_esc(r["testo_diff"])}</b></font>', cella)])
+    cw = [W - 4 - 16 - 3 * 30 * mm, 30 * mm, 30 * mm, 30 * mm]
+    t = Table(rows, colWidths=cw)
+    t.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                           ("RIGHTPADDING", (0, 0), (-1, -1), 6), ("TOPPADDING", (0, 0), (-1, -1), 1.5),
+                           ("BOTTOMPADDING", (0, 0), (-1, -1), 1.5), ("LINEBELOW", (0, 0), (-1, -2), 0.4, BORDO)]))
+    sotto = ("Le stesse misure della squadra quando è in campo e quando è in panchina: un confronto dentro la "
+             "sua squadra, che non dipende da quanto è forte o debole la squadra in classifica. "
+             "Blu: con lui la squadra va meglio. Rosso: va peggio.")
+    if cs["pct_net"] is not None:
+        sotto += (f" Il suo saldo con/senza è migliore di quello del {int(round(cs['pct_net']))}% dei giocatori "
+                  "del campionato.")
+    if cs["pochi_senza"]:
+        sotto += " Gioca quasi sempre: pochi minuti senza di lui per un confronto affidabile."
+    return [_carta([tit("Con lui in campo e senza di lui"), Paragraph(_esc(sotto), piccolo), Spacer(1, 2), t],
+                   W - 4, pad=8), Spacer(1, 5)]
 
 
 class Andamento(Flowable):

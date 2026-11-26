@@ -24,7 +24,8 @@ DA_PREPARARE = ("players", "profile", "lineups", "shots", "clutch_players", "ass
 # la prima volta che servono, per non occupare memoria finché nessuno le apre
 PIGRE = ("leverage_eventi", "leverage")
 _CODICE = ("analysis.py", "pbp.py", "contesto.py", "db.py", "approfondimenti.py", "previsioni.py",
-           "leverage.py", "avvisi.py", "mercato.py", "impatto.py", "verifica_chiavi.py", "chiavi.py", "validazione.py", "precalcolo.py")
+           "leverage.py", "avvisi.py", "mercato.py", "impatto.py", "verifica_chiavi.py", "chiavi.py", "validazione.py", "precalcolo.py",
+           "avanzate.py")
 
 
 def _chiave(stagione: str) -> str:
@@ -47,6 +48,11 @@ def prepara(stagione: str = config.STAGIONE, verifiche: bool = True) -> Path:
         getattr(ctx, nome)
     for camp in ctx.bs["campionato_id"].unique():      # forza delle squadre e fattore campo
         ctx.forze(camp), ctx.hca(camp)
+    try:                                               # statistiche avanzate e confronto con/senza
+        from . import avanzate
+        avanzate.tabella(ctx), avanzate.on_off_squadra(ctx)
+    except Exception:  # noqa: BLE001
+        pass
     try:                                               # impatto dei giocatori (Scouting, obiettivi)
         from . import impatto
         impatto.storico(ctx)
