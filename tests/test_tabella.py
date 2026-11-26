@@ -12,7 +12,7 @@ pytest.importorskip("streamlit")
 def _payload(monkeypatch, df, **k):
     from dashboard import tabella as TB
     preso = {}
-    monkeypatch.setattr(TB.components, "html", lambda html, height, scrolling: preso.update(html=html, h=height))
+    monkeypatch.setattr(TB.st, "iframe", lambda html, height: preso.update(html=html, h=height))
     TB.render(df, **k)
     m = re.search(r'<script type="application/json" id="dati">(.*?)</script>', preso["html"], re.S)
     return json.loads(m.group(1).replace("<\\/", "</")), preso["h"]
