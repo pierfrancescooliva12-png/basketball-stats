@@ -9,7 +9,6 @@ import base64
 import json
 
 import streamlit as st
-import streamlit.components.v1 as components
 
 from basket import config, icona
 
@@ -69,4 +68,4 @@ def imposta(tema=None) -> None:
         return
     st.markdown(CSS, unsafe_allow_html=True)
     with st.container(key="icona_app"):
-        components.html(JS % json.dumps(v), height=0)
+        st.iframe(JS % json.dumps(v), height=1)       # nascosto dal CSS: serve solo lo script

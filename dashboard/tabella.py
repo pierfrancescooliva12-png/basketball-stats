@@ -11,7 +11,6 @@ import re
 
 import pandas as pd
 import streamlit as st
-import streamlit.components.v1 as components
 
 from basket.figurine import maiuscole
 
@@ -300,4 +299,4 @@ def render(df: pd.DataFrame, height: int | None = None, progress: dict | None = 
     html = (f'<!doctype html><html lang="it"><head><meta charset="utf-8">{FONT}<style>{CSS}{stile}</style></head>'
             f'<body><div id="t" style="height:100%"></div><script type="application/json" id="dati">{dati_json}'
             f'</script><script>{JS}</script></body></html>')
-    components.html(html, height=alto, scrolling=False)
+    st.iframe(html, height=alto)
