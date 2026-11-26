@@ -309,11 +309,29 @@ def avanzate_giocatore(a: App, sid: int, gid: str):
             righe.append({"Famiglia": g["titolo"], "Statistica": f"{r['nome']} ({r['sigla']})", "Valore": r["testo"],
                           "Meglio del": None if r["pct"] is None else round(r["pct"]),
                           "Livello": r["livello"].capitalize() if r["livello"] else "–",
+                          "In squadra": r["in_squadra"]["testo"] if r.get("in_squadra") else "–",
                           "Cosa misura": r["cosa"]})
     show(pd.DataFrame(righe), progress={"Meglio del": (0, 100)}, voci=[])
     note_html("«Meglio del»: percentuale di giocatori del campionato che fanno peggio in quella voce. Per azioni "
-              "chiuse (USG%) e ritmo indica solo quanti hanno un valore più basso: non è un giudizio."
+              "chiuse (USG%) e ritmo indica solo quanti hanno un valore più basso: non è un giudizio. "
+              "«In squadra»: la sua posizione tra i compagni con minuti sufficienti (1° = il migliore)."
               + (" Ha giocato poco: valori da confermare." if sch["pochi_dati"] else ""))
+    cs = sch.get("con_senza")
+    if cs:
+        section("Con lui in campo e senza di lui", "le stesse misure della squadra, con lui e quando è in panchina: "
+                "un confronto che non dipende dalla forza della squadra", key="con_senza")
+        show(pd.DataFrame([{"La squadra…": f"{r['nome']} ({r['sigla']})", "Con lui": r["testo_con"],
+                            "Senza di lui": r["testo_senza"], "Differenza": r["testo_diff"],
+                            "Effetto": "meglio con lui" if r["meglio"] is True else
+                            "peggio con lui" if r["meglio"] is False else "–"} for r in cs["righe"]]), voci=[])
+        nota = (f"Possessi con lui: {cs['poss_on']:.0f} · senza di lui: {cs['poss_off']:.0f}. Solo partite con i "
+                "quintetti verificati.")
+        if cs["pct_net"] is not None:
+            nota += (f" Il suo saldo con/senza è migliore di quello del {int(round(cs['pct_net']))}% dei giocatori "
+                     "del campionato.")
+        if cs["pochi_senza"]:
+            nota += " Gioca quasi sempre: pochi minuti senza di lui per un confronto affidabile."
+        note_html(nota)
 
 
 def giocatore_extra(a: App):

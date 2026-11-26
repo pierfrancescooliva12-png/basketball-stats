@@ -106,3 +106,51 @@ def test_report_senza_istruzioni_tattiche():
         testo = " ".join(v for voci in gruppi.values() for v in voci).lower()
         for parola in vietate:
             assert parola not in testo, (parola, testo[:200])
+
+
+def test_con_e_senza_di_lui_su_stint_e_cronaca():
+    from types import SimpleNamespace
+    # una partita: squadra 1 contro 2; A in campo nei primi 100 secondi, poi in panchina
+    stints = pd.DataFrame([
+        {"squadra_id": 1, "inizio": 0, "fine": 100, "quintetto": "A,B,C,D,E", "punti_fatti": 10, "punti_subiti": 4,
+         "poss_fatti": 10.0, "poss_subiti": 10.0, "partita_id": "p", "campionato_id": "c", "stagione": "s", "secondi": 100},
+        {"squadra_id": 1, "inizio": 100, "fine": 200, "quintetto": "B,C,D,E,F", "punti_fatti": 4, "punti_subiti": 10,
+         "poss_fatti": 50.0, "poss_subiti": 50.0, "partita_id": "p", "campionato_id": "c", "stagione": "s", "secondi": 100},
+    ])
+    ev = pd.DataFrame([
+        {"partita_id": "p", "secondi": 10, "squadra_id": 1, "tipo": "tiro3_fatto"},
+        {"partita_id": "p", "secondi": 20, "squadra_id": 1, "tipo": "tiro2_sbagliato"},
+        {"partita_id": "p", "secondi": 20, "squadra_id": 1, "tipo": "rimb_off"},
+        {"partita_id": "p", "secondi": 30, "squadra_id": 2, "tipo": "persa"},
+        {"partita_id": "p", "secondi": 150, "squadra_id": 1, "tipo": "tiro2_sbagliato"},
+        {"partita_id": "p", "secondi": 150, "squadra_id": 2, "tipo": "rimb_dif"},
+        {"partita_id": "p", "secondi": 160, "squadra_id": 2, "tipo": "tiro2_fatto"},
+    ]).assign(squadra_casa_id=1, squadra_ospite_id=2)
+    st = AV.stint_eventi(ev, stints)
+    assert list(st["f_fga"]) == [2, 1] and list(st["f_orb"]) == [1, 0] and list(st["s_tov"]) == [1, 0]
+    assert list(st["s_drb"]) == [0, 1] and list(st["s_fgm"]) == [0, 1]
+    ctx = SimpleNamespace(ev=ev, stints=stints)
+    oo = AV.on_off_squadra(ctx).set_index("giocatore_id")
+    a = oo.loc["A"]
+    assert a["ortg_on"] == 100 and a["ortg_off"] == 8 and a["ortg_diff"] == 92
+    assert a["efg_on"] == 75 and a["efg_off"] == 0          # (1 + 0,5) su 2 tiri · 0 su 1
+    assert a["orb_on"] == 100 and a["orb_off"] == 0          # 1 su 1 · 0 su (0 + 1)
+    assert oo.loc["B", "poss_off"] == 0 and pd.isna(oo.loc["B", "ortg_off"])   # sempre in campo
+
+
+def test_scheda_con_senza_e_posizione_in_squadra():
+    from basket import config, db
+    from basket.contesto import Contesto
+    if not config.DB_PATH.exists():
+        return
+    ctx = Contesto(db.connect(config.DB_PATH, readonly=True), config.STAGIONE)
+    t = AV.tabella(ctx)
+    r = t[t["minuti_pg"] >= 20].iloc[0]
+    s = AV.scheda(ctx, int(r.squadra_id), r.giocatore_id)
+    cs = s["con_senza"]
+    assert cs and len(cs["righe"]) == len(AV.VOCI_ONOFF) and cs["poss_on"] > 0
+    net = next(x for x in cs["righe"] if x["chiave"] == "net")
+    net_tab = next(x for g in s["gruppi"] for x in g["righe"] if x["sigla"] == "NETRTG")
+    assert net["testo_con"] == net_tab["testo"]                 # stesso saldo nelle due tabelle
+    pos = [x["in_squadra"] for g in s["gruppi"] for x in g["righe"] if x["in_squadra"]]
+    assert pos and all(1 <= p["pos"] <= p["su"] <= s["compagni"] for p in pos)
