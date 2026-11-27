@@ -211,7 +211,7 @@ a = App(ctx=ctx, mtime=mtime, stagione=stagione, camp=camp, sq=sq, gsel=gsel, ut
 
 agg = ctx.conn.execute("SELECT MAX(scaricata_il) FROM partite").fetchone()[0]
 chi = (" · modalità demo" if utente.get("demo") else
-       f" · {esc(utente['username'])} ({esc(utente['club'] or 'amministratore')})")
+       f" · {esc(utente['username'])} ({esc(utente['club'] or ('amministratore' if utente.get('ruolo') == 'admin' else 'tutte le squadre'))})")
 n_incomplete = a.bs_c.loc[~a.bs_c["affidabile"], "partita_id"].nunique()
 with barra:
     c1, c2 = st.columns([5, 1.6], vertical_alignment="center")

@@ -143,11 +143,17 @@ def _attivita(a: App, da_db: dict):
                            "Ultima volta": d["ultima"].map(ora_italiana)}), voci=[])
 
 
+TUTTE = "Tutte le squadre · accesso generico, senza club"
+
+
 def _nuovo_accesso(a: App, esistenti: dict):
     section("Nuovo accesso per un club", "password provvisoria generata a caso")
     with st.form("nuovo_utente", clear_on_submit=True):
         c1, c2, c3 = st.columns([2, 1.2, 1])
-        squadra = c1.selectbox("Squadra", _squadre(a), index=None, placeholder="Scegli la squadra…")
+        squadra = c1.selectbox("Squadra", [TUTTE] + list(_squadre(a)), index=None, placeholder="Scegli la squadra…",
+                               help="«Tutte le squadre»: un accesso generico che vede tutta la piattaforma e "
+                                    "sceglie la squadra da seguire nella Home, come l'amministratore ma senza "
+                                    "questa pagina (con il ruolo staff).")
         nome = c2.text_input("Utente", placeholder="es. forli-staff")
         ruolo = c3.selectbox("Ruolo", ["staff", "admin"],
                              help="staff: vede la piattaforma con la sua squadra; admin: vede "
@@ -163,12 +169,12 @@ def _nuovo_accesso(a: App, esistenti: dict):
     if errore:
         st.error(f"Utente: {errore}.")
         return
-    club = squadra.rsplit(" · ", 1)[0]
+    club = None if squadra == TUTTE else squadra.rsplit(" · ", 1)[0]
     pw = accesso.genera_password()
     u = nome.strip().lower()
     if a.archivio.permanente:
         a.archivio.add_user(u, accesso.hash_password(pw), club, ruolo, a.autore)
-        st.success(f"Accesso creato per «{u}» ({club}): può entrare subito.")
+        st.success(f"Accesso creato per «{u}» ({club or 'tutte le squadre'}): può entrare subito.")
         _password_mostrata(u, pw)
     else:
         st.success(f"Accesso preparato per «{u}».")
